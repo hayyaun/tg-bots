@@ -58,7 +58,9 @@ const startBot = async () => {
       setUser(ctx, Gender.male);
       await ctx.answerCallbackQuery();
       await sendQuestion(ctx, 0);
-    } catch {}
+    } catch (err) {
+      console.log(err);
+    }
   });
 
   bot.callbackQuery("gender:female", async (ctx) => {
@@ -66,7 +68,9 @@ const startBot = async () => {
       setUser(ctx, Gender.female);
       await ctx.answerCallbackQuery();
       await sendQuestion(ctx, 0);
-    } catch {}
+    } catch (err) {
+      console.log(err);
+    }
   });
 
   // Quiz
@@ -103,8 +107,8 @@ const startBot = async () => {
       keyboard.text(v, `answer:${current}-${i}`)
     );
 
-    // TODO if not last message id -> don't reply
-    await ctx.reply(q.text, { reply_markup: keyboard });
+    const message = `${current}/${quiz.length} ${q.text}`;
+    await ctx.reply(message, { reply_markup: keyboard });
   }
 
   async function sendResult(ctx: Context) {
