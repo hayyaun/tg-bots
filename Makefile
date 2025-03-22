@@ -1,4 +1,6 @@
 docker:
+		@echo "Fetching..."
+		-git pull
 		@echo "Removing previous..."
 		-docker stop tgbots-app
 		-docker rm tgbots-app
