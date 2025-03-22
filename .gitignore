@@ -30,3 +30,6 @@ lerna-debug.log*
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+
+*.Identifier

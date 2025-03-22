@@ -2,6 +2,7 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
 import { SocksProxyAgent } from "socks-proxy-agent";
+import { intToEmoji } from "../utils/emoji";
 import { female, male } from "./questions";
 import strings from "./strings";
 import { Deity, Gender, IUserData, Value } from "./types";
@@ -100,7 +101,7 @@ const startBot = async () => {
       keyboard.text(v, `answer:${current}-${i}`)
     );
 
-    const message = `${current + 1}/${quiz.length} ${q.text}`;
+    const message = `${current + 1}/${quiz.length} \n${q.text}`;
     await ctx.reply(message, { reply_markup: keyboard });
   }
 
@@ -123,7 +124,7 @@ const startBot = async () => {
       _.sortBy([...result], ([, value]) => value)
     );
     const message = sortedResults
-      .map(([deity, value], i) => `${i + 1}: ${deity} - ${value}`)
+      .map(([deity, value], i) => `${i + 1}. ${deity} \n${intToEmoji(value)}`)
       .join("\n");
     await ctx.reply(message);
   }
