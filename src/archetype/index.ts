@@ -115,12 +115,13 @@ const startBot = async () => {
     await ctx.reply(strings.done);
     const userId = ctx.from?.id;
     if (!userId) return;
-    const data = userData.get(userId);
-    if (!data) return;
+    const user = userData.get(userId);
+    if (!user) return;
     const result = new Map<Deity, number>();
-    Object.entries(data.answers).forEach((answer) => {
-      const questionId = parseInt(answer[0]);
-      const question = male[questionId];
+    Object.entries(user.answers).forEach((answer) => {
+      const index = parseInt(answer[0]);
+      const quiz = user.gender === Gender.male ? male : female;
+      const question = quiz[index];
       const value = answer[1];
       const previous = result.get(question.deity);
       result.set(question.deity, (previous ?? 0) + value);
