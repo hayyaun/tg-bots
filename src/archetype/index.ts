@@ -107,7 +107,7 @@ const startBot = async () => {
       keyboard.text(v, `answer:${current}-${i}`)
     );
 
-    const message = `${current}/${quiz.length} ${q.text}`;
+    const message = `${current + 1}/${quiz.length} ${q.text}`;
     await ctx.reply(message, { reply_markup: keyboard });
   }
 
@@ -118,9 +118,9 @@ const startBot = async () => {
     const user = userData.get(userId);
     if (!user) return;
     const result = new Map<Deity, number>();
+    const quiz = user.gender === Gender.male ? male : female;
     Object.entries(user.answers).forEach((answer) => {
       const index = parseInt(answer[0]);
-      const quiz = user.gender === Gender.male ? male : female;
       const question = quiz[index];
       const value = answer[1];
       const previous = result.get(question.deity);
