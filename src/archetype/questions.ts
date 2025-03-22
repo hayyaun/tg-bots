@@ -1,3 +1,4 @@
+import { configDotenv } from "dotenv";
 import _ from "lodash";
 import aphrodite from "./female/aphrodite.json";
 import artemis from "./female/artemis.json";
@@ -16,7 +17,9 @@ import poseidon from "./male/poseidon.json";
 import zeus from "./male/zeus.json";
 import { Deity, IQuest } from "./types";
 
-const SAMPLE_SIZE = 5;
+configDotenv();
+
+const SAMPLE_SIZE = process.env.DEV ? 1 : 5;
 
 interface IListItem {
   deity: Deity;

@@ -1,5 +1,5 @@
 import startArchetypeBot from "./archetype";
 
-console.log("App Running!");
+console.log("Running App!");
 
 startArchetypeBot();

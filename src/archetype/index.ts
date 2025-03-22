@@ -1,5 +1,6 @@
 import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
+import _ from "lodash";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { female, male } from "./questions";
 import strings from "./strings";
@@ -27,6 +28,7 @@ const startBot = async () => {
   const setUser = (ctx: Context, gender: Gender) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
     userData.set(userId, {
       date: Date.now(),
       gender: gender,
@@ -39,7 +41,7 @@ const startBot = async () => {
   });
 
   await bot.api.setMyCommands([
-    { command: "start", description: strings.help_btn },
+    { command: "start", description: strings.start_btn },
     { command: "help", description: strings.help_btn },
   ]);
 
@@ -47,8 +49,8 @@ const startBot = async () => {
   bot.command("start", (ctx) =>
     ctx.reply(strings.welcome, {
       reply_markup: new InlineKeyboard()
-        .text("مرد", "gender:male")
-        .text("زن", "gender:female"),
+        .text(strings.man, "gender:" + Gender.male)
+        .text(strings.female, "gender:" + Gender.female),
     })
   );
 
@@ -117,10 +119,12 @@ const startBot = async () => {
       const previous = result.get(question.deity);
       result.set(question.deity, (previous ?? 0) + value);
     });
-    let message = "";
-    result.forEach((value, deity) => {
-      message += `${deity}: ${value} \n`;
-    });
+    const sortedResults = _.reverse(
+      _.sortBy([...result], ([, value]) => value)
+    );
+    const message = sortedResults
+      .map(([deity, value], i) => `${i + 1}: ${deity} - ${value}`)
+      .join("\n");
     await ctx.reply(message);
   }
 
@@ -128,7 +132,7 @@ const startBot = async () => {
     console.log(err);
   };
 
-  bot.start({ timeout: 10 });
+  bot.start();
 };
 
 export default startBot;

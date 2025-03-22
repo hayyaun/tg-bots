@@ -1,5 +1,5 @@
 export enum Value {
-  A,
+  A = 0,
   B,
   C,
   D,
@@ -24,25 +24,24 @@ export interface IUserData {
   date: number;
   gender: Gender;
   answers: { [i: number]: Value };
-  // current: number;
 }
 
 export enum Deity {
   // male
-  Zeus = "Zeus ⚡",
-  Hades = "Hades 💀",
-  Apollo = "Apollo ☀️",
-  Ares = "Ares 🗡️",
-  Dionysus = "Dionysus 🍷",
-  Hermes = "Hermes 🏃‍♂️",
-  Hephaestus = "Hephaestus 🔥",
-  Poseidon = "Poseidon 🌊",
+  Zeus = "زئوس ⚡",
+  Hades = "هادس 💀",
+  Apollo = "آپولو ☀️",
+  Ares = "آرس 🗡️",
+  Dionysus = "دیونوس 🍷",
+  Hermes = "هرمس 🏃‍♂️",
+  Hephaestus = "هفائستوس 🔥",
+  Poseidon = "پوزایدن 🌊",
   // female
-  Hera = "Hera 👑",
-  Demeter = "Demeter 🌾",
-  Persephone = "Persephone 🌺",
-  Artemis = "Artemis 🌙",
-  Athena = "Athena 🦉",
-  Aphrodite = "Aphrodite 💋",
-  Hestia = "Hestia 🏡",
+  Hera = "هرا 👑",
+  Demeter = "دیمیتر 🌾",
+  Persephone = "پرسیفون 🌺",
+  Artemis = "آرتمیس 🌙",
+  Athena = "آتنا 🦉",
+  Aphrodite = "آفرودیت 💋",
+  Hestia = "هستیا 🏡",
 }
