@@ -53,19 +53,10 @@ const startBot = async () => {
   );
 
   // Gender
-  bot.callbackQuery("gender:male", async (ctx) => {
+  bot.callbackQuery(/gender:(.+)/, async (ctx) => {
     try {
-      setUser(ctx, Gender.male);
-      await ctx.answerCallbackQuery();
-      await sendQuestion(ctx, 0);
-    } catch (err) {
-      console.log(err);
-    }
-  });
-
-  bot.callbackQuery("gender:female", async (ctx) => {
-    try {
-      setUser(ctx, Gender.female);
+      const gender = ctx.match[1] as Gender;
+      setUser(ctx, gender);
       await ctx.answerCallbackQuery();
       await sendQuestion(ctx, 0);
     } catch (err) {

@@ -11,8 +11,8 @@ export interface IQuest {
 }
 
 export enum Gender {
-  male,
-  female,
+  male = "male",
+  female = "female",
 }
 
 export interface IScore {
