@@ -103,6 +103,7 @@ const startBot = async () => {
       keyboard.text(v, `answer:${current}-${i}`)
     );
 
+    // TODO if not last message id -> don't reply
     await ctx.reply(q.text, { reply_markup: keyboard });
   }
 
