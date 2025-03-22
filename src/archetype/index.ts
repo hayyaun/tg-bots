@@ -133,7 +133,11 @@ const startBot = async () => {
     await ctx.reply(message);
   }
 
-  bot.start({ timeout: 10 }).catch(console.log);
+  bot.catch = (err) => {
+    console.log(err);
+  };
+
+  bot.start({ timeout: 10 });
 };
 
 export default startBot;
