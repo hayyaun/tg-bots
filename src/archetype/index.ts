@@ -1,10 +1,11 @@
 import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
+import path from "path";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { intToEmoji } from "../utils/emoji";
 import { female, male } from "./questions";
-import strings from "./strings";
+import strings, { deities } from "./strings";
 import { Deity, Gender, IUserData, Value } from "./types";
 
 configDotenv();
@@ -124,9 +125,15 @@ const startBot = async () => {
       _.sortBy([...result], ([, value]) => value)
     );
     const message = sortedResults
-      .map(([deity, value], i) => `${i + 1}. ${deity} \n${intToEmoji(value)}`)
+      .map(
+        ([deity, value], i) =>
+          `${i + 1}. ${deities[deity]} \n${intToEmoji(value)}`
+      )
       .join("\n");
-    await ctx.reply(message);
+    const mainDeity = sortedResults[0][0];
+    await ctx.replyWithPhoto(path.join(__dirname, `assets/${mainDeity}.webp`), {
+      caption: message,
+    });
   }
 
   bot.catch = (err) => {
