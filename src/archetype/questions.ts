@@ -31,7 +31,7 @@ const combine = (items: IListItem[]) =>
     items
       .map(({ deity, questions }) =>
         _.sampleSize(questions, SAMPLE_SIZE).map(
-          (q) => ({ deity, text: q }) as IQuest
+          (text) => ({ deity, text }) as IQuest
         )
       )
       .flat()
@@ -48,10 +48,6 @@ const maleItems = [
   { deity: Deity.Poseidon, questions: poseidon },
 ];
 
-export const maleSize = maleItems.length * SAMPLE_SIZE;
-
-export const male = combine(maleItems);
-
 const femaleItems = [
   { deity: Deity.Hera, questions: hera },
   { deity: Deity.Demeter, questions: demeter },
@@ -62,6 +58,8 @@ const femaleItems = [
   { deity: Deity.Hestia, questions: hestia },
 ];
 
+export const maleSize = maleItems.length * SAMPLE_SIZE;
 export const femaleSize = femaleItems.length * SAMPLE_SIZE;
 
+export const male = combine(maleItems);
 export const female = combine(femaleItems);

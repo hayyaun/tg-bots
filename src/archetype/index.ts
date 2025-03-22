@@ -31,7 +31,7 @@ const startBot = async () => {
   const setUser = (ctx: Context, gender: Gender) => {
     const userId = ctx.from?.id;
     if (!userId) return;
-
+    // TODO log new users
     userData.set(userId, {
       date: Date.now(),
       gender: gender,
