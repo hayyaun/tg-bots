@@ -39,8 +39,8 @@ const startBot = async () => {
   });
 
   await bot.api.setMyCommands([
-    { command: "start", description: "شروع آزمون" },
-    { command: "help", description: "راهنما" },
+    { command: "start", description: strings.help_btn },
+    { command: "help", description: strings.help_btn },
   ]);
 
   bot.command("help", (ctx) => ctx.reply(strings.help));
