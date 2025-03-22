@@ -1,7 +1,7 @@
 import { configDotenv } from "dotenv";
-import { Bot, Context, InlineKeyboard } from "grammy";
+import fs from "fs";
+import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
-import path from "path";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { intToEmoji } from "../utils/emoji";
 import { female, male } from "./questions";
@@ -131,7 +131,8 @@ const startBot = async () => {
       )
       .join("\n");
     const mainDeity = sortedResults[0][0];
-    await ctx.replyWithPhoto(path.join(__dirname, `assets/${mainDeity}.webp`), {
+    const imageBuffer = fs.readFileSync(`assets/${mainDeity}.webp`);
+    await ctx.replyWithPhoto(new InputFile(imageBuffer, `${mainDeity}.webp`), {
       caption: message,
     });
   }
