@@ -15,11 +15,9 @@ import hephaestus from "./male/hephaestus.json";
 import hermes from "./male/hermes.json";
 import poseidon from "./male/poseidon.json";
 import zeus from "./male/zeus.json";
-import { Deity, IQuest } from "./types";
+import { Deity, Gender, IQuest } from "./types";
 
 configDotenv();
-
-const SAMPLE_SIZE = process.env.DEV ? 1 : 5;
 
 interface IListItem {
   deity: Deity;
@@ -27,11 +25,18 @@ interface IListItem {
 }
 
 const combine = (items: IListItem[]) =>
+  items
+    .map(({ deity, questions }) =>
+      questions.map((text) => ({ deity, text }) as IQuest)
+    )
+    .flat();
+
+const sample = (items: IListItem[], check: IQuest[], size: number) =>
   _.shuffle(
     items
       .map(({ deity, questions }) =>
-        _.sampleSize(questions, SAMPLE_SIZE).map(
-          (text) => ({ deity, text }) as IQuest
+        _.sampleSize(questions, size).map((text) =>
+          _.findIndex(check, { deity, text } as IQuest)
         )
       )
       .flat()
@@ -58,8 +63,18 @@ const femaleItems = [
   { deity: Deity.Hestia, questions: hestia },
 ];
 
-export const maleSize = maleItems.length * SAMPLE_SIZE;
-export const femaleSize = femaleItems.length * SAMPLE_SIZE;
+// const maleSize = maleItems.length * SAMPLE_SIZE;
+// const femaleSize = femaleItems.length * SAMPLE_SIZE;
 
-export const male = combine(maleItems);
-export const female = combine(femaleItems);
+const male = combine(maleItems);
+const female = combine(femaleItems);
+
+export const getSample = (gender: Gender, size: number) =>
+  sample(
+    gender === Gender.male ? maleItems : femaleItems,
+    gender === Gender.male ? male : female,
+    size
+  );
+
+export const getQuizItem = (order: number[], index: number, gender: Gender) =>
+  (gender === Gender.male ? male : female)[order[index]];

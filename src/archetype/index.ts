@@ -5,7 +5,7 @@ import _ from "lodash";
 import path from "path";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { intToEmoji } from "../utils/emoji";
-import { female, male } from "./questions";
+import { getQuizItem, getSample } from "./questions";
 import strings, { deities } from "./strings";
 import { Deity, Gender, IUserData, Value } from "./types";
 
@@ -13,6 +13,8 @@ configDotenv();
 
 const PERIODIC_CLEAN = 60_000; // 1m
 const USER_MAX_AGE = 3_600_000; // 1h
+const SAMPLE_SIZE = process.env.DEV ? 1 : 5;
+const SAMPLE_SIZE_BIG = 15;
 
 const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)
@@ -28,14 +30,16 @@ const startBot = async () => {
     });
   }, PERIODIC_CLEAN);
 
-  const setUser = (ctx: Context, gender: Gender) => {
+  const setUser = async (ctx: Context, gender: Gender, mode: number) => {
     const userId = ctx.from?.id;
     if (!userId) return;
     // TODO log new users
+    const sampleSize = mode === 1 ? SAMPLE_SIZE_BIG : SAMPLE_SIZE;
     userData.set(userId, {
       date: Date.now(),
-      gender: gender,
+      gender,
       answers: {},
+      order: getSample(gender, sampleSize),
     });
   };
 
@@ -52,16 +56,20 @@ const startBot = async () => {
   bot.command("start", (ctx) =>
     ctx.reply(strings.welcome, {
       reply_markup: new InlineKeyboard()
-        .text(strings.man, "gender:" + Gender.male)
-        .text(strings.female, "gender:" + Gender.female),
+        .text(strings.man0, `gender:${Gender.male}:0`)
+        .text(strings.female0, `gender:${Gender.female}:0`)
+        .row()
+        .text(strings.man1, `gender:${Gender.male}:1`)
+        .text(strings.female1, `gender:${Gender.female}:1`),
     })
   );
 
   // Gender
-  bot.callbackQuery(/gender:(.+)/, async (ctx) => {
+  bot.callbackQuery(/gender:(.+):(\d+)/, async (ctx) => {
     try {
       const gender = ctx.match[1] as Gender;
-      setUser(ctx, gender);
+      const mode = parseInt(ctx.match[2]);
+      await setUser(ctx, gender, mode);
       await ctx.answerCallbackQuery();
       await sendQuestion(ctx, 0);
     } catch (err) {
@@ -70,6 +78,32 @@ const startBot = async () => {
   });
 
   // Quiz
+
+  async function sendQuestion(ctx: Context, current: number) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    const user = userData.get(userId);
+    if (!user) return;
+
+    const question = getQuizItem(user.order, current, user.gender);
+    const lenght = user.order.length;
+
+    if (current >= lenght) {
+      // Quiz finished
+      await sendResult(ctx);
+      userData.delete(userId);
+      return;
+    }
+
+    const keyboard = new InlineKeyboard();
+    strings.values.forEach((v, i: Value) =>
+      keyboard.text(v, `answer:${current}-${i}`)
+    );
+
+    const message = `${current + 1}/${lenght} \n${question.text}`;
+    await ctx.reply(message, { reply_markup: keyboard });
+  }
+
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
     const userId = ctx.from.id;
     const user = userData.get(userId);
@@ -83,30 +117,6 @@ const startBot = async () => {
     await sendQuestion(ctx, current + 1);
   });
 
-  async function sendQuestion(ctx: Context, current: number) {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-    const user = userData.get(userId);
-    if (!user) return;
-
-    const quiz = user.gender === Gender.male ? male : female;
-    if (current >= quiz.length) {
-      // Quiz finished
-      await sendResult(ctx);
-      userData.delete(userId);
-      return;
-    }
-
-    const q = quiz[current];
-    const keyboard = new InlineKeyboard();
-    strings.values.forEach((v, i: Value) =>
-      keyboard.text(v, `answer:${current}-${i}`)
-    );
-
-    const message = `${current + 1}/${quiz.length} \n${q.text}`;
-    await ctx.reply(message, { reply_markup: keyboard });
-  }
-
   async function sendResult(ctx: Context) {
     await ctx.reply(strings.done);
     const userId = ctx.from?.id;
@@ -114,10 +124,9 @@ const startBot = async () => {
     const user = userData.get(userId);
     if (!user) return;
     const result = new Map<Deity, number>();
-    const quiz = user.gender === Gender.male ? male : female;
     Object.entries(user.answers).forEach((answer) => {
       const index = parseInt(answer[0]);
-      const question = quiz[index];
+      const question = getQuizItem(user.order, index, user.gender);
       const value = answer[1];
       const previous = result.get(question.deity);
       result.set(question.deity, (previous ?? 0) + value);

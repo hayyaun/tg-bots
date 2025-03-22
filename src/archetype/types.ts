@@ -5,6 +5,13 @@ export enum Value {
   D,
 }
 
+export interface IUserData {
+  date: number;
+  gender: Gender;
+  answers: { [i: number]: Value };
+  order: number[];
+}
+
 export interface IQuest {
   text: string;
   deity: Deity;
@@ -18,12 +25,6 @@ export enum Gender {
 export interface IScore {
   value: number;
   deity: Deity;
-}
-
-export interface IUserData {
-  date: number;
-  gender: Gender;
-  answers: { [i: number]: Value };
 }
 
 export enum Deity {
