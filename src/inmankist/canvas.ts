@@ -3,8 +3,9 @@ import { createCanvas, loadImage } from "canvas";
 const width = 640; // Adjust box width
 const height = 280; // Adjust box width
 const radius = 22;
-const padding = 50;
-const fontSize = 48;
+const margin = 48;
+const padding = 28;
+const fontSize = 42;
 const textColor = "white";
 
 export async function addTextToImage(
@@ -24,7 +25,7 @@ export async function addTextToImage(
     const boxWidth = width;
     const boxHeight = height;
     const boxX = (image.width - boxWidth) / 2; // Center horizontally
-    const boxY = image.height - boxHeight - 50; // 50px from bottom
+    const boxY = image.height - boxHeight - margin;
 
     // Set transparency and fill rectangle
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // 50% transparent black
@@ -34,17 +35,24 @@ export async function addTextToImage(
 
     // Set text properties
     ctx.font = `${fontSize}px 'Vazirmatn', 'Noto Color Emoji', sans-serif`;
-    ctx.textAlign = "right";
-    ctx.direction = "rtl";
     ctx.fillStyle = textColor;
-    ctx.strokeStyle = "black";
     ctx.lineWidth = 3;
 
-    // Draw the text with stroke for visibility
+    // Right Texts
     textRight.split("\n").forEach((s, i) => {
+      ctx.textAlign = "right";
+      ctx.direction = "rtl";
       const rx = boxX + boxWidth - padding;
-      const ry = boxY + padding + 20 + i * (fontSize * 1.0);
-      // ctx.strokeText(s, rx, ry);
+      const ry = boxY + padding + fontSize + i * (fontSize * 0.9);
+      ctx.fillText(s, rx, ry);
+    });
+
+    // Left Texts
+    textLeft.split("\n").forEach((s, i) => {
+      ctx.textAlign = "left";
+      ctx.direction = "ltr";
+      const rx = boxX + padding;
+      const ry = boxY + padding + fontSize + i * (fontSize * 0.9);
       ctx.fillText(s, rx, ry);
     });
 

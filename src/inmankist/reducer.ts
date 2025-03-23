@@ -1,6 +1,5 @@
 import { Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
-import { intToEmoji } from "../utils/emoji";
 import { toPercentage } from "../utils/string";
 import * as archetype from "./archetype";
 import deities from "./archetype/deities";
@@ -37,13 +36,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
         _.sortBy([...result], ([, value]) => value)
       );
 
-      const message = sortedResults
-        .map(
-          ([deity, value], i) =>
-            `${i + 1}. ${deities[deity].name} \n${intToEmoji(toPercentage(value, user.sampleSize * 3))}`
-        )
-        .join("\n");
-
       // process image
       const textRight = sortedResults
         .slice(0, 3)
@@ -69,7 +61,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
         btns.text(text, to).row();
       });
       await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".jpg"), {
-        caption: message,
+        // caption: message,
         reply_markup: btns,
       });
       break;
