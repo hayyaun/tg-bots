@@ -8,3 +8,8 @@ docker:
 		@echo ".> Building..."
 		docker build -t tgbots .
 		docker run -d --name tgbots-app tgbots
+
+
+docker-stop:
+		@echo ".> Stopping..."
+		docker stop tgbots-app
