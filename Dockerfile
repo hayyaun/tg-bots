@@ -30,7 +30,7 @@ RUN apk add --no-cache \
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Copy Vazirmatn font into the system fonts directory
-COPY assets/fonts /usr/share/fonts/vazirmatn/
+COPY assets/fonts/* /usr/share/fonts/
 
 # Update font cache to detect new fonts
 RUN fc-cache -fv
