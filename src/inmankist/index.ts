@@ -1,13 +1,10 @@
 import { configDotenv } from "dotenv";
-import fs from "fs";
-import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
-import _ from "lodash";
-import path from "path";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { SocksProxyAgent } from "socks-proxy-agent";
-import { intToEmoji } from "../utils/emoji";
-import { getQuizItem, getSample } from "./questions";
-import strings, { deities } from "./strings";
-import { Deity, Gender, IUserData, Value } from "./types";
+import { getSample } from "./archetype";
+import { selectQuizQuestion, selectQuizResult } from "./reducer";
+import strings from "./strings";
+import { Gender, IUserData, QuizType, Value } from "./types";
 
 configDotenv();
 
@@ -40,6 +37,8 @@ const startBot = async () => {
       gender,
       answers: {},
       order: getSample(gender, sampleSize),
+      quiz: QuizType.Archetype, // TODO dynamic
+      sampleSize,
     });
   };
 
@@ -78,14 +77,12 @@ const startBot = async () => {
   });
 
   // Quiz
-
   async function sendQuestion(ctx: Context, current: number) {
     const userId = ctx.from?.id;
     if (!userId) return;
     const user = userData.get(userId);
     if (!user) return;
 
-    const question = getQuizItem(user.order, current, user.gender);
     const lenght = user.order.length;
 
     if (current >= lenght) {
@@ -100,6 +97,8 @@ const startBot = async () => {
       keyboard.text(v, `answer:${current}-${i}`)
     );
 
+    const question = selectQuizQuestion(user, current);
+    if (!question) return; // TODO error
     const message = `${current + 1}/${lenght} \n${question.text}`;
     await ctx.reply(message, { reply_markup: keyboard });
   }
@@ -123,31 +122,7 @@ const startBot = async () => {
     if (!userId) return;
     const user = userData.get(userId);
     if (!user) return;
-    const result = new Map<Deity, number>();
-    Object.entries(user.answers).forEach((answer) => {
-      const index = parseInt(answer[0]);
-      const question = getQuizItem(user.order, index, user.gender);
-      const value = answer[1];
-      const previous = result.get(question.deity);
-      result.set(question.deity, (previous ?? 0) + value);
-    });
-    const sortedResults = _.reverse(
-      _.sortBy([...result], ([, value]) => value)
-    );
-    const message = sortedResults
-      .map(
-        ([deity, value], i) =>
-          `${i + 1}. ${deities[deity]} \n${intToEmoji(value)}`
-      )
-      .join("\n");
-    const mainDeity = sortedResults[0][0];
-    const filename = `${mainDeity}.webp`;
-    const imageBuffer = fs.readFileSync(
-      path.join(process.cwd(), `assets/${filename}`)
-    );
-    await ctx.replyWithPhoto(new InputFile(imageBuffer, filename), {
-      caption: message,
-    });
+    await selectQuizResult(ctx, user);
   }
 
   bot.catch = (err) => {

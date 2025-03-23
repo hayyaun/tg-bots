@@ -1,4 +1,4 @@
-import startArchetypeBot from "./archetype";
+import startArchetypeBot from "./inmankist";
 
 console.log("Running App!");
 

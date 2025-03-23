@@ -1,5 +1,6 @@
 import { configDotenv } from "dotenv";
 import _ from "lodash";
+import { Gender, IQuest } from "../types";
 import aphrodite from "./female/aphrodite.json";
 import artemis from "./female/artemis.json";
 import athena from "./female/athena.json";
@@ -15,7 +16,7 @@ import hephaestus from "./male/hephaestus.json";
 import hermes from "./male/hermes.json";
 import poseidon from "./male/poseidon.json";
 import zeus from "./male/zeus.json";
-import { Deity, Gender, IQuest } from "./types";
+import { Deity } from "./types";
 
 configDotenv();
 
@@ -26,17 +27,17 @@ interface IListItem {
 
 const combine = (items: IListItem[]) =>
   items
-    .map(({ deity, questions }) =>
-      questions.map((text) => ({ deity, text }) as IQuest)
+    .map(({ deity: belong, questions }) =>
+      questions.map((text) => ({ belong, text }) as IQuest<Deity>)
     )
     .flat();
 
-const sample = (items: IListItem[], check: IQuest[], size: number) =>
+const sample = (items: IListItem[], check: IQuest<Deity>[], size: number) =>
   _.shuffle(
     items
-      .map(({ deity, questions }) =>
+      .map(({ deity: belong, questions }) =>
         _.sampleSize(questions, size).map((text) =>
-          _.findIndex(check, { deity, text } as IQuest)
+          _.findIndex(check, { belong, text } as IQuest<Deity>)
         )
       )
       .flat()
@@ -63,9 +64,6 @@ const femaleItems = [
   { deity: Deity.Hestia, questions: hestia },
 ];
 
-// const maleSize = maleItems.length * SAMPLE_SIZE;
-// const femaleSize = femaleItems.length * SAMPLE_SIZE;
-
 const male = combine(maleItems);
 const female = combine(femaleItems);
 
@@ -76,5 +74,5 @@ export const getSample = (gender: Gender, size: number) =>
     size
   );
 
-export const getQuizItem = (order: number[], index: number, gender: Gender) =>
+export const getQuestion = (order: number[], index: number, gender: Gender) =>
   (gender === Gender.male ? male : female)[order[index]];

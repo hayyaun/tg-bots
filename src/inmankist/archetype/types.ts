@@ -1,32 +1,3 @@
-export enum Value {
-  A = 0,
-  B,
-  C,
-  D,
-}
-
-export interface IUserData {
-  date: number;
-  gender: Gender;
-  answers: { [i: number]: Value };
-  order: number[];
-}
-
-export interface IQuest {
-  text: string;
-  deity: Deity;
-}
-
-export enum Gender {
-  male = "male",
-  female = "female",
-}
-
-export interface IScore {
-  value: number;
-  deity: Deity;
-}
-
 export enum Deity {
   // male
   Zeus = "zeus",
