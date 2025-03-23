@@ -13,12 +13,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@jimp/plugin-print": "^1.6.0",
     "@types/lodash": "^4.17.16",
-    "chalk": "^5.4.1",
+    "canvas": "^3.1.0",
     "dotenv": "^16.4.7",
     "grammy": "^1.35.0",
-    "jimp": "^1.6.0",
     "lodash": "^4.17.21",
     "socks-proxy-agent": "^8.0.5"
   },

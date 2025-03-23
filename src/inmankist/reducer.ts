@@ -4,7 +4,7 @@ import { intToEmoji } from "../utils/emoji";
 import { toPercentage } from "../utils/string";
 import * as archetype from "./archetype";
 import deities from "./archetype/deities";
-import { addTextToImage } from "./archetype/jimp";
+import { addTextToImage } from "./canvas";
 import { Deity } from "./archetype/types";
 import strings from "./strings";
 import { IQuest, IUserData, QuizType } from "./types";

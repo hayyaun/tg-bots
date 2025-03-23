@@ -3,6 +3,17 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+# Install necessary packages (including fonts)
+RUN apk add --no-cache \
+  fontconfig \
+  ttf-dejavu \
+  ttf-freefont \
+  ttf-liberation \
+  ttf-droid \
+  ttf-opensans \
+  fonts-noto \
+  fonts-noto-color-emoji
+
 # Copy package.json and package-lock.json first for better caching
 COPY package*.json ./
 
@@ -18,7 +29,7 @@ RUN npm run build
 # Set environment variables (if needed)
 ENV NODE_ENV=production
 
-# Expose port if necessary (optional, adjust accordingly)
+# Expose port if necessary
 # EXPOSE 3000
 
 # Command to run the bot
