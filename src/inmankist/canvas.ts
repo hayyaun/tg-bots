@@ -1,7 +1,7 @@
 import { createCanvas, loadImage } from "canvas";
 
 const width = 640; // Adjust box width
-const height = 280; // Adjust box width
+const height = 270; // Adjust box width
 const radius = 22;
 const margin = 48;
 const padding = 28;
@@ -52,7 +52,7 @@ export async function addTextToImage(
       ctx.font = `${fontSize}px 'DejaVu Sans Mono', monospace`;
       ctx.textAlign = "left";
       ctx.direction = "ltr";
-      const rx = boxX + padding;
+      const rx = boxX + padding + 10;
       const ry = boxY + padding + fontSize + i * (fontSize * 0.9);
       ctx.fillText(s, rx, ry);
     });
