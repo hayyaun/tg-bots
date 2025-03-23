@@ -111,25 +111,25 @@ const startBot = async () => {
     // Save/Update Answer
     const current = parseInt(ctx.match[1]);
     const selectedAnswer = parseInt(ctx.match[2]);
+    const isRevision = typeof user.answers[current] === "number";
     user.answers[current] = selectedAnswer;
 
+    if (selectedAnswer < 0) return; // TODO err
+
     // Update keyboard
-    if (selectedAnswer > -1) {
-      // Create a new keyboard with updated buttons
-      const keyboard = new InlineKeyboard();
-      strings.values.forEach((v, i: Value) =>
-        keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
-      );
+    const keyboard = new InlineKeyboard();
+    strings.values.forEach((v, i: Value) =>
+      keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
+    );
 
-      // Edit the message with the new keyboard
-      await ctx.editMessageText("Choose an option:", {
-        reply_markup: keyboard,
-      });
-    }
-
-    // Go next question
+    // Edit the message with the new keyboard
     await ctx.answerCallbackQuery();
-    await sendQuestion(ctx, current + 1);
+    await ctx.editMessageReplyMarkup({ reply_markup: keyboard });
+
+    if (!isRevision) {
+      // Go next question
+      await sendQuestion(ctx, current + 1);
+    }
   });
 
   async function sendResult(ctx: Context) {

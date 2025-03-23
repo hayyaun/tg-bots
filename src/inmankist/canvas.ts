@@ -6,7 +6,7 @@ const radius = 22;
 const margin = 48;
 const padding = 28;
 const fontSize = 42;
-const lineHeight = fontSize * 0.9;
+const lineHeight = fontSize * 1.8;
 const textColor = "white";
 
 export async function addTextToImage(
