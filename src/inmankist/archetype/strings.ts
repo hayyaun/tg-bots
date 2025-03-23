@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { resolve } from "path";
+import path from "path";
 import { escapeMarkdownV2 } from "../../utils/string";
 import { Deity } from "./types";
 
@@ -10,7 +10,7 @@ interface IDeity {
 
 const get = (name: string) =>
   escapeMarkdownV2(
-    readFileSync(resolve(__dirname, `./md/${name}.md`), "utf-8")
+    readFileSync(path.join(process.cwd(), `assets/md/${name}.md`), "utf-8")
   );
 
 export const deities: { [k: string]: IDeity } = {
