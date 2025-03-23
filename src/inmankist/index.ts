@@ -104,31 +104,35 @@ const startBot = async () => {
   }
 
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
-    const userId = ctx.from.id;
-    const user = userData.get(userId);
-    if (!user) return;
+    try {
+      const userId = ctx.from.id;
+      const user = userData.get(userId);
+      if (!user) return;
 
-    // Save/Update Answer
-    const current = parseInt(ctx.match[1]);
-    const selectedAnswer = parseInt(ctx.match[2]);
-    const isRevision = typeof user.answers[current] === "number";
-    user.answers[current] = selectedAnswer;
+      // Save/Update Answer
+      const current = parseInt(ctx.match[1]);
+      const selectedAnswer = parseInt(ctx.match[2]);
+      const isRevision = typeof user.answers[current] === "number";
+      user.answers[current] = selectedAnswer;
 
-    if (selectedAnswer < 0) return; // TODO err
+      if (selectedAnswer < 0) return; // TODO err
 
-    // Update keyboard
-    const keyboard = new InlineKeyboard();
-    strings.values.forEach((v, i: Value) =>
-      keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
-    );
+      // Update keyboard
+      const keyboard = new InlineKeyboard();
+      strings.values.forEach((v, i: Value) =>
+        keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
+      );
 
-    // Edit the message with the new keyboard
-    await ctx.answerCallbackQuery();
-    await ctx.editMessageReplyMarkup({ reply_markup: keyboard });
+      // Edit the message with the new keyboard
+      await ctx.answerCallbackQuery();
+      await ctx.editMessageReplyMarkup({ reply_markup: keyboard });
 
-    if (!isRevision) {
-      // Go next question
-      await sendQuestion(ctx, current + 1);
+      if (!isRevision) {
+        // Go next question
+        await sendQuestion(ctx, current + 1);
+      }
+    } catch (err) {
+      console.log(err); // TODO
     }
   });
 
