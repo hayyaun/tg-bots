@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Context, InputFile } from "grammy";
+import { Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
 import path from "path";
 import { intToEmoji } from "../utils/emoji";
@@ -7,6 +7,7 @@ import { toPercentage } from "../utils/string";
 import * as archetype from "./archetype";
 import { deities } from "./archetype/strings";
 import { Deity } from "./archetype/types";
+import strings from "./strings";
 import { IQuest, IUserData, QuizType } from "./types";
 
 export function selectQuizQuestion<T>(
@@ -21,7 +22,7 @@ export function selectQuizQuestion<T>(
   }
 }
 
-export async function selectQuizResult(ctx: Context, user: IUserData) {
+export async function replyResult(ctx: Context, user: IUserData) {
   switch (user.quiz) {
     case QuizType.Archetype: {
       const result = new Map<Deity, number>();
@@ -39,7 +40,7 @@ export async function selectQuizResult(ctx: Context, user: IUserData) {
 
       const messages = sortedResults.map(
         ([deity, value], i) =>
-          `${i + 1}. ${deities[deity]} \n${intToEmoji(toPercentage(value, user.sampleSize * 3))}`
+          `${i + 1}. ${deities[deity].name} \n${intToEmoji(toPercentage(value, user.sampleSize * 3))}`
       );
       const message = messages.join("\n");
       const mainDeity = sortedResults[0][0];
@@ -49,11 +50,22 @@ export async function selectQuizResult(ctx: Context, user: IUserData) {
       );
       await ctx.replyWithPhoto(new InputFile(imageBuffer, filename), {
         caption: message,
+        reply_markup: new InlineKeyboard().text(
+          strings.show_about(`کهن الگو ${deities[mainDeity].name}`),
+          `about:${QuizType.Archetype}:${mainDeity}`
+        ),
       });
       break;
     }
+  }
+}
 
-    default:
-      break; // TODO error
+export async function replyDetials(ctx: Context, type: QuizType, item: string) {
+  switch (type) {
+    case QuizType.Archetype: {
+      const deity = deities[item];
+      if (!deity) return; // TODO error
+      ctx.reply(deity.about, { parse_mode: "MarkdownV2" });
+    }
   }
 }

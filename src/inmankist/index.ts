@@ -2,7 +2,7 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { getSample } from "./archetype";
-import { selectQuizQuestion, selectQuizResult } from "./reducer";
+import { replyDetials, replyResult, selectQuizQuestion } from "./reducer";
 import strings from "./strings";
 import { Gender, IUserData, QuizType, Value } from "./types";
 
@@ -72,7 +72,7 @@ const startBot = async () => {
       await ctx.answerCallbackQuery();
       await sendQuestion(ctx, 0);
     } catch (err) {
-      console.log(err);
+      console.log(err); // TODO
     }
   });
 
@@ -122,8 +122,20 @@ const startBot = async () => {
     if (!userId) return;
     const user = userData.get(userId);
     if (!user) return;
-    await selectQuizResult(ctx, user);
+    await replyResult(ctx, user);
   }
+
+  // Details
+  bot.callbackQuery(/about:(.+):(.+)/, async (ctx) => {
+    try {
+      const type = ctx.match[1] as QuizType;
+      const item = ctx.match[2];
+      await ctx.answerCallbackQuery();
+      await replyDetials(ctx, type, item);
+    } catch (err) {
+      console.log(err); // TODO
+    }
+  });
 
   bot.catch = (err) => {
     console.log(err);
