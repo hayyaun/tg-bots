@@ -5,7 +5,20 @@ WORKDIR /app
 
 # Install necessary packages (including fonts)
 RUN apk add --no-cache \
+  python3 \
+  py3-pip \
+  make \
+  g++ \
+  cairo \
+  cairo-dev \
+  pango \
+  pango-dev \
+  musl-dev \
+  jpeg-dev \
+  giflib-dev \
+  libpng-dev \
   fontconfig \
+  freetype \
   ttf-dejavu \
   ttf-freefont \
   ttf-liberation \
