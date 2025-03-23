@@ -9,15 +9,20 @@ interface IDeity {
   image: Buffer<ArrayBufferLike>;
 }
 
+// Preload content
 const getMarkdown = (name: string) =>
   escapeMarkdownV2(
-    readFileSync(path.join(process.cwd(), `assets/md/${name}.md`), "utf-8")
+    readFileSync(
+      path.join(process.cwd(), `assets/deities-md/${name}.md`),
+      "utf-8"
+    )
   );
 
+// Preloading images help decrease fs load
 const getImage = (name: string) => {
-  const filename = `${name}.webp`;
+  const filename = `${name}.jpg`;
   const imageBuffer = readFileSync(
-    path.join(process.cwd(), `assets/${filename}`)
+    path.join(process.cwd(), `assets/deities/${filename}`)
   );
   return imageBuffer;
 };

@@ -4,6 +4,7 @@ import { intToEmoji } from "../utils/emoji";
 import { toPercentage } from "../utils/string";
 import * as archetype from "./archetype";
 import deities from "./archetype/deities";
+import { addTextToImage } from "./archetype/jimp";
 import { Deity } from "./archetype/types";
 import strings from "./strings";
 import { IQuest, IUserData, QuizType } from "./types";
@@ -36,20 +37,36 @@ export async function replyResult(ctx: Context, user: IUserData) {
         _.sortBy([...result], ([, value]) => value)
       );
 
-      const messages = sortedResults.map(
-        ([deity, value], i) =>
-          `${i + 1}. ${deities[deity].name} \n${intToEmoji(toPercentage(value, user.sampleSize * 3))}`
-      );
-      const message = messages.join("\n");
+      const message = sortedResults
+        .map(
+          ([deity, value], i) =>
+            `${i + 1}. ${deities[deity].name} \n${intToEmoji(toPercentage(value, user.sampleSize * 3))}`
+        )
+        .join("\n");
+
+      // process image
+      const textRight = sortedResults
+        .map(([deity], i) => `${i + 1}. ${deities[deity].name} \n`)
+        .join("\n");
+      const textLeft = sortedResults
+        .map(([, value]) => `${toPercentage(value, user.sampleSize * 3)}% \n`)
+        .join("\n");
+
       const mainDeity = sortedResults[0][0];
-      const src = deities[mainDeity].image;
+      const src = await addTextToImage(
+        deities[mainDeity].image,
+        textRight,
+        textLeft
+      );
+
+      // add buttons
       const btns = new InlineKeyboard();
       sortedResults.slice(0, 3).forEach((r) => {
         const text = strings.show_about(`کهن الگو ${deities[r[0]].name}`);
         const to = `about:${QuizType.Archetype}:${r[0]}`;
         btns.text(text, to).row();
       });
-      await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".webp"), {
+      await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".jpg"), {
         caption: message,
         reply_markup: btns,
       });
