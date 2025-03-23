@@ -53,7 +53,7 @@ export async function addTextToImage(
       ctx.textAlign = "left";
       ctx.direction = "ltr";
       const rx = boxX + padding + 10;
-      const ry = boxY + padding + fontSize + i * (fontSize * 0.9);
+      const ry = boxY + padding + 4 + fontSize + i * (fontSize * 0.9);
       ctx.fillText(s, rx, ry);
     });
 
