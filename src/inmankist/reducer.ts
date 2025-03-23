@@ -1,11 +1,9 @@
-import fs from "fs";
 import { Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
-import path from "path";
 import { intToEmoji } from "../utils/emoji";
 import { toPercentage } from "../utils/string";
 import * as archetype from "./archetype";
-import { deities } from "./archetype/strings";
+import deities from "./archetype/deities";
 import { Deity } from "./archetype/types";
 import strings from "./strings";
 import { IQuest, IUserData, QuizType } from "./types";
@@ -44,17 +42,14 @@ export async function replyResult(ctx: Context, user: IUserData) {
       );
       const message = messages.join("\n");
       const mainDeity = sortedResults[0][0];
-      const filename = `${mainDeity}.webp`;
-      const imageBuffer = fs.readFileSync(
-        path.join(process.cwd(), `assets/${filename}`)
-      );
+      const src = deities[mainDeity].image;
       const btns = new InlineKeyboard();
       sortedResults.slice(0, 3).forEach((r) => {
         const text = strings.show_about(`کهن الگو ${deities[r[0]].name}`);
         const to = `about:${QuizType.Archetype}:${r[0]}`;
         btns.text(text, to).row();
       });
-      await ctx.replyWithPhoto(new InputFile(imageBuffer, filename), {
+      await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".webp"), {
         caption: message,
         reply_markup: btns,
       });
