@@ -28,18 +28,18 @@ export async function addTextToImage(
     const boxY = image.height - boxHeight - margin;
 
     // Set transparency and fill rectangle
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; // 50% transparent black
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)"; // 50% transparent black
     ctx.beginPath();
     ctx.roundRect(boxX, boxY, boxWidth, boxHeight, radius);
     ctx.fill();
 
     // Set text properties
-    ctx.font = `${fontSize}px 'Vazirmatn', 'Noto Color Emoji', sans-serif`;
     ctx.fillStyle = textColor;
     ctx.lineWidth = 3;
 
     // Right Texts
     textRight.split("\n").forEach((s, i) => {
+      ctx.font = `${fontSize}px 'Vazirmatn', sans-serif, 'Noto Color Emoji'`;
       ctx.textAlign = "right";
       ctx.direction = "rtl";
       const rx = boxX + boxWidth - padding;
@@ -49,6 +49,7 @@ export async function addTextToImage(
 
     // Left Texts
     textLeft.split("\n").forEach((s, i) => {
+      ctx.font = `${fontSize}px 'DejaVu Sans Mono', monospace`;
       ctx.textAlign = "left";
       ctx.direction = "ltr";
       const rx = boxX + padding;
