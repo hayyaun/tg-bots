@@ -11,8 +11,7 @@ RUN apk add --no-cache \
   ttf-liberation \
   ttf-droid \
   ttf-opensans \
-  fonts-noto \
-  fonts-noto-color-emoji
+  ttf-noto-emoji
 
 # Copy package.json and package-lock.json first for better caching
 COPY package*.json ./
