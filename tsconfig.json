@@ -1,7 +1,6 @@
 {
   "include": [
     "src",
-    "src/types/markdown.d.ts"
   ],
   "exclude": [
     "node_modules",
