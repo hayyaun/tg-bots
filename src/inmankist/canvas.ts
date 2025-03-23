@@ -1,17 +1,18 @@
 import { createCanvas, loadImage } from "canvas";
 
-const width = 640; // Adjust box width
-const height = 270; // Adjust box width
+const width = 640;
+const height = 270;
 const radius = 22;
 const margin = 48;
 const padding = 28;
 const fontSize = 42;
+const lineHeight = fontSize * 0.9;
 const textColor = "white";
 
 export async function addTextToImage(
   file: Buffer<ArrayBuffer>,
-  textRight: string,
-  textLeft: string
+  textRight: string[],
+  textLeft: string[]
 ): Promise<Buffer<ArrayBuffer>> {
   try {
     const image = await loadImage(file);
@@ -38,30 +39,27 @@ export async function addTextToImage(
     ctx.lineWidth = 3;
 
     // Right Texts
-    textRight.split("\n").forEach((s, i) => {
+    textRight.forEach((s, i) => {
       ctx.font = `${fontSize}px 'Vazirmatn', sans-serif, 'Noto Color Emoji'`;
       ctx.textAlign = "right";
       ctx.direction = "rtl";
       const rx = boxX + boxWidth - padding;
-      const ry = boxY + padding + fontSize + i * (fontSize * 0.9);
+      const ry = boxY + padding + fontSize + i * lineHeight;
       ctx.fillText(s, rx, ry);
     });
 
     // Left Texts
-    textLeft.split("\n").forEach((s, i) => {
+    textLeft.forEach((s, i) => {
       ctx.font = `${fontSize}px 'DejaVu Sans Mono', monospace`;
       ctx.textAlign = "left";
       ctx.direction = "ltr";
       const rx = boxX + padding + 10;
-      const ry = boxY + padding + 4 + fontSize + i * (fontSize * 0.9);
+      const ry = boxY + padding + 4 + fontSize + i * lineHeight;
       ctx.fillText(s, rx, ry);
     });
 
-    console.log("Text added to image successfully!");
-
     // Save the output
-    const buffer = canvas.toBuffer("image/jpeg");
-    return buffer;
+    return canvas.toBuffer("image/jpeg");
   } catch (err) {
     console.error("Error:", err);
   }

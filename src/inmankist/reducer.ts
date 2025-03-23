@@ -39,12 +39,10 @@ export async function replyResult(ctx: Context, user: IUserData) {
       // process image
       const textRight = sortedResults
         .slice(0, 3)
-        .map(([deity], i) => `${i + 1}. ${deities[deity].name} \n`)
-        .join("\n");
+        .map(([deity], i) => `${i + 1}. ${deities[deity].name} \n`);
       const textLeft = sortedResults
         .slice(0, 3)
-        .map(([, value]) => `${toPercentage(value, user.sampleSize * 3)}% \n`)
-        .join("\n");
+        .map(([, value]) => `${toPercentage(value, user.sampleSize * 3)}% \n`);
 
       const mainDeity = sortedResults[0][0];
       const src = await addTextToImage(

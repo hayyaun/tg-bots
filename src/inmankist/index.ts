@@ -108,10 +108,26 @@ const startBot = async () => {
     const user = userData.get(userId);
     if (!user) return;
 
+    // Save/Update Answer
     const current = parseInt(ctx.match[1]);
     const selectedAnswer = parseInt(ctx.match[2]);
     user.answers[current] = selectedAnswer;
 
+    // Update keyboard
+    if (selectedAnswer > -1) {
+      // Create a new keyboard with updated buttons
+      const keyboard = new InlineKeyboard();
+      strings.values.forEach((v, i: Value) =>
+        keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
+      );
+
+      // Edit the message with the new keyboard
+      await ctx.editMessageText("Choose an option:", {
+        reply_markup: keyboard,
+      });
+    }
+
+    // Go next question
     await ctx.answerCallbackQuery();
     await sendQuestion(ctx, current + 1);
   });
