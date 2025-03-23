@@ -1,10 +1,10 @@
 docker:
-		@echo "Fetching..."
+		@echo ".> Fetching..."
 		-git pull
-		@echo "Removing previous..."
+		@echo ".> Cleaning..."
 		-docker stop tgbots-app
 		-docker rm tgbots-app
 		-docker rmi tgbots:latest
-		@echo "Building new..."
+		@echo ".> Building..."
 		docker build -t tgbots .
 		docker run -d --name tgbots-app tgbots
