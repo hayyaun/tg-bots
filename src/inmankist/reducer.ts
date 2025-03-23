@@ -4,8 +4,8 @@ import { intToEmoji } from "../utils/emoji";
 import { toPercentage } from "../utils/string";
 import * as archetype from "./archetype";
 import deities from "./archetype/deities";
-import { addTextToImage } from "./canvas";
 import { Deity } from "./archetype/types";
+import { addTextToImage } from "./canvas";
 import strings from "./strings";
 import { IQuest, IUserData, QuizType } from "./types";
 
@@ -46,9 +46,11 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
       // process image
       const textRight = sortedResults
+        .slice(0, 3)
         .map(([deity], i) => `${i + 1}. ${deities[deity].name} \n`)
         .join("\n");
       const textLeft = sortedResults
+        .slice(0, 3)
         .map(([, value]) => `${toPercentage(value, user.sampleSize * 3)}% \n`)
         .join("\n");
 

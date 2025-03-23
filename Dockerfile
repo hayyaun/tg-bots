@@ -29,6 +29,12 @@ RUN apk add --no-cache \
 # Ensure python3 is set as the default Python
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
+# Copy Vazirmatn font into the system fonts directory
+COPY assets/fonts /usr/share/fonts/vazirmatn/
+
+# Update font cache to detect new fonts
+RUN fc-cache -fv
+
 # Copy package.json and package-lock.json first for better caching
 COPY package*.json ./
 

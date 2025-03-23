@@ -1,7 +1,7 @@
 import { createCanvas, loadImage } from "canvas";
 
 const width = 640; // Adjust box width
-const height = 480; // Adjust box width
+const height = 280; // Adjust box width
 const radius = 22;
 const padding = 50;
 const fontSize = 48;
@@ -33,16 +33,20 @@ export async function addTextToImage(
     ctx.fill();
 
     // Set text properties
-    ctx.font = `${fontSize}px Arial`;
+    ctx.font = `${fontSize}px 'Vazirmatn', 'Noto Color Emoji', sans-serif`;
+    ctx.textAlign = "right";
+    ctx.direction = "rtl";
     ctx.fillStyle = textColor;
     ctx.strokeStyle = "black";
     ctx.lineWidth = 3;
 
     // Draw the text with stroke for visibility
-    const rx = boxX + boxWidth - padding;
-    const ry = boxY + padding;
-    ctx.strokeText(textRight, rx, ry);
-    ctx.fillText(textRight, rx, ry);
+    textRight.split("\n").forEach((s, i) => {
+      const rx = boxX + boxWidth - padding;
+      const ry = boxY + padding + 20 + i * (fontSize * 1.0);
+      // ctx.strokeText(s, rx, ry);
+      ctx.fillText(s, rx, ry);
+    });
 
     console.log("Text added to image successfully!");
 
