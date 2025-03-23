@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { escapeMarkdownV2 } from "../../utils/string";
 import { Deity } from "./types";
 
 interface IDeity {
@@ -8,7 +9,9 @@ interface IDeity {
 }
 
 const get = (name: string) =>
-  readFileSync(resolve(__dirname, `./md/${name}.md`), "utf-8");
+  escapeMarkdownV2(
+    readFileSync(resolve(__dirname, `./md/${name}.md`), "utf-8")
+  );
 
 export const deities: { [k: string]: IDeity } = {
   // male
