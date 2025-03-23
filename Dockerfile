@@ -26,6 +26,9 @@ RUN apk add --no-cache \
   ttf-opensans \
   font-noto-emoji
 
+# Ensure python3 is set as the default Python
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
 # Copy package.json and package-lock.json first for better caching
 COPY package*.json ./
 
