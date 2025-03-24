@@ -71,8 +71,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
 export async function replyDetail(ctx: Context, key: Deity) {
   const deity = deities[key];
   if (!deity) throw "Deity not found!"; // TODO
-  ctx.replyWithPhoto(new InputFile(deity.image, key + ".jpg"), {
-    caption: deity.about,
-    parse_mode: "MarkdownV2",
-  });
+  ctx.replyWithPhoto(new InputFile(deity.image, key + ".jpg"));
+  ctx.reply(deity.about, { parse_mode: "MarkdownV2" });
 }
