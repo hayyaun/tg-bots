@@ -56,15 +56,15 @@ export async function replyResult(ctx: Context, user: IUserData) {
       );
 
       // add buttons
-      const btns = new InlineKeyboard();
+      const keyboard = new InlineKeyboard();
       sortedResults.slice(0, 3).forEach((r) => {
         const text = strings.show_about(`کهن الگو ${deities[r[0]].name}`);
         const to = `about:${QuizType.Archetype}:${r[0]}`;
-        btns.text(text, to).row();
+        keyboard.text(text, to).row();
       });
       await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".jpg"), {
         // caption: message,
-        reply_markup: btns,
+        reply_markup: keyboard,
       });
       break;
     }
