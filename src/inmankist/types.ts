@@ -2,6 +2,12 @@ export enum QuizType {
   Archetype = "archetype",
 }
 
+export enum QuizMode {
+  SM,
+  MD,
+  LG,
+}
+
 export enum Value {
   A = 0,
   B,
@@ -10,12 +16,13 @@ export enum Value {
 }
 
 export interface IUserData {
+  welcomeId?: number;
   date: number;
   gender: Gender;
   answers: { [i: number]: Value };
   order: number[];
   quiz: QuizType;
-  sampleSize: number;
+  mode: QuizMode;
 }
 
 export interface IQuest<T> {

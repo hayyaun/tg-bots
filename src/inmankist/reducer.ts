@@ -5,6 +5,7 @@ import * as archetype from "./archetype";
 import deities from "./archetype/deities";
 import { Deity } from "./archetype/types";
 import { addTextToImage } from "./canvas";
+import { quizModes } from "./config";
 import strings from "./strings";
 import { IQuest, IUserData, QuizType } from "./types";
 
@@ -42,7 +43,10 @@ export async function replyResult(ctx: Context, user: IUserData) {
         .map(([deity], i) => `${i + 1}. ${deities[deity].name} \n`);
       const textLeft = sortedResults
         .slice(0, 3)
-        .map(([, value]) => `${toPercentage(value, user.sampleSize * 3)}% \n`);
+        .map(
+          ([, value]) =>
+            `${toPercentage(value, quizModes[user.mode].size * 3)}% \n`
+        );
 
       const mainDeity = sortedResults[0][0];
       const src = await addTextToImage(
@@ -73,6 +77,14 @@ export async function replyDetials(ctx: Context, type: QuizType, item: string) {
       const deity = deities[item];
       if (!deity) return; // TODO error
       ctx.reply(deity.about, { parse_mode: "MarkdownV2" });
+    }
+  }
+}
+
+export async function selectOrder(user: IUserData) {
+  switch (user.quiz) {
+    case QuizType.Archetype: {
+      return archetype.getSample(user.gender, quizModes[user.mode].size);
     }
   }
 }

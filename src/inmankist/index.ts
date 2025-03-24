@@ -1,17 +1,20 @@
 import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { SocksProxyAgent } from "socks-proxy-agent";
-import { getSample } from "./archetype";
-import { replyDetials, replyResult, selectQuizQuestion } from "./reducer";
+import { quizModes, quizTypes } from "./config";
+import {
+  replyDetials,
+  replyResult,
+  selectOrder,
+  selectQuizQuestion,
+} from "./reducer";
 import strings from "./strings";
-import { Gender, IUserData, QuizType, Value } from "./types";
+import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
 
 configDotenv();
 
 const PERIODIC_CLEAN = 60_000; // 1m
-const USER_MAX_AGE = 3_600_000; // 1h
-const SAMPLE_SIZE = process.env.DEV ? 1 : 5;
-const SAMPLE_SIZE_BIG = 15;
+const USER_MAX_AGE = 2 * 3_600_000; // 2h
 
 const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)
@@ -27,18 +30,18 @@ const startBot = async () => {
     });
   }, PERIODIC_CLEAN);
 
-  const setUser = async (ctx: Context, gender: Gender, mode: number) => {
+  const setUser = async (ctx: Context, type: QuizType) => {
     const userId = ctx.from?.id;
     if (!userId) return;
-    // TODO log new users
-    const sampleSize = mode === 1 ? SAMPLE_SIZE_BIG : SAMPLE_SIZE;
     userData.set(userId, {
+      welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
-      gender,
       answers: {},
-      order: getSample(gender, sampleSize),
-      quiz: QuizType.Archetype, // TODO dynamic
-      sampleSize,
+      // zero values - defaults
+      quiz: type,
+      mode: QuizMode.MD,
+      gender: Gender.male,
+      order: [],
     });
   };
 
@@ -52,27 +55,91 @@ const startBot = async () => {
   ]);
 
   bot.command("help", (ctx) => ctx.reply(strings.help));
-  bot.command("start", (ctx) =>
+  bot.command("start", (ctx) => {
+    const keyboard = new InlineKeyboard();
+    Object.keys(quizTypes).forEach((k) =>
+      keyboard.text(quizTypes[k], `type:${k}`).row()
+    );
     ctx.reply(strings.welcome, {
-      reply_markup: new InlineKeyboard()
-        .text(strings.man0, `gender:${Gender.male}:0`)
-        .text(strings.female0, `gender:${Gender.female}:0`)
-        .row()
-        .text(strings.man1, `gender:${Gender.male}:1`)
-        .text(strings.female1, `gender:${Gender.female}:1`),
-    })
-  );
+      reply_markup: keyboard,
+    });
+  });
+
+  // Quiz Type
+  bot.callbackQuery(/type:(.+)/, async (ctx) => {
+    try {
+      const type = ctx.match[1] as QuizType;
+      await ctx.answerCallbackQuery();
+      await ctx.editMessageText(
+        `${strings.welcome} \n\n✅  ${quizTypes[type]}`,
+        {
+          reply_markup: undefined,
+        }
+      );
+      await setUser(ctx, type);
+      const keyboard = new InlineKeyboard();
+      Object.keys(quizModes).forEach((k) =>
+        keyboard.text(quizModes[parseInt(k)].name, `mode:${k}`)
+      );
+      ctx.reply(strings.mode, {
+        reply_markup: keyboard,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  async function getUser(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    const user = userData.get(userId);
+    return user;
+  }
+
+  // Quiz Mode
+  bot.callbackQuery(/mode:(\d+)/, async (ctx) => {
+    try {
+      const mode = parseInt(ctx.match[1]) as QuizMode;
+      const user = await getUser(ctx);
+      if (!user) return;
+      await ctx.answerCallbackQuery();
+      await ctx.deleteMessage();
+      await ctx.api.editMessageText(
+        ctx.chat!.id!,
+        user.welcomeId!,
+        `${strings.welcome} \n\n✅  ${quizTypes[user.quiz]} - ${quizModes[mode].name}`,
+        { reply_markup: undefined }
+      );
+      user.mode = mode;
+      ctx.reply(strings.gender, {
+        reply_markup: new InlineKeyboard()
+          .text(strings.male, `gender:${Gender.male}`)
+          .text(strings.female, `gender:${Gender.female}`),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
   // Gender
-  bot.callbackQuery(/gender:(.+):(\d+)/, async (ctx) => {
+  bot.callbackQuery(/gender:(.+)/, async (ctx) => {
     try {
       const gender = ctx.match[1] as Gender;
-      const mode = parseInt(ctx.match[2]);
-      await setUser(ctx, gender, mode);
+      const user = await getUser(ctx);
+      if (!user) return;
       await ctx.answerCallbackQuery();
+      await ctx.deleteMessage();
+      await ctx.api.editMessageText(
+        ctx.chat!.id!,
+        user.welcomeId!,
+        `${strings.welcome} \n\n✅  ${quizTypes[user.quiz]} - ${quizModes[user.mode].name} - ${gender === Gender.male ? strings.male : strings.female}`,
+        { reply_markup: undefined }
+      );
+      user.gender = gender;
+      user.order = await selectOrder(user);
       await sendQuestion(ctx, 0);
     } catch (err) {
-      console.log(err); // TODO
+      console.error(err);
     }
   });
 
@@ -98,8 +165,8 @@ const startBot = async () => {
     );
 
     const question = selectQuizQuestion(user, current);
-    if (!question) return; // TODO error
-    const message = `${current + 1}/${lenght} \n${question.text}`;
+    if (!question) return;
+    const message = `${current + 1}/${lenght} \n\n${question.text}`;
     await ctx.reply(message, { reply_markup: keyboard });
   }
 
@@ -115,7 +182,7 @@ const startBot = async () => {
       const isRevision = typeof user.answers[current] === "number";
       user.answers[current] = selectedAnswer;
 
-      if (selectedAnswer < 0) return; // TODO err
+      if (selectedAnswer < 0) return;
 
       // Update keyboard
       const keyboard = new InlineKeyboard();
@@ -132,15 +199,13 @@ const startBot = async () => {
         await sendQuestion(ctx, current + 1);
       }
     } catch (err) {
-      console.log(err); // TODO
+      console.error(err);
     }
   });
 
   async function sendResult(ctx: Context) {
     await ctx.reply(strings.done);
-    const userId = ctx.from?.id;
-    if (!userId) return;
-    const user = userData.get(userId);
+    const user = await getUser(ctx);
     if (!user) return;
     await replyResult(ctx, user);
   }
@@ -153,12 +218,12 @@ const startBot = async () => {
       await ctx.answerCallbackQuery();
       await replyDetials(ctx, type, item);
     } catch (err) {
-      console.log(err); // TODO
+      console.error(err);
     }
   });
 
   bot.catch = (err) => {
-    console.log(err);
+    console.error(err);
   };
 
   bot.start();
