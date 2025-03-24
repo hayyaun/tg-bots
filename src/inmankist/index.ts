@@ -69,7 +69,7 @@ const startBot = async () => {
 
   for (const key in quizTypes) {
     commands.push({
-      command: `about_${key}`,
+      command: key,
       description: strings.show_about(quizTypes[key]),
     });
   }
@@ -88,7 +88,7 @@ const startBot = async () => {
   });
 
   for (const key in quizTypes) {
-    bot.command(`about_${key}`, (ctx) => replyAbout(ctx, key as QuizType));
+    bot.command(key, (ctx) => replyAbout(ctx, key as QuizType));
   }
 
   await setCustomCommands(bot);
