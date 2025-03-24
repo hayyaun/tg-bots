@@ -9,6 +9,7 @@ import {
   replyResult,
   selectOrder,
   selectQuizQuestion,
+  setCustomCommands,
 } from "./reducer";
 import strings from "./strings";
 import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
@@ -23,6 +24,7 @@ const socksAgent = process.env.PROXY
   : undefined;
 
 const startBot = async () => {
+  // Storage
   const userData = new Map<number, IUserData>();
 
   setInterval(() => {
@@ -54,6 +56,7 @@ const startBot = async () => {
     });
   }
 
+  // Bot
   const bot = new Bot(process.env.ARCHETYPE_BOT_KEY!, {
     client: { baseFetchConfig: { agent: socksAgent } },
   });
@@ -66,8 +69,8 @@ const startBot = async () => {
 
   for (const key in quizTypes) {
     commands.push({
-      command: `about:${key}`,
-      description: `درباره ${quizTypes[key]}`,
+      command: `about_${key}`,
+      description: strings.show_about(quizTypes[key]),
     });
   }
 
@@ -85,8 +88,10 @@ const startBot = async () => {
   });
 
   for (const key in quizTypes) {
-    bot.command(`about:${key}`, (ctx) => replyAbout(ctx, key as QuizType));
+    bot.command(`about_${key}`, (ctx) => replyAbout(ctx, key as QuizType));
   }
+
+  await setCustomCommands(bot);
 
   // Quiz Type
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {

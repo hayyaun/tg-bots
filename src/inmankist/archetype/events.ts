@@ -1,4 +1,4 @@
-import { Context, InlineKeyboard, InputFile } from "grammy";
+import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
@@ -9,7 +9,12 @@ import { addTextBoxToImage } from "./canvas";
 import deities from "./deities";
 import { Deity } from "./types";
 
-export const replyAbout = async (ctx: Context) => {
+export function setCustomCommands(bot: Bot) {
+  // TODO anything
+  return bot;
+}
+
+export async function replyAbout(ctx: Context) {
   const keyboard = new InlineKeyboard();
   Object.keys(deities).forEach((k, i) => {
     keyboard.text(deities[k].name, `detail:${QuizType.Archetype}:${k}`);
@@ -19,9 +24,9 @@ export const replyAbout = async (ctx: Context) => {
     "آزمون کهن الگوها به شما نشان می دهد که به کدام یک از خدایان باستانی یونانی شباهت دارید.",
     { reply_markup: keyboard }
   );
-};
+}
 
-export const replyResult = async (ctx: Context, user: IUserData) => {
+export async function replyResult(ctx: Context, user: IUserData) {
   const result = new Map<Deity, number>();
   Object.entries(user.answers).forEach((answer) => {
     const index = parseInt(answer[0]);
@@ -61,10 +66,10 @@ export const replyResult = async (ctx: Context, user: IUserData) => {
     // caption: message,
     reply_markup: keyboard,
   });
-};
+}
 
-export const replyDetail = async (ctx: Context, item: string) => {
+export async function replyDetail(ctx: Context, item: string) {
   const deity = deities[item];
   if (!deity) return; // TODO error
   ctx.reply(deity.about, { parse_mode: "MarkdownV2" });
-};
+}

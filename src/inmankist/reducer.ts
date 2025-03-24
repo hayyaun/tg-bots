@@ -1,7 +1,13 @@
-import { Context } from "grammy";
+import { Bot, Context } from "grammy";
 import * as archetype from "./archetype";
 import { quizModes } from "./config";
 import { IQuest, IUserData, QuizType } from "./types";
+
+// Optional customization for each quiz
+
+export async function setCustomCommands(bot: Bot) {
+  archetype.setCustomCommands(bot);
+}
 
 // Indirect - select
 
