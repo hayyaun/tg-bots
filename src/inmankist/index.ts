@@ -1,8 +1,10 @@
 import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
+import { BotCommand } from "grammy/types";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { quizModes, quizTypes } from "./config";
 import {
+  replyAbout,
   replyDetials,
   replyResult,
   selectOrder,
@@ -30,7 +32,14 @@ const startBot = async () => {
     });
   }, PERIODIC_CLEAN);
 
-  const setUser = async (ctx: Context, type: QuizType) => {
+  async function getUser(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    const user = userData.get(userId);
+    return user;
+  }
+
+  async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) return;
     userData.set(userId, {
@@ -43,16 +52,26 @@ const startBot = async () => {
       gender: Gender.male,
       order: [],
     });
-  };
+  }
 
   const bot = new Bot(process.env.ARCHETYPE_BOT_KEY!, {
     client: { baseFetchConfig: { agent: socksAgent } },
   });
 
-  await bot.api.setMyCommands([
+  // Commands
+  const commands: BotCommand[] = [
     { command: "start", description: strings.start_btn },
     { command: "help", description: strings.help_btn },
-  ]);
+  ];
+
+  for (const key in quizTypes) {
+    commands.push({
+      command: `about:${key}`,
+      description: `درباره ${quizTypes[key]}`,
+    });
+  }
+
+  await bot.api.setMyCommands(commands);
 
   bot.command("help", (ctx) => ctx.reply(strings.help));
   bot.command("start", (ctx) => {
@@ -64,6 +83,10 @@ const startBot = async () => {
       reply_markup: keyboard,
     });
   });
+
+  for (const key in quizTypes) {
+    bot.command(`about:${key}`, (ctx) => replyAbout(ctx, key as QuizType));
+  }
 
   // Quiz Type
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
@@ -86,13 +109,6 @@ const startBot = async () => {
       console.error(err);
     }
   });
-
-  async function getUser(ctx: Context) {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-    const user = userData.get(userId);
-    return user;
-  }
 
   // Quiz Mode
   bot.callbackQuery(/mode:(\d+)/, async (ctx) => {
@@ -209,7 +225,7 @@ const startBot = async () => {
   }
 
   // Details
-  bot.callbackQuery(/about:(.+):(.+)/, async (ctx) => {
+  bot.callbackQuery(/detail:(.+):(.+)/, async (ctx) => {
     try {
       const type = ctx.match[1] as QuizType;
       const item = ctx.match[2];

@@ -9,7 +9,7 @@ const fontSize = 42;
 const lineHeight = fontSize * 1.8;
 const textColor = "white";
 
-export async function addTextToImage(
+export async function addTextBoxToImage(
   file: Buffer<ArrayBuffer>,
   textRight: string[],
   textLeft: string[]
