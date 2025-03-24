@@ -2,7 +2,7 @@ import { createCanvas, loadImage } from "canvas";
 
 const width = 640;
 const height = 270;
-const radius = 22;
+const radius = 28;
 const margin = 48;
 const padding = 28;
 const fontSize = 42;
