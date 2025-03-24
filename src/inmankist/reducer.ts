@@ -1,5 +1,6 @@
 import { Bot, Context } from "grammy";
 import * as archetype from "./archetype";
+import { Deity } from "./archetype/types";
 import { quizModes } from "./config";
 import { IQuest, IUserData, QuizType } from "./types";
 
@@ -47,6 +48,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
 export async function replyDetial(ctx: Context, type: QuizType, item: string) {
   switch (type) {
     case QuizType.Archetype:
-      return archetype.replyDetail(ctx, item);
+      return archetype.replyDetail(ctx, item as Deity);
   }
 }
