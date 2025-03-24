@@ -62,3 +62,9 @@ export const replyResult = async (ctx: Context, user: IUserData) => {
     reply_markup: keyboard,
   });
 };
+
+export const replyDetail = async (ctx: Context, item: string) => {
+  const deity = deities[item];
+  if (!deity) return; // TODO error
+  ctx.reply(deity.about, { parse_mode: "MarkdownV2" });
+};

@@ -5,7 +5,7 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 import { quizModes, quizTypes } from "./config";
 import {
   replyAbout,
-  replyDetials,
+  replyDetial,
   replyResult,
   selectOrder,
   selectQuizQuestion,
@@ -230,7 +230,7 @@ const startBot = async () => {
       const type = ctx.match[1] as QuizType;
       const item = ctx.match[2];
       await ctx.answerCallbackQuery();
-      await replyDetials(ctx, type, item);
+      await replyDetial(ctx, type, item);
     } catch (err) {
       console.error(err);
     }
