@@ -58,7 +58,7 @@ const startBot = async () => {
   bot.command("start", (ctx) => {
     const keyboard = new InlineKeyboard();
     Object.keys(quizTypes).forEach((k) =>
-      keyboard.text(quizTypes[k], `quiztype:${k}`).row()
+      keyboard.text(quizTypes[k], `quiz:${k}`).row()
     );
     ctx.reply(strings.welcome, {
       reply_markup: keyboard,
@@ -66,7 +66,7 @@ const startBot = async () => {
   });
 
   // Quiz Type
-  bot.callbackQuery(/quiztype:(.+)/, async (ctx) => {
+  bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
     try {
       const type = ctx.match[1] as QuizType;
       await ctx.answerCallbackQuery();
