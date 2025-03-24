@@ -3,10 +3,12 @@ import * as archetype from "./archetype";
 import { quizModes } from "./config";
 import { IQuest, IUserData, QuizType } from "./types";
 
-export async function replyAbout(ctx: Context, type: QuizType) {
-  switch (type) {
+// Indirect - select
+
+export async function selectOrder(user: IUserData) {
+  switch (user.quiz) {
     case QuizType.Archetype:
-      return archetype.replyAbout(ctx);
+      return archetype.getSample(user.gender, quizModes[user.mode].size);
   }
 }
 
@@ -17,6 +19,15 @@ export function selectQuizQuestion<T>(
   switch (user.quiz) {
     case QuizType.Archetype:
       return archetype.getQuestion(user, index) as IQuest<T>;
+  }
+}
+
+// Direct - reply
+
+export async function replyAbout(ctx: Context, type: QuizType) {
+  switch (type) {
+    case QuizType.Archetype:
+      return archetype.replyAbout(ctx);
   }
 }
 
@@ -31,12 +42,5 @@ export async function replyDetial(ctx: Context, type: QuizType, item: string) {
   switch (type) {
     case QuizType.Archetype:
       return archetype.replyDetail(ctx, item);
-  }
-}
-
-export async function selectOrder(user: IUserData) {
-  switch (user.quiz) {
-    case QuizType.Archetype:
-      return archetype.getSample(user.gender, quizModes[user.mode].size);
   }
 }
