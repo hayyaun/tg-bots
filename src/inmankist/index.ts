@@ -78,6 +78,7 @@ const startBot = async () => {
 
   bot.command("help", (ctx) => ctx.reply(strings.help));
   bot.command("start", (ctx) => {
+    ctx.react("❤‍🔥");
     const keyboard = new InlineKeyboard();
     Object.keys(quizTypes).forEach((k) =>
       keyboard.text(quizTypes[k], `quiz:${k}`).row()
