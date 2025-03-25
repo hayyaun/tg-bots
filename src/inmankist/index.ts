@@ -181,6 +181,7 @@ const startBot = async () => {
     const lenght = user.order.length;
 
     if (current >= lenght) {
+      log.info("Inmankist > Complete", { userId, type: user.quiz });
       // Quiz finished
       await replyResult(ctx, user);
       userData.delete(userId);
