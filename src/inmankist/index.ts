@@ -33,7 +33,7 @@ const startBot = async () => {
     userData.forEach((ud, key) => {
       if (now - ud.date > USER_MAX_AGE) userData.delete(key);
     });
-    log.info("Active Users", { users: userData.size });
+    log.info("Inmankist > Users", { users: userData.size });
   }, PERIODIC_CLEAN);
 
   async function getUser(ctx: Context) {
@@ -46,7 +46,7 @@ const startBot = async () => {
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) return;
-    log.info("New User", { userId, type });
+    log.info("Inmankist > New", { userId, type });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -118,7 +118,7 @@ const startBot = async () => {
         reply_markup: keyboard,
       });
     } catch (err) {
-      console.error(err);
+      log.error("Inmankist > Quiz Type", err);
     }
   });
 
@@ -143,7 +143,7 @@ const startBot = async () => {
           .text(strings.female, `gender:${Gender.female}`),
       });
     } catch (err) {
-      console.error(err);
+      log.error("Inmankist > Quiz Mode", err);
     }
   });
 
@@ -165,7 +165,7 @@ const startBot = async () => {
       user.order = await selectOrder(user);
       await sendQuestion(ctx, 0);
     } catch (err) {
-      console.error(err);
+      log.error("Inmankist > Gender", err);
     }
   });
 
@@ -225,7 +225,7 @@ const startBot = async () => {
         await sendQuestion(ctx, current + 1);
       }
     } catch (err) {
-      console.error(err);
+      log.error("Inmankist > Answer", err);
     }
   });
 
@@ -244,12 +244,12 @@ const startBot = async () => {
       await ctx.answerCallbackQuery();
       await replyDetial(ctx, type, item);
     } catch (err) {
-      console.error(err);
+      log.error("Inmankist > Detail", err);
     }
   });
 
   bot.catch = (err) => {
-    console.error(err);
+    log.error("Inmankist > BOT", err);
   };
 
   bot.start();
