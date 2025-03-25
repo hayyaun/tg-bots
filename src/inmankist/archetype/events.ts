@@ -70,8 +70,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
 export async function replyDetail(ctx: Context, key: Deity) {
   const deity = deities[key];
-  if (!deity) throw "Deity not found!"; // TODO
-  // ctx.replyWithPhoto(new InputFile(deity.image, key + ".jpg"));
+  if (!deity) throw "Deity not found!";
   const url = `https://hayyaun.ir/tg/deity/${deity.name}`;
   const rhash = "ab61e4b98f351c";
   const instantViewLink = `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${rhash}`;
