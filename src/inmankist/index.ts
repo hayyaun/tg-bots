@@ -184,7 +184,7 @@ const startBot = async () => {
       // Quiz finished
       await replyResult(ctx, user);
       userData.delete(userId);
-      return;
+      return; // end
     }
 
     const keyboard = new InlineKeyboard();
@@ -193,7 +193,7 @@ const startBot = async () => {
     );
 
     const question = selectQuizQuestion(user, current);
-    if (!question) return;
+    if (!question) throw new Error("Cannot find next question");
     const message = `${current + 1}/${lenght} \n\n${question.text}`;
     await ctx.reply(message, { reply_markup: keyboard });
   }
