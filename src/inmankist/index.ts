@@ -18,7 +18,7 @@ import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
 configDotenv();
 
 const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 60_000; // 1m
-const USER_MAX_AGE = process.env.DEV ? 60_000 : 2 * 3_600_000; // 2h
+const USER_MAX_AGE = process.env.DEV ? 5 * 60_000 : 2 * 3_600_000; // 2h
 
 const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)
@@ -38,14 +38,14 @@ const startBot = async () => {
 
   async function getUser(ctx: Context) {
     const userId = ctx.from?.id;
-    if (!userId) return;
+    if (!userId) throw new Error("UserId Inavalid!");
     const user = userData.get(userId);
     return user;
   }
 
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
-    if (!userId) return;
+    if (!userId) throw new Error("UserId Inavalid!");
     log.info("Inmankist > New", { userId, type });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
@@ -65,6 +65,7 @@ const startBot = async () => {
   });
 
   // Commands
+
   const commands: BotCommand[] = [
     { command: "start", description: strings.start_btn },
     { command: "help", description: strings.help_btn },
@@ -100,15 +101,16 @@ const startBot = async () => {
 
   await setCustomCommands(bot);
 
+  // Callbacks
+
   // Quiz Type
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
     try {
       const type = ctx.match[1] as QuizType;
-      await ctx.answerCallbackQuery();
-      await ctx.editMessageText(
-        `${strings.welcome} \n\n✅  ${quizTypes[type]}`,
-        { reply_markup: undefined }
-      );
+      ctx.answerCallbackQuery();
+      ctx.editMessageText(`${strings.welcome} \n\n✅  ${quizTypes[type]}`, {
+        reply_markup: undefined,
+      });
       await setUser(ctx, type);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
@@ -127,10 +129,10 @@ const startBot = async () => {
     try {
       const mode = parseInt(ctx.match[1]) as QuizMode;
       const user = await getUser(ctx);
-      if (!user) return;
-      await ctx.answerCallbackQuery();
-      await ctx.deleteMessage();
-      await ctx.api.editMessageText(
+      if (!user) throw new Error("404 User Not Found!");
+      ctx.answerCallbackQuery();
+      ctx.deleteMessage();
+      ctx.api.editMessageText(
         ctx.chat!.id!,
         user.welcomeId!,
         `${strings.welcome} \n\n✅  ${quizTypes[user.quiz]} - ${quizModes[mode].name}`,
@@ -152,35 +154,35 @@ const startBot = async () => {
     try {
       const gender = ctx.match[1] as Gender;
       const user = await getUser(ctx);
-      if (!user) return;
-      await ctx.answerCallbackQuery();
+      if (!user) throw new Error("404 User Not Found!");
+      ctx.answerCallbackQuery();
       await ctx.deleteMessage();
-      await ctx.api.editMessageText(
+      ctx.api.editMessageText(
         ctx.chat!.id!,
         user.welcomeId!,
         `${strings.welcome} \n\n✅  ${quizTypes[user.quiz]} - ${quizModes[user.mode].name} - ${gender === Gender.male ? strings.male : strings.female}`,
         { reply_markup: undefined }
       );
       user.gender = gender;
-      user.order = await selectOrder(user);
-      await sendQuestion(ctx, 0);
+      user.order = selectOrder(user);
+      sendQuestionOrResult(ctx, 0);
     } catch (err) {
       log.error("Inmankist > Gender", err);
     }
   });
 
   // Quiz
-  async function sendQuestion(ctx: Context, current: number) {
+  async function sendQuestionOrResult(ctx: Context, current: number) {
     const userId = ctx.from?.id;
-    if (!userId) return;
+    if (!userId) throw new Error("UserId Inavalid!");
     const user = userData.get(userId);
-    if (!user) return;
+    if (!user) throw new Error("404 User Not Found!");
 
     const lenght = user.order.length;
 
     if (current >= lenght) {
       // Quiz finished
-      await sendResult(ctx);
+      await replyResult(ctx, user);
       userData.delete(userId);
       return;
     }
@@ -196,19 +198,20 @@ const startBot = async () => {
     await ctx.reply(message, { reply_markup: keyboard });
   }
 
-  bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
+  bot.callbackQuery(/answer:(\d+)-(\d+)/, (ctx) => {
     try {
       const userId = ctx.from.id;
       const user = userData.get(userId);
-      if (!user) return;
+      if (!user) throw new Error("404 User Not Found!");
+      ctx.answerCallbackQuery();
 
       // Save/Update Answer
       const current = parseInt(ctx.match[1]);
       const selectedAnswer = parseInt(ctx.match[2]);
+      if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
       const isRevision = typeof user.answers[current] === "number";
+      if (isRevision && user.answers[current] === selectedAnswer) return; // no change
       user.answers[current] = selectedAnswer;
-
-      if (selectedAnswer < 0) return;
 
       // Update keyboard
       const keyboard = new InlineKeyboard();
@@ -217,32 +220,21 @@ const startBot = async () => {
       );
 
       // Edit the message with the new keyboard
-      await ctx.answerCallbackQuery();
-      await ctx.editMessageReplyMarkup({ reply_markup: keyboard });
-
-      if (!isRevision) {
-        // Go next question
-        await sendQuestion(ctx, current + 1);
-      }
+      ctx.editMessageReplyMarkup({ reply_markup: keyboard });
+      // Go next question
+      if (!isRevision) sendQuestionOrResult(ctx, current + 1);
     } catch (err) {
       log.error("Inmankist > Answer", err);
     }
   });
 
-  async function sendResult(ctx: Context) {
-    await ctx.reply(strings.done);
-    const user = await getUser(ctx);
-    if (!user) return;
-    await replyResult(ctx, user);
-  }
-
   // Details
-  bot.callbackQuery(/detail:(.+):(.+)/, async (ctx) => {
+  bot.callbackQuery(/detail:(.+):(.+)/, (ctx) => {
     try {
       const type = ctx.match[1] as QuizType;
       const item = ctx.match[2];
-      await ctx.answerCallbackQuery();
-      await replyDetial(ctx, type, item);
+      ctx.answerCallbackQuery();
+      replyDetial(ctx, type, item);
     } catch (err) {
       log.error("Inmankist > Detail", err);
     }

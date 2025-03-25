@@ -12,7 +12,7 @@ export async function setCustomCommands(bot: Bot) {
 
 // Indirect - select
 
-export async function selectOrder(user: IUserData) {
+export function selectOrder(user: IUserData) {
   switch (user.quiz) {
     case QuizType.Archetype:
       return archetype.getSample(user.gender, quizModes[user.mode].size);
