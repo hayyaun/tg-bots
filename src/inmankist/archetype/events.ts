@@ -72,7 +72,9 @@ export async function replyDetail(ctx: Context, key: Deity) {
   const deity = deities[key];
   if (!deity) throw "Deity not found!"; // TODO
   // ctx.replyWithPhoto(new InputFile(deity.image, key + ".jpg"));
-  // const url = "https://hayyaun.ir/tg/";
-  // const instantViewLink = `https://t.me/iv?url=${encodeURIComponent(url)}`;
-  ctx.reply(deity.about, { parse_mode: "MarkdownV2" });
+  const url = `https://hayyaun.ir/tg/deity/${deity.name}`;
+  const rhash = "ab61e4b98f351c";
+  const instantViewLink = `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${rhash}`;
+  const message = `${deity.about.slice(0, 80)}... [ادامه](${instantViewLink})`;
+  ctx.reply(message, { parse_mode: "MarkdownV2" });
 }
