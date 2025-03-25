@@ -1,4 +1,4 @@
-docker:
+start:
 		@echo ".> Fetching..."
 		git pull
 		@echo ".> Cleaning..."
@@ -9,7 +9,10 @@ docker:
 		docker build -t tgbots .
 		docker run -d --name tgbots-app tgbots
 
-
-docker-stop:
+stop:
 		@echo ".> Stopping..."
 		docker stop tgbots-app
+
+logs:
+		@echo ".> Listening..."
+		docker logs tgbots-app --follow
