@@ -2,6 +2,7 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { BotCommand } from "grammy/types";
 import { SocksProxyAgent } from "socks-proxy-agent";
+import log from "../log";
 import { quizModes, quizTypes } from "./config";
 import {
   replyAbout,
@@ -16,8 +17,8 @@ import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
 
 configDotenv();
 
-const PERIODIC_CLEAN = 60_000; // 1m
-const USER_MAX_AGE = 2 * 3_600_000; // 2h
+const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 60_000; // 1m
+const USER_MAX_AGE = process.env.DEV ? 60_000 : 2 * 3_600_000; // 2h
 
 const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)
@@ -30,8 +31,9 @@ const startBot = async () => {
   setInterval(() => {
     const now = Date.now();
     userData.forEach((ud, key) => {
-      if (ud.date - now > USER_MAX_AGE) userData.delete(key);
+      if (now - ud.date > USER_MAX_AGE) userData.delete(key);
     });
+    log.info("Active Users", { users: userData.size });
   }, PERIODIC_CLEAN);
 
   async function getUser(ctx: Context) {
@@ -44,6 +46,7 @@ const startBot = async () => {
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) return;
+    log.info("New User", { userId, type });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -252,4 +255,4 @@ const startBot = async () => {
   bot.start();
 };
 
-export default startBot;
+export default { startBot };

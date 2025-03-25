@@ -1,5 +1,9 @@
-import startArchetypeBot from "./inmankist";
+import { configDotenv } from "dotenv";
+import inmankist from "./inmankist";
+import log from "./log";
 
-console.log("Running App!");
+configDotenv();
 
-startArchetypeBot();
+log.info("App Running", { dev: process.env.DEV });
+
+inmankist.startBot();
