@@ -76,7 +76,10 @@ const startBot = async () => {
 
   await bot.api.setMyCommands(commands);
 
-  bot.command("help", (ctx) => ctx.reply(strings.help));
+  bot.command("help", (ctx) => {
+    ctx.react("🤔");
+    ctx.reply(strings.help);
+  });
   bot.command("start", (ctx) => {
     ctx.react("❤‍🔥");
     const keyboard = new InlineKeyboard();

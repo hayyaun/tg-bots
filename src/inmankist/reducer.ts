@@ -34,6 +34,7 @@ export function selectQuizQuestion<T>(
 export async function replyAbout(ctx: Context, type: QuizType) {
   switch (type) {
     case QuizType.Archetype:
+      ctx.react("⚡");
       return archetype.replyAbout(ctx);
   }
 }
