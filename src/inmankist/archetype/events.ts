@@ -71,7 +71,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
 export async function replyDetail(ctx: Context, key: Deity) {
   const deity = deities[key];
   if (!deity) throw "Deity not found!";
-  const message = `${deity.about.split("\n")[0]}\n\n[\\.\\.\\.](${toIV(key)})`;
+  const message = `[\\.\\.\\.](${toIV(key)})`;
   ctx.reply(message, { parse_mode: "MarkdownV2" });
 }
 
