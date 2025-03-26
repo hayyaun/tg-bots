@@ -63,7 +63,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
     keyboard.text(text, to).row();
   });
   await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".jpg"), {
-    // caption: message,
     reply_markup: keyboard,
   });
 }
@@ -76,7 +75,7 @@ export async function replyDetail(ctx: Context, key: Deity) {
 }
 
 export function toIV(name: string) {
-  const url = `https://hayyaun.ir/tg/deity/${name}`;
+  const url = `https://hayyaun.ir/private/deity/${name}`;
   const rhash = "ab61e4b98f351c";
   const ivLink = `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${rhash}`;
   return ivLink;
