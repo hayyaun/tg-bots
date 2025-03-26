@@ -71,9 +71,13 @@ export async function replyResult(ctx: Context, user: IUserData) {
 export async function replyDetail(ctx: Context, key: Deity) {
   const deity = deities[key];
   if (!deity) throw "Deity not found!";
-  const url = `https://hayyaun.ir/tg/deity/${deity.name}`;
-  const rhash = "ab61e4b98f351c";
-  const instantViewLink = `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${rhash}`;
-  const message = `${deity.about.slice(0, 80)}... [ادامه](${instantViewLink})`;
+  const message = `${deity.about.split("\n")[0]}\n\n[\\.\\.\\.](${toIV(key)})`;
   ctx.reply(message, { parse_mode: "MarkdownV2" });
+}
+
+export function toIV(name: string) {
+  const url = `https://hayyaun.ir/tg/deity/${name}`;
+  const rhash = "ab61e4b98f351c";
+  const ivLink = `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${rhash}`;
+  return ivLink;
 }
