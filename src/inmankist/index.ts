@@ -33,6 +33,7 @@ const startBot = async () => {
     userData.forEach((ud, key) => {
       if (now - ud.date > USER_MAX_AGE) userData.delete(key);
     });
+    if (!userData.size) return;
     log.info("Inmankist > Users", { users: userData.size });
   }, PERIODIC_CLEAN);
 
