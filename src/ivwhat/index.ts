@@ -12,7 +12,11 @@ const socksAgent = process.env.PROXY
 
 const urlPattern = /(https?:\/\/[^\s]+)/gi;
 
-const options = [{ domain: "pmc.ncbi.nlm.nih.gov", rhash: "92d33bcf16f5f5" }];
+const options = [
+  { domain: "pmc.ncbi.nlm.nih.gov", rhash: "92d33bcf16f5f5" },
+  { domain: "nature.com", rhash: "70d5d3c1fc0f12" },
+  { domain: "scholar.google.com", rhash: "6fbee84229a302" },
+];
 
 const toIVLink = (uri: string, rhash: string) =>
   `https://t.me/iv?url=${uri}&rhash=${rhash}`;
