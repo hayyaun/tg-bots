@@ -39,10 +39,11 @@ const startBot = async () => {
   // Callbacks
 
   bot.on("message:text", (ctx) => {
+    if (typeof ctx.from !== "object") return;
     const text = ctx.message.text;
+    log.info("IVWhat > Link", { message: text, ...ctx.from });
     const match = text.match(urlPattern);
     if (!match) return ctx.reply("No links detected. Send me a valid URL.");
-
     const firstLink = match[0]; // Get the first matched URL
     const validOption = options.find((option) =>
       firstLink.includes(option.domain)
