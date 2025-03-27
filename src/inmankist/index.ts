@@ -46,7 +46,7 @@ const startBot = async () => {
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
-    log.info("Inmankist > New", { userId, type });
+    log.info("Inmankist > Begin", { type, userId });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -86,6 +86,8 @@ const startBot = async () => {
   });
   bot.command("start", (ctx) => {
     ctx.react("❤‍🔥");
+    if (typeof ctx.from !== "object") return;
+    log.info("Inmankist > Start", { ...ctx.from });
     const keyboard = new InlineKeyboard();
     Object.keys(quizTypes).forEach((k) =>
       keyboard.text(quizTypes[k], `quiz:${k}`).row()
