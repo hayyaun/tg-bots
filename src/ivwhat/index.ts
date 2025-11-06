@@ -40,6 +40,12 @@ const startBot = async () => {
     ctx.reply("Hi give me a link:");
   });
 
+  bot.command("help", (ctx) => {
+    ctx.react("⚡");
+    const domains = options.map((o) => o.domain).join("\n");
+    ctx.reply(`Supported domains: \n\n${domains}`);
+  });
+
   // Callbacks
 
   bot.on("message:text", (ctx) => {

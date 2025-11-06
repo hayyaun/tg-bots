@@ -3,7 +3,7 @@ run: clean
 		git pull
 		@echo ".> Building..."
 		docker build -t tgbots .
-		docker run -d --name tgbots-app tgbots
+		docker run -d --name tgbots-app --restart always tgbots
 
 clean: stop
 		@echo ".> Cleaning..."
