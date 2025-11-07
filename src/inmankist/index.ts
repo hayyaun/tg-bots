@@ -17,8 +17,8 @@ import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
 
 configDotenv();
 
-const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 5 * 60_000; // 1m
-const USER_MAX_AGE = (process.env.DEV ? 5 : 120) * 60_000; // 2h
+const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 5 * 60_000; // 5m
+const USER_MAX_AGE = (process.env.DEV ? 5 : 24 * 60) * 60_000; // 24h
 
 const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)
