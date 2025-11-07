@@ -50,7 +50,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
   const mainDeity = sortedResults[0][0];
   const src = await addTextBoxToImage(
-    deities[mainDeity].image,
+    deities[mainDeity].image as Buffer<ArrayBuffer>,
     textRight,
     textLeft
   );
@@ -65,6 +65,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
   await ctx.replyWithPhoto(new InputFile(src, mainDeity + ".jpg"), {
     reply_markup: keyboard,
   });
+
+  return sortedResults;
 }
 
 export async function replyDetail(ctx: Context, key: Deity) {

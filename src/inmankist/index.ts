@@ -32,9 +32,8 @@ const startBot = async () => {
     const now = Date.now();
     userData.forEach((ud, key) => {
       if (now - ud.date > USER_MAX_AGE) userData.delete(key);
+      log.info("Inmankist > Delete", { user: key, remaining: userData.size });
     });
-    if (!userData.size) return;
-    log.info("Inmankist > Users", { users: userData.size });
   }, PERIODIC_CLEAN);
 
   async function getUser(ctx: Context) {
@@ -184,9 +183,9 @@ const startBot = async () => {
     const lenght = user.order.length;
 
     if (current >= lenght) {
-      log.info("Inmankist > Complete", { userId, type: user.quiz });
       // Quiz finished
-      await replyResult(ctx, user);
+      const result = await replyResult(ctx, user);
+      log.info("Inmankist > Complete", { userId, type: user.quiz, result });
       userData.delete(userId);
       return; // end
     }
