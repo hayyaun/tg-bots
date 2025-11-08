@@ -1,14 +1,9 @@
 import { configDotenv } from "dotenv";
 import { Bot } from "grammy";
 import { BotCommand } from "grammy/types";
-import { SocksProxyAgent } from "socks-proxy-agent";
 import log from "../log";
 
 configDotenv();
-
-const socksAgent = process.env.PROXY
-  ? new SocksProxyAgent(process.env.PROXY)
-  : undefined;
 
 const urlPattern = /(https?:\/\/[^\s]+)/gi;
 
@@ -21,10 +16,10 @@ const options = [
 const toIVLink = (uri: string, rhash: string) =>
   `https://t.me/iv?url=${uri}&rhash=${rhash}`;
 
-const startBot = async () => {
+const startBot = async (botKey: string, agent: unknown) => {
   // Bot
-  const bot = new Bot(process.env.IVWHAT_BOT_KEY!, {
-    client: { baseFetchConfig: { agent: socksAgent } },
+  const bot = new Bot(botKey, {
+    client: { baseFetchConfig: { agent } },
   });
 
   // Commands

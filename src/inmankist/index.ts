@@ -1,7 +1,6 @@
 import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { BotCommand } from "grammy/types";
-import { SocksProxyAgent } from "socks-proxy-agent";
 import log from "../log";
 import { quizModes, quizTypes } from "./config";
 import {
@@ -17,22 +16,20 @@ import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
 
 configDotenv();
 
+const BOT_NAME = "Inmankist";
 const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 5 * 60_000; // 5m
 const USER_MAX_AGE = (process.env.DEV ? 5 : 24 * 60) * 60_000; // 24h
 
-const socksAgent = process.env.PROXY
-  ? new SocksProxyAgent(process.env.PROXY)
-  : undefined;
-
-const startBot = async () => {
+const startBot = async (botKey: string, agent: unknown) => {
   // Storage
   const userData = new Map<number, IUserData>();
 
   setInterval(() => {
     const now = Date.now();
     userData.forEach((ud, key) => {
-      if (now - ud.date > USER_MAX_AGE) userData.delete(key);
-      log.info("Inmankist > Delete", { user: key, remaining: userData.size });
+      if (now - ud.date < USER_MAX_AGE) return;
+      userData.delete(key);
+      log.info(BOT_NAME, "> Delete", { user: key, remaining: userData.size });
     });
   }, PERIODIC_CLEAN);
 
@@ -46,7 +43,7 @@ const startBot = async () => {
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
-    log.info("Inmankist > Begin", { type, userId });
+    log.info(BOT_NAME, "> Begin", { type, user: ctx.from });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -60,8 +57,8 @@ const startBot = async () => {
   }
 
   // Bot
-  const bot = new Bot(process.env.ARCHETYPE_BOT_KEY!, {
-    client: { baseFetchConfig: { agent: socksAgent } },
+  const bot = new Bot(botKey, {
+    client: { baseFetchConfig: { agent } },
   });
 
   // Commands
@@ -87,7 +84,7 @@ const startBot = async () => {
   bot.command("start", (ctx) => {
     ctx.react("❤‍🔥");
     if (typeof ctx.from !== "object") return;
-    log.info("Inmankist > Start", { ...ctx.from });
+    log.info(BOT_NAME, "> Start", { ...ctx.from });
     const keyboard = new InlineKeyboard();
     Object.keys(quizTypes).forEach((k) =>
       keyboard.text(quizTypes[k], `quiz:${k}`).row()
@@ -122,7 +119,7 @@ const startBot = async () => {
         reply_markup: keyboard,
       });
     } catch (err) {
-      log.error("Inmankist > Quiz Type", err);
+      log.error(BOT_NAME, "> Quiz Type", err);
     }
   });
 
@@ -147,7 +144,7 @@ const startBot = async () => {
           .text(strings.female, `gender:${Gender.female}`),
       });
     } catch (err) {
-      log.error("Inmankist > Quiz Mode", err);
+      log.error(BOT_NAME, "> Quiz Mode", err);
     }
   });
 
@@ -169,7 +166,7 @@ const startBot = async () => {
       user.order = selectOrder(user);
       sendQuestionOrResult(ctx, 0);
     } catch (err) {
-      log.error("Inmankist > Gender", err);
+      log.error(BOT_NAME, "> Gender", err);
     }
   });
 
@@ -185,7 +182,7 @@ const startBot = async () => {
     if (current >= lenght) {
       // Quiz finished
       const result = await replyResult(ctx, user);
-      log.info("Inmankist > Complete", { userId, type: user.quiz, result });
+      log.info(BOT_NAME, "> Complete", { userId, type: user.quiz, result });
       userData.delete(userId);
       return; // end
     }
@@ -227,7 +224,7 @@ const startBot = async () => {
       // Go next question
       if (!isRevision) sendQuestionOrResult(ctx, current + 1);
     } catch (err) {
-      log.error("Inmankist > Answer", err);
+      log.error(BOT_NAME, "> Answer", err);
     }
   });
 
@@ -239,12 +236,12 @@ const startBot = async () => {
       ctx.answerCallbackQuery();
       replyDetial(ctx, type, item);
     } catch (err) {
-      log.error("Inmankist > Detail", err);
+      log.error(BOT_NAME, "> Detail", err);
     }
   });
 
   bot.catch = (err) => {
-    log.error("Inmankist > BOT", err);
+    log.error(BOT_NAME, "> BOT", err);
   };
 
   bot.start();
