@@ -29,7 +29,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     userData.forEach((ud, key) => {
       if (now - ud.date < USER_MAX_AGE) return;
       userData.delete(key);
-      log.info(BOT_NAME, "> Delete", { user: key, remaining: userData.size });
+      log.info(BOT_NAME + " > Delete", { user: key, remaining: userData.size });
     });
   }, PERIODIC_CLEAN);
 
@@ -43,7 +43,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
-    log.info(BOT_NAME, "> Begin", { type, user: ctx.from });
+    log.info(BOT_NAME + " > Begin", { type, user: ctx.from });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -84,7 +84,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.command("start", (ctx) => {
     ctx.react("❤‍🔥");
     if (typeof ctx.from !== "object") return;
-    log.info(BOT_NAME, "> Start", { ...ctx.from });
+    log.info(BOT_NAME + " > Start", { ...ctx.from });
     const keyboard = new InlineKeyboard();
     Object.keys(quizTypes).forEach((k) =>
       keyboard.text(quizTypes[k], `quiz:${k}`).row()
@@ -119,7 +119,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         reply_markup: keyboard,
       });
     } catch (err) {
-      log.error(BOT_NAME, "> Quiz Type", err);
+      log.error(BOT_NAME + " > Quiz Type", err);
     }
   });
 
@@ -144,7 +144,7 @@ const startBot = async (botKey: string, agent: unknown) => {
           .text(strings.female, `gender:${Gender.female}`),
       });
     } catch (err) {
-      log.error(BOT_NAME, "> Quiz Mode", err);
+      log.error(BOT_NAME + " > Quiz Mode", err);
     }
   });
 
@@ -166,7 +166,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       user.order = selectOrder(user);
       sendQuestionOrResult(ctx, 0);
     } catch (err) {
-      log.error(BOT_NAME, "> Gender", err);
+      log.error(BOT_NAME + " > Gender", err);
     }
   });
 
@@ -182,7 +182,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     if (current >= lenght) {
       // Quiz finished
       const result = await replyResult(ctx, user);
-      log.info(BOT_NAME, "> Complete", { userId, type: user.quiz, result });
+      log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
       userData.delete(userId);
       return; // end
     }
@@ -224,7 +224,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Go next question
       if (!isRevision) sendQuestionOrResult(ctx, current + 1);
     } catch (err) {
-      log.error(BOT_NAME, "> Answer", err);
+      log.error(BOT_NAME + " > Answer", err);
     }
   });
 
@@ -236,12 +236,12 @@ const startBot = async (botKey: string, agent: unknown) => {
       ctx.answerCallbackQuery();
       replyDetial(ctx, type, item);
     } catch (err) {
-      log.error(BOT_NAME, "> Detail", err);
+      log.error(BOT_NAME + " > Detail", err);
     }
   });
 
   bot.catch = (err) => {
-    log.error(BOT_NAME, "> BOT", err);
+    log.error(BOT_NAME + " > BOT", err);
   };
 
   bot.start();
