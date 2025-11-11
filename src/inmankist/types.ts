@@ -1,6 +1,7 @@
 export enum QuizType {
   Archetype = "archetype",
   MBTI = "mbti",
+  LeftRight = "leftright",
 }
 
 export enum QuizMode {

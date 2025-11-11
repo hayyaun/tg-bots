@@ -3,6 +3,7 @@ import { QuizMode, QuizType } from "./types";
 export const quizTypes: { [k: string]: string } = {
   [QuizType.Archetype]: "آزمون کهن الگوها",
   [QuizType.MBTI]: "آزمون شخصیت MBTI",
+  [QuizType.LeftRight]: "آزمون سبک شناختی",
 };
 
 const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;
