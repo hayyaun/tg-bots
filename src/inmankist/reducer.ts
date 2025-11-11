@@ -5,6 +5,8 @@ import * as leftright from "./leftright";
 import { ResultType } from "./leftright/types";
 import * as mbti from "./mbti";
 import { MBTIType } from "./mbti/types";
+import * as politicalcompass from "./politicalcompass";
+import { Quadrant } from "./politicalcompass/types";
 import { quizModes } from "./config";
 import { IQuest, IUserData, QuizType } from "./types";
 
@@ -14,6 +16,7 @@ export async function setCustomCommands(bot: Bot) {
   archetype.setCustomCommands(bot);
   mbti.setCustomCommands(bot);
   leftright.setCustomCommands(bot);
+  politicalcompass.setCustomCommands(bot);
 }
 
 // Indirect - select
@@ -26,6 +29,8 @@ export function selectOrder(user: IUserData) {
       return mbti.getSample(user.gender, quizModes[user.mode].size);
     case QuizType.LeftRight:
       return leftright.getSample(user.gender, quizModes[user.mode].size);
+    case QuizType.PoliticalCompass:
+      return politicalcompass.getSample(user.gender, quizModes[user.mode].size);
   }
 }
 
@@ -40,6 +45,8 @@ export function selectQuizQuestion<T>(
       return mbti.getQuestion(user, index) as IQuest<T>;
     case QuizType.LeftRight:
       return leftright.getQuestion(user, index) as IQuest<T>;
+    case QuizType.PoliticalCompass:
+      return politicalcompass.getQuestion(user, index) as IQuest<T>;
   }
 }
 
@@ -56,6 +63,9 @@ export async function replyAbout(ctx: Context, type: QuizType) {
     case QuizType.LeftRight:
       ctx.react("🤩");
       return leftright.replyAbout(ctx);
+    case QuizType.PoliticalCompass:
+      ctx.react("🤯");
+      return politicalcompass.replyAbout(ctx);
   }
 }
 
@@ -67,6 +77,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
       return mbti.replyResult(ctx, user);
     case QuizType.LeftRight:
       return leftright.replyResult(ctx, user);
+    case QuizType.PoliticalCompass:
+      return politicalcompass.replyResult(ctx, user);
   }
 }
 
@@ -78,5 +90,7 @@ export async function replyDetial(ctx: Context, type: QuizType, item: string) {
       return mbti.replyDetail(ctx, item as MBTIType);
     case QuizType.LeftRight:
       return leftright.replyDetail(ctx, item as ResultType);
+    case QuizType.PoliticalCompass:
+      return politicalcompass.replyDetail(ctx, item as Quadrant);
   }
 }

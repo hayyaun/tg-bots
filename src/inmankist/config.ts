@@ -4,6 +4,7 @@ export const quizTypes: { [k: string]: string } = {
   [QuizType.Archetype]: "آزمون کهن الگوها",
   [QuizType.MBTI]: "آزمون شخصیت MBTI",
   [QuizType.LeftRight]: "آزمون سبک شناختی",
+  [QuizType.PoliticalCompass]: "قطب‌نمای سیاسی",
 };
 
 const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;
