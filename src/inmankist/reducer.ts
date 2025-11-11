@@ -44,7 +44,7 @@ export async function replyAbout(ctx: Context, type: QuizType) {
       ctx.react("⚡");
       return archetype.replyAbout(ctx);
     case QuizType.MBTI:
-      ctx.react("🧠");
+      ctx.react("🤔");
       return mbti.replyAbout(ctx);
   }
 }
