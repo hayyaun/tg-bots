@@ -102,6 +102,34 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   // Callbacks
 
+  // Quiz
+  async function sendQuestionOrResult(ctx: Context, current: number) {
+    const userId = ctx.from?.id;
+    if (!userId) throw new Error("UserId Inavalid!");
+    const user = userData.get(userId);
+    if (!user) throw new Error("404 User Not Found!");
+
+    const lenght = user.order.length;
+
+    if (current >= lenght) {
+      // Quiz finished
+      const result = await replyResult(ctx, user);
+      log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
+      userData.delete(userId);
+      return; // end
+    }
+
+    const keyboard = new InlineKeyboard();
+    strings.values.forEach((v, i: Value) =>
+      keyboard.text(v, `answer:${current}-${i}`)
+    );
+
+    const question = selectQuizQuestion(user, current);
+    if (!question) throw new Error("Cannot find next question");
+    const message = `${current + 1}/${lenght} \n\n${question.text}`;
+    await ctx.reply(message, { reply_markup: keyboard });
+  }
+
   // Quiz Type
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
     try {
@@ -169,34 +197,6 @@ const startBot = async (botKey: string, agent: unknown) => {
       log.error(BOT_NAME + " > Gender", err);
     }
   });
-
-  // Quiz
-  async function sendQuestionOrResult(ctx: Context, current: number) {
-    const userId = ctx.from?.id;
-    if (!userId) throw new Error("UserId Inavalid!");
-    const user = userData.get(userId);
-    if (!user) throw new Error("404 User Not Found!");
-
-    const lenght = user.order.length;
-
-    if (current >= lenght) {
-      // Quiz finished
-      const result = await replyResult(ctx, user);
-      log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
-      userData.delete(userId);
-      return; // end
-    }
-
-    const keyboard = new InlineKeyboard();
-    strings.values.forEach((v, i: Value) =>
-      keyboard.text(v, `answer:${current}-${i}`)
-    );
-
-    const question = selectQuizQuestion(user, current);
-    if (!question) throw new Error("Cannot find next question");
-    const message = `${current + 1}/${lenght} \n\n${question.text}`;
-    await ctx.reply(message, { reply_markup: keyboard });
-  }
 
   bot.callbackQuery(/answer:(\d+)-(\d+)/, (ctx) => {
     try {
