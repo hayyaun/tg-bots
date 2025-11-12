@@ -12,5 +12,15 @@ const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)
   : undefined;
 
-inmankist.startBot(process.env.ARCHETYPE_BOT_KEY!, socksAgent);
-ivwhat.startBot(process.env.IVWHAT_BOT_KEY!, socksAgent);
+const arctypeBot = inmankist.startBot(
+  process.env.ARCHETYPE_BOT_KEY!,
+  socksAgent
+);
+const ivwhatBot = ivwhat.startBot(process.env.IVWHAT_BOT_KEY!, socksAgent);
+
+Promise.all([arctypeBot, ivwhatBot]).then(([arctypeBot, ivwhatBot]) => {
+  log.info("Bots Started", {
+    arctypeBot: arctypeBot.botInfo,
+    ivwhatBot: ivwhatBot.botInfo,
+  });
+});

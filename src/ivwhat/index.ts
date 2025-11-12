@@ -65,6 +65,8 @@ const startBot = async (botKey: string, agent: unknown) => {
   };
 
   bot.start();
+
+  return bot;
 };
 
 export default { startBot };
