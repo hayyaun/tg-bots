@@ -244,7 +244,9 @@ const startBot = async (botKey: string, agent: unknown) => {
     log.error(BOT_NAME + " > BOT", err);
   };
 
-  await bot.start();
+  bot.start();
+
+  await bot.init();
   return bot;
 };
 
