@@ -1,6 +1,8 @@
 import { Bot, Context } from "grammy";
 import * as archetype from "./archetype";
 import { Deity } from "./archetype/types";
+import * as enneagram from "./enneagram";
+import { EnneagramType } from "./enneagram/types";
 import * as leftright from "./leftright";
 import { ResultType } from "./leftright/types";
 import * as mbti from "./mbti";
@@ -17,20 +19,24 @@ export async function setCustomCommands(bot: Bot) {
   mbti.setCustomCommands(bot);
   leftright.setCustomCommands(bot);
   politicalcompass.setCustomCommands(bot);
+  enneagram.setCustomCommands(bot);
 }
 
 // Indirect - select
 
 export function selectOrder(user: IUserData) {
+  const size = quizModes[user.mode].size;
   switch (user.quiz) {
     case QuizType.Archetype:
-      return archetype.getSample(user.gender, quizModes[user.mode].size);
+      return archetype.getSample(user.gender, size);
     case QuizType.MBTI:
-      return mbti.getSample(user.gender, quizModes[user.mode].size);
+      return mbti.getSample(user.gender, size);
     case QuizType.LeftRight:
-      return leftright.getSample(user.gender, quizModes[user.mode].size);
+      return leftright.getSample(user.gender, size);
     case QuizType.PoliticalCompass:
-      return politicalcompass.getSample(user.gender, quizModes[user.mode].size);
+      return politicalcompass.getSample(user.gender, size);
+    case QuizType.Enneagram:
+      return enneagram.getSample(user.gender, size);
   }
 }
 
@@ -47,6 +53,8 @@ export function selectQuizQuestion<T>(
       return leftright.getQuestion(user, index) as IQuest<T>;
     case QuizType.PoliticalCompass:
       return politicalcompass.getQuestion(user, index) as IQuest<T>;
+    case QuizType.Enneagram:
+      return enneagram.getQuestion(user, index) as IQuest<T>;
   }
 }
 
@@ -66,6 +74,9 @@ export async function replyAbout(ctx: Context, type: QuizType) {
     case QuizType.PoliticalCompass:
       ctx.react("🤯");
       return politicalcompass.replyAbout(ctx);
+    case QuizType.Enneagram:
+      ctx.react("🎉");
+      return enneagram.replyAbout(ctx);
   }
 }
 
@@ -79,6 +90,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
       return leftright.replyResult(ctx, user);
     case QuizType.PoliticalCompass:
       return politicalcompass.replyResult(ctx, user);
+    case QuizType.Enneagram:
+      return enneagram.replyResult(ctx, user);
   }
 }
 
@@ -92,5 +105,7 @@ export async function replyDetial(ctx: Context, type: QuizType, item: string) {
       return leftright.replyDetail(ctx, item as ResultType);
     case QuizType.PoliticalCompass:
       return politicalcompass.replyDetail(ctx, item as Quadrant);
+    case QuizType.Enneagram:
+      return enneagram.replyDetail(ctx, item as EnneagramType);
   }
 }

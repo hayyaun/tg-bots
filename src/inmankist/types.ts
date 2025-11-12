@@ -3,6 +3,7 @@ export enum QuizType {
   MBTI = "mbti",
   LeftRight = "leftright",
   PoliticalCompass = "politicalcompass",
+  Enneagram = "enneagram",
 }
 
 export enum QuizMode {

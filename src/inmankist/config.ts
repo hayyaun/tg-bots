@@ -5,6 +5,7 @@ export const quizTypes: { [k: string]: string } = {
   [QuizType.MBTI]: "آزمون شخصیت MBTI",
   [QuizType.LeftRight]: "آزمون سبک شناختی",
   [QuizType.PoliticalCompass]: "قطب‌نمای سیاسی",
+  [QuizType.Enneagram]: "آزمون انیاگرام",
 };
 
 const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;
