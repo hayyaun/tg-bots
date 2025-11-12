@@ -64,8 +64,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     log.error("Inmankist > BOT", err);
   };
 
-  bot.start();
-
+  await bot.start();
   return bot;
 };
 
