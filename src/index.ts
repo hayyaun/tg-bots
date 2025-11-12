@@ -19,5 +19,5 @@ const arctypeBot = inmankist.startBot(
 const ivwhatBot = ivwhat.startBot(process.env.IVWHAT_BOT_KEY!, socksAgent);
 
 Promise.all([arctypeBot, ivwhatBot]).then((bots) => {
-  log.info("Bots Started\n" + bots.map((b) => b.botInfo?.username).join("\n"));
+  log.info("Bots Started: " + bots.map((b) => b.botInfo?.username).join(", "));
 });
