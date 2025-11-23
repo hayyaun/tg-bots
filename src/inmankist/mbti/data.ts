@@ -1,14 +1,25 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData } from "../types";
-import E from "./json/E.json";
-import F from "./json/F.json";
-import I from "./json/I.json";
-import J from "./json/J.json";
-import N from "./json/N.json";
-import P from "./json/P.json";
-import S from "./json/S.json";
-import T from "./json/T.json";
+import { getUserLanguage } from "../i18n";
+import { Gender, IQuest, IUserData, Language } from "../types";
 import { Dimension } from "./types";
+
+// Load questions by language
+function loadQuestions(dimension: string, language: Language): string[] {
+  const langDir = language === Language.Persian ? "fa" : language === Language.English ? "en" : "ru";
+  try {
+    // Dynamic import based on language
+    if (language === Language.Persian) {
+      return require(`./json/fa/${dimension}.json`);
+    } else if (language === Language.English) {
+      return require(`./json/en/${dimension}.json`);
+    } else {
+      return require(`./json/ru/${dimension}.json`);
+    }
+  } catch {
+    // Fallback to Persian if translation not available
+    return require(`./json/fa/${dimension}.json`);
+  }
+}
 
 interface IListItem {
   dimension: Dimension;
@@ -33,25 +44,33 @@ const sample = (items: IListItem[], check: IQuest<Dimension>[], size: number) =>
       .flat()
   );
 
-// MBTI dimensions are gender-neutral, so we use the same questions for all
-const items = [
-  { dimension: Dimension.E, questions: E },
-  { dimension: Dimension.I, questions: I },
-  { dimension: Dimension.S, questions: S },
-  { dimension: Dimension.N, questions: N },
-  { dimension: Dimension.T, questions: T },
-  { dimension: Dimension.F, questions: F },
-  { dimension: Dimension.J, questions: J },
-  { dimension: Dimension.P, questions: P },
-];
+// Get items for a specific language
+function getItems(language: Language): IListItem[] {
+  return [
+    { dimension: Dimension.E, questions: loadQuestions("E", language) },
+    { dimension: Dimension.I, questions: loadQuestions("I", language) },
+    { dimension: Dimension.S, questions: loadQuestions("S", language) },
+    { dimension: Dimension.N, questions: loadQuestions("N", language) },
+    { dimension: Dimension.T, questions: loadQuestions("T", language) },
+    { dimension: Dimension.F, questions: loadQuestions("F", language) },
+    { dimension: Dimension.J, questions: loadQuestions("J", language) },
+    { dimension: Dimension.P, questions: loadQuestions("P", language) },
+  ];
+}
 
-const all = combine(items);
+export const getSample = (gender: Gender, size: number, language: Language = Language.Persian) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return sample(items, all, size);
+};
 
-export const getSample = (gender: Gender, size: number) =>
-  sample(items, all, size);
+const getQuestionByIndex = (order: number[], index: number, language: Language) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return all[order[index]];
+};
 
-const getQuestionByIndex = (order: number[], index: number) => all[order[index]];
-
-export const getQuestion = (user: IUserData, index: number) =>
-  getQuestionByIndex(user.order, index);
-
+export const getQuestion = (user: IUserData, index: number) => {
+  const language = user.language || Language.Persian;
+  return getQuestionByIndex(user.order, index, language);
+};

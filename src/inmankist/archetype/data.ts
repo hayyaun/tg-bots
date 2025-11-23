@@ -1,21 +1,22 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData } from "../types";
-import aphrodite from "./json/aphrodite.json";
-import apollo from "./json/apollo.json";
-import ares from "./json/ares.json";
-import artemis from "./json/artemis.json";
-import athena from "./json/athena.json";
-import demeter from "./json/demeter.json";
-import dionysus from "./json/dionysus.json";
-import hades from "./json/hades.json";
-import hephaestus from "./json/hephaestus.json";
-import hera from "./json/hera.json";
-import hermes from "./json/hermes.json";
-import hestia from "./json/hestia.json";
-import persephone from "./json/persephone.json";
-import poseidon from "./json/poseidon.json";
-import zeus from "./json/zeus.json";
+import { Gender, IQuest, IUserData, Language } from "../types";
 import { Deity } from "./types";
+
+// Load questions by language
+function loadQuestions(deity: string, language: Language): string[] {
+  try {
+    if (language === Language.Persian) {
+      return require(`./json/fa/${deity}.json`);
+    } else if (language === Language.English) {
+      return require(`./json/en/${deity}.json`);
+    } else {
+      return require(`./json/ru/${deity}.json`);
+    }
+  } catch {
+    // Fallback to Persian if translation not available
+    return require(`./json/fa/${deity}.json`);
+  }
+}
 
 interface IListItem {
   deity: Deity;
@@ -40,39 +41,45 @@ const sample = (items: IListItem[], check: IQuest<Deity>[], size: number) =>
       .flat()
   );
 
-const maleItems = [
-  { deity: Deity.Zeus, questions: zeus },
-  { deity: Deity.Hades, questions: hades },
-  { deity: Deity.Apollo, questions: apollo },
-  { deity: Deity.Ares, questions: ares },
-  { deity: Deity.Dionysus, questions: dionysus },
-  { deity: Deity.Hermes, questions: hermes },
-  { deity: Deity.Hephaestus, questions: hephaestus },
-  { deity: Deity.Poseidon, questions: poseidon },
-];
+// Get items for a specific language
+function getItems(gender: Gender, language: Language): IListItem[] {
+  const maleItems = [
+    { deity: Deity.Zeus, questions: loadQuestions("zeus", language) },
+    { deity: Deity.Hades, questions: loadQuestions("hades", language) },
+    { deity: Deity.Apollo, questions: loadQuestions("apollo", language) },
+    { deity: Deity.Ares, questions: loadQuestions("ares", language) },
+    { deity: Deity.Dionysus, questions: loadQuestions("dionysus", language) },
+    { deity: Deity.Hermes, questions: loadQuestions("hermes", language) },
+    { deity: Deity.Hephaestus, questions: loadQuestions("hephaestus", language) },
+    { deity: Deity.Poseidon, questions: loadQuestions("poseidon", language) },
+  ];
 
-const femaleItems = [
-  { deity: Deity.Hera, questions: hera },
-  { deity: Deity.Demeter, questions: demeter },
-  { deity: Deity.Persephone, questions: persephone },
-  { deity: Deity.Artemis, questions: artemis },
-  { deity: Deity.Athena, questions: athena },
-  { deity: Deity.Aphrodite, questions: aphrodite },
-  { deity: Deity.Hestia, questions: hestia },
-];
+  const femaleItems = [
+    { deity: Deity.Hera, questions: loadQuestions("hera", language) },
+    { deity: Deity.Demeter, questions: loadQuestions("demeter", language) },
+    { deity: Deity.Persephone, questions: loadQuestions("persephone", language) },
+    { deity: Deity.Artemis, questions: loadQuestions("artemis", language) },
+    { deity: Deity.Athena, questions: loadQuestions("athena", language) },
+    { deity: Deity.Aphrodite, questions: loadQuestions("aphrodite", language) },
+    { deity: Deity.Hestia, questions: loadQuestions("hestia", language) },
+  ];
 
-const male = combine(maleItems);
-const female = combine(femaleItems);
+  return gender === Gender.male ? maleItems : femaleItems;
+}
 
-export const getSample = (gender: Gender, size: number) =>
-  sample(
-    gender === Gender.male ? maleItems : femaleItems,
-    gender === Gender.male ? male : female,
-    size
-  );
+export const getSample = (gender: Gender, size: number, language: Language = Language.Persian) => {
+  const items = getItems(gender, language);
+  const all = combine(items);
+  return sample(items, all, size);
+};
 
-const getQuestionByIndex = (order: number[], index: number, gender: Gender) =>
-  (gender === Gender.male ? male : female)[order[index]];
+const getQuestionByIndex = (order: number[], index: number, gender: Gender, language: Language) => {
+  const items = getItems(gender, language);
+  const all = combine(items);
+  return all[order[index]];
+};
 
-export const getQuestion = (user: IUserData, index: number) =>
-  getQuestionByIndex(user.order, index, user.gender);
+export const getQuestion = (user: IUserData, index: number) => {
+  const language = user.language || Language.Persian;
+  return getQuestionByIndex(user.order, index, user.gender, language);
+};

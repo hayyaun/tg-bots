@@ -1,10 +1,22 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData } from "../types";
-import authoritarian from "./json/authoritarian.json";
-import economicLeft from "./json/economic_left.json";
-import economicRight from "./json/economic_right.json";
-import libertarian from "./json/libertarian.json";
+import { Gender, IQuest, IUserData, Language } from "../types";
 import { PoliticalAxis } from "./types";
+
+// Load questions by language
+function loadQuestions(axis: string, language: Language): string[] {
+  try {
+    if (language === Language.Persian) {
+      return require(`./json/fa/${axis}.json`);
+    } else if (language === Language.English) {
+      return require(`./json/en/${axis}.json`);
+    } else {
+      return require(`./json/ru/${axis}.json`);
+    }
+  } catch {
+    // Fallback to Persian if translation not available
+    return require(`./json/fa/${axis}.json`);
+  }
+}
 
 interface IListItem {
   axis: PoliticalAxis;
@@ -33,21 +45,29 @@ const sample = (
       .flat()
   );
 
-// Political views are gender-neutral
-const items = [
-  { axis: PoliticalAxis.EconomicLeft, questions: economicLeft },
-  { axis: PoliticalAxis.EconomicRight, questions: economicRight },
-  { axis: PoliticalAxis.Authoritarian, questions: authoritarian },
-  { axis: PoliticalAxis.Libertarian, questions: libertarian },
-];
+// Get items for a specific language
+function getItems(language: Language): IListItem[] {
+  return [
+    { axis: PoliticalAxis.EconomicLeft, questions: loadQuestions("economic_left", language) },
+    { axis: PoliticalAxis.EconomicRight, questions: loadQuestions("economic_right", language) },
+    { axis: PoliticalAxis.Authoritarian, questions: loadQuestions("authoritarian", language) },
+    { axis: PoliticalAxis.Libertarian, questions: loadQuestions("libertarian", language) },
+  ];
+}
 
-const all = combine(items);
+export const getSample = (gender: Gender, size: number, language: Language = Language.Persian) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return sample(items, all, size);
+};
 
-export const getSample = (gender: Gender, size: number) =>
-  sample(items, all, size);
+const getQuestionByIndex = (order: number[], index: number, language: Language) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return all[order[index]];
+};
 
-const getQuestionByIndex = (order: number[], index: number) => all[order[index]];
-
-export const getQuestion = (user: IUserData, index: number) =>
-  getQuestionByIndex(user.order, index);
-
+export const getQuestion = (user: IUserData, index: number) => {
+  const language = user.language || Language.Persian;
+  return getQuestionByIndex(user.order, index, language);
+};

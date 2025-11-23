@@ -3,8 +3,9 @@ import _ from "lodash";
 import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
 import { quizModes } from "../config";
+import { getUserLanguage } from "../i18n";
 import strings from "../strings";
-import { IUserData, QuizType } from "../types";
+import { IUserData, Language, QuizType } from "../types";
 import { addTextBoxToImage } from "./canvas";
 import deities from "./deities";
 import { Deity } from "./types";
@@ -15,15 +16,21 @@ export function setCustomCommands(bot: Bot) {
 }
 
 export async function replyAbout(ctx: Context) {
+  const userId = ctx.from?.id;
+  const language = getUserLanguage(userId);
   const keyboard = new InlineKeyboard();
   Object.keys(deities).forEach((k, i) => {
-    keyboard.text(deities[k].name, `detail:${QuizType.Archetype}:${k}`);
+    keyboard.text(deities[k].name[language], `detail:${QuizType.Archetype}:${k}`);
     if (i % 2) keyboard.row();
   });
-  await ctx.reply(
-    "آزمون کهن الگوها به شما نشان می دهد که به کدام یک از خدایان باستانی یونانی شباهت دارید.",
-    { reply_markup: keyboard }
-  );
+
+  const aboutText = {
+    [Language.Persian]: "آزمون کهن الگوها به شما نشان می دهد که به کدام یک از خدایان باستانی یونانی شباهت دارید.",
+    [Language.English]: "The Archetype test shows you which of the ancient Greek deities you resemble.",
+    [Language.Russian]: "Тест архетипов показывает, какому из древнегреческих божеств вы похожи.",
+  };
+
+  await ctx.reply(aboutText[language], { reply_markup: keyboard });
 }
 
 export async function replyResult(ctx: Context, user: IUserData) {
@@ -37,11 +44,12 @@ export async function replyResult(ctx: Context, user: IUserData) {
     result.set(question.belong, (previous ?? 0) + value);
   });
   const sortedResults = _.reverse(_.sortBy([...result], ([, value]) => value));
+  const language = user.language || Language.Persian;
 
   // process image
   const textRight = sortedResults
     .slice(0, 3)
-    .map(([deity], i) => `${i + 1}. ${deities[deity].name} \n`);
+    .map(([deity], i) => `${i + 1}. ${deities[deity].name[language]} \n`);
   const textLeft = sortedResults
     .slice(0, 3)
     .map(
@@ -58,7 +66,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   // add buttons
   const keyboard = new InlineKeyboard();
   sortedResults.slice(0, 3).forEach((r) => {
-    const text = strings.show_about(`کهن الگو ${deities[r[0]].name}`);
+    const text = strings.show_about(`کهن الگو ${deities[r[0]].name[language]}`);
     const to = `detail:${QuizType.Archetype}:${r[0]}`;
     keyboard.text(text, to).row();
   });
@@ -70,6 +78,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
 }
 
 export async function replyDetail(ctx: Context, key: Deity) {
+  const userId = ctx.from?.id;
+  const language = getUserLanguage(userId);
   const deity = deities[key];
   if (!deity) throw "Deity not found!";
   const message = `[\\.\\.\\.](${toIV(key)})`;

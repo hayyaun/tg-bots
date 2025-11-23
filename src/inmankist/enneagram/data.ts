@@ -1,15 +1,22 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData } from "../types";
-import type1 from "./json/type1.json";
-import type2 from "./json/type2.json";
-import type3 from "./json/type3.json";
-import type4 from "./json/type4.json";
-import type5 from "./json/type5.json";
-import type6 from "./json/type6.json";
-import type7 from "./json/type7.json";
-import type8 from "./json/type8.json";
-import type9 from "./json/type9.json";
+import { Gender, IQuest, IUserData, Language } from "../types";
 import { EnneagramType } from "./types";
+
+// Load questions by language
+function loadQuestions(type: string, language: Language): string[] {
+  try {
+    if (language === Language.Persian) {
+      return require(`./json/fa/${type}.json`);
+    } else if (language === Language.English) {
+      return require(`./json/en/${type}.json`);
+    } else {
+      return require(`./json/ru/${type}.json`);
+    }
+  } catch {
+    // Fallback to Persian if translation not available
+    return require(`./json/fa/${type}.json`);
+  }
+}
 
 interface IListItem {
   type: EnneagramType;
@@ -38,26 +45,34 @@ const sample = (
       .flat()
   );
 
-// Enneagram types are gender-neutral
-const items = [
-  { type: EnneagramType.Type1, questions: type1 },
-  { type: EnneagramType.Type2, questions: type2 },
-  { type: EnneagramType.Type3, questions: type3 },
-  { type: EnneagramType.Type4, questions: type4 },
-  { type: EnneagramType.Type5, questions: type5 },
-  { type: EnneagramType.Type6, questions: type6 },
-  { type: EnneagramType.Type7, questions: type7 },
-  { type: EnneagramType.Type8, questions: type8 },
-  { type: EnneagramType.Type9, questions: type9 },
-];
+// Get items for a specific language
+function getItems(language: Language): IListItem[] {
+  return [
+    { type: EnneagramType.Type1, questions: loadQuestions("type1", language) },
+    { type: EnneagramType.Type2, questions: loadQuestions("type2", language) },
+    { type: EnneagramType.Type3, questions: loadQuestions("type3", language) },
+    { type: EnneagramType.Type4, questions: loadQuestions("type4", language) },
+    { type: EnneagramType.Type5, questions: loadQuestions("type5", language) },
+    { type: EnneagramType.Type6, questions: loadQuestions("type6", language) },
+    { type: EnneagramType.Type7, questions: loadQuestions("type7", language) },
+    { type: EnneagramType.Type8, questions: loadQuestions("type8", language) },
+    { type: EnneagramType.Type9, questions: loadQuestions("type9", language) },
+  ];
+}
 
-const all = combine(items);
+export const getSample = (gender: Gender, size: number, language: Language = Language.Persian) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return sample(items, all, size);
+};
 
-export const getSample = (gender: Gender, size: number) =>
-  sample(items, all, size);
+const getQuestionByIndex = (order: number[], index: number, language: Language) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return all[order[index]];
+};
 
-const getQuestionByIndex = (order: number[], index: number) => all[order[index]];
-
-export const getQuestion = (user: IUserData, index: number) =>
-  getQuestionByIndex(user.order, index);
-
+export const getQuestion = (user: IUserData, index: number) => {
+  const language = user.language || Language.Persian;
+  return getQuestionByIndex(user.order, index, language);
+};

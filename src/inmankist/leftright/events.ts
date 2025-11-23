@@ -2,8 +2,9 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
 import { quizModes } from "../config";
+import { getUserLanguage } from "../i18n";
 import strings from "../strings";
-import { IUserData, QuizType } from "../types";
+import { IUserData, Language, QuizType } from "../types";
 import styles from "./styles";
 import { CognitiveStyle, ResultType } from "./types";
 
@@ -13,25 +14,40 @@ export function setCustomCommands(bot: Bot) {
 }
 
 export async function replyAbout(ctx: Context) {
+  const userId = ctx.from?.id;
+  const language = getUserLanguage(userId);
   const keyboard = new InlineKeyboard();
   
   Object.values(ResultType).forEach((type) => {
     keyboard.text(
-      styles[type].emoji + " " + styles[type].name,
+      styles[type].emoji + " " + styles[type].name[language],
       `detail:${QuizType.LeftRight}:${type}`
     );
     keyboard.row();
   });
 
-  await ctx.reply(
-    [
+  const aboutText = {
+    [Language.Persian]: [
       "آزمون سبک شناختی به شما نشان می‌دهد که سبک تفکر غالب شما چیست.",
       "",
       "⚠️ توجه: این آزمون سبک‌های شناختی مختلف را می‌سنجد، نه عملکرد مغز.",
       "هر دو نیمکره مغز در اکثر فعالیت‌ها با هم کار می‌کنند.",
-    ].join("\n"),
-    { reply_markup: keyboard }
-  );
+    ],
+    [Language.English]: [
+      "The cognitive style test shows you what your dominant thinking style is.",
+      "",
+      "⚠️ Note: This test measures different cognitive styles, not brain function.",
+      "Both brain hemispheres work together in most activities.",
+    ],
+    [Language.Russian]: [
+      "Тест когнитивного стиля показывает вам, каков ваш доминирующий стиль мышления.",
+      "",
+      "⚠️ Примечание: Этот тест измеряет различные когнитивные стили, а не функцию мозга.",
+      "Оба полушария мозга работают вместе в большинстве видов деятельности.",
+    ],
+  };
+
+  await ctx.reply(aboutText[language].join("\n"), { reply_markup: keyboard });
 }
 
 function determineResultType(
@@ -70,29 +86,36 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const totalQuestions = user.order.length;
   const resultType = determineResultType(leftScore, rightScore, totalQuestions);
   const style = styles[resultType];
+  const language = user.language || Language.Persian;
 
   // Calculate percentages
   const total = leftScore + rightScore;
   const leftPercentage = total > 0 ? Math.round((leftScore / total) * 100) : 50;
   const rightPercentage = total > 0 ? Math.round((rightScore / total) * 100) : 50;
 
+  const labels = {
+    [Language.Persian]: { traits: "ویژگی‌های شما", distribution: "توزیع سبک شناختی", analytical: "تحلیلی", creative: "خلاق" },
+    [Language.English]: { traits: "Your Traits", distribution: "Cognitive Style Distribution", analytical: "Analytical", creative: "Creative" },
+    [Language.Russian]: { traits: "Ваши черты", distribution: "Распределение когнитивного стиля", analytical: "Аналитический", creative: "Творческий" },
+  };
+
   // Create message
   const resultText = [
-    `${style.emoji} *${style.name}*`,
+    `${style.emoji} *${style.name[language]}*`,
     "",
-    style.description,
+    style.description[language],
     "",
-    "🎯 *ویژگی‌های شما:*",
-    ...style.traits.map((trait) => `  ${trait}`),
+    `🎯 *${labels[language].traits}:*`,
+    ...style.traits[language].map((trait) => `  ${trait}`),
     "",
-    "📊 *توزیع سبک شناختی:*",
-    `  📐 تحلیلی: ${leftPercentage}%`,
-    `  🎨 خلاق: ${rightPercentage}%`,
+    `📊 *${labels[language].distribution}:*`,
+    `  📐 ${labels[language].analytical}: ${leftPercentage}%`,
+    `  🎨 ${labels[language].creative}: ${rightPercentage}%`,
   ].join("\n");
 
   // Add button for detailed view
   const keyboard = new InlineKeyboard().text(
-    strings.show_about(`سبک ${style.name}`),
+    strings.show_about(`سبک ${style.name[language]}`),
     `detail:${QuizType.LeftRight}:${resultType}`
   );
 
@@ -105,16 +128,24 @@ export async function replyResult(ctx: Context, user: IUserData) {
 }
 
 export async function replyDetail(ctx: Context, key: ResultType) {
+  const userId = ctx.from?.id;
+  const language = getUserLanguage(userId);
   const style = styles[key];
   if (!style) throw "Cognitive style not found!";
 
+  const labels = {
+    [Language.Persian]: "ویژگی‌ها",
+    [Language.English]: "Traits",
+    [Language.Russian]: "Черты",
+  };
+
   const message = [
-    `${style.emoji} *${style.name}*`,
+    `${style.emoji} *${style.name[language]}*`,
     "",
-    style.description,
+    style.description[language],
     "",
-    "*ویژگی‌ها:*",
-    ...style.traits.map((trait) => `  ${trait}`),
+    `*${labels[language]}:*`,
+    ...style.traits[language].map((trait) => `  ${trait}`),
   ].join("\n");
 
   ctx.reply(message, { parse_mode: "Markdown" });

@@ -1,8 +1,22 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData } from "../types";
-import left from "./json/left.json";
-import right from "./json/right.json";
+import { Gender, IQuest, IUserData, Language } from "../types";
 import { CognitiveStyle } from "./types";
+
+// Load questions by language
+function loadQuestions(style: string, language: Language): string[] {
+  try {
+    if (language === Language.Persian) {
+      return require(`./json/fa/${style}.json`);
+    } else if (language === Language.English) {
+      return require(`./json/en/${style}.json`);
+    } else {
+      return require(`./json/ru/${style}.json`);
+    }
+  } catch {
+    // Fallback to Persian if translation not available
+    return require(`./json/fa/${style}.json`);
+  }
+}
 
 interface IListItem {
   style: CognitiveStyle;
@@ -31,19 +45,27 @@ const sample = (
       .flat()
   );
 
-// Cognitive styles are gender-neutral
-const items = [
-  { style: CognitiveStyle.Left, questions: left },
-  { style: CognitiveStyle.Right, questions: right },
-];
+// Get items for a specific language
+function getItems(language: Language): IListItem[] {
+  return [
+    { style: CognitiveStyle.Left, questions: loadQuestions("left", language) },
+    { style: CognitiveStyle.Right, questions: loadQuestions("right", language) },
+  ];
+}
 
-const all = combine(items);
+export const getSample = (gender: Gender, size: number, language: Language = Language.Persian) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return sample(items, all, size);
+};
 
-export const getSample = (gender: Gender, size: number) =>
-  sample(items, all, size);
+const getQuestionByIndex = (order: number[], index: number, language: Language) => {
+  const items = getItems(language);
+  const all = combine(items);
+  return all[order[index]];
+};
 
-const getQuestionByIndex = (order: number[], index: number) => all[order[index]];
-
-export const getQuestion = (user: IUserData, index: number) =>
-  getQuestionByIndex(user.order, index);
-
+export const getQuestion = (user: IUserData, index: number) => {
+  const language = user.language || Language.Persian;
+  return getQuestionByIndex(user.order, index, language);
+};

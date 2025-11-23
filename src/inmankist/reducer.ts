@@ -10,7 +10,7 @@ import { MBTIType } from "./mbti/types";
 import * as politicalcompass from "./politicalcompass";
 import { Quadrant } from "./politicalcompass/types";
 import { quizModes } from "./config";
-import { IQuest, IUserData, QuizType } from "./types";
+import { IQuest, IUserData, Language, QuizType } from "./types";
 
 // Optional customization for each quiz
 
@@ -26,17 +26,18 @@ export async function setCustomCommands(bot: Bot) {
 
 export function selectOrder(user: IUserData) {
   const size = quizModes[user.mode].size;
+  const language = user.language || Language.Persian;
   switch (user.quiz) {
     case QuizType.Archetype:
-      return archetype.getSample(user.gender, size);
+      return archetype.getSample(user.gender, size, language);
     case QuizType.MBTI:
-      return mbti.getSample(user.gender, size);
+      return mbti.getSample(user.gender, size, language);
     case QuizType.LeftRight:
-      return leftright.getSample(user.gender, size);
+      return leftright.getSample(user.gender, size, language);
     case QuizType.PoliticalCompass:
-      return politicalcompass.getSample(user.gender, size);
+      return politicalcompass.getSample(user.gender, size, language);
     case QuizType.Enneagram:
-      return enneagram.getSample(user.gender, size);
+      return enneagram.getSample(user.gender, size, language);
   }
 }
 

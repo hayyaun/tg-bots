@@ -2,7 +2,18 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { BotCommand } from "grammy/types";
 import log from "../log";
-import { quizModes, quizTypes } from "./config";
+import {
+  getQuizModeName,
+  getQuizTypeName,
+  quizModes,
+  quizTypes,
+} from "./config";
+import {
+  getStringsForUser,
+  getUserLanguage,
+  setUserLanguage,
+  userLanguages,
+} from "./i18n";
 import {
   replyAbout,
   replyDetial,
@@ -11,8 +22,14 @@ import {
   selectQuizQuestion,
   setCustomCommands,
 } from "./reducer";
-import strings from "./strings";
-import { Gender, IUserData, QuizMode, QuizType, Value } from "./types";
+import {
+  Gender,
+  IUserData,
+  Language,
+  QuizMode,
+  QuizType,
+  Value,
+} from "./types";
 
 configDotenv();
 
@@ -43,7 +60,8 @@ const startBot = async (botKey: string, agent: unknown) => {
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
-    log.info(BOT_NAME + " > Begin", { type, user: ctx.from });
+    const language = getUserLanguage(userId);
+    log.info(BOT_NAME + " > Begin", { type, user: ctx.from, language });
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -53,6 +71,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       mode: QuizMode.MD,
       gender: Gender.male,
       order: [],
+      language,
     });
   }
 
@@ -61,17 +80,20 @@ const startBot = async (botKey: string, agent: unknown) => {
     client: { baseFetchConfig: { agent } },
   });
 
-  // Commands
-
+  // Commands - use default language for commands
+  const defaultStrings = getStringsForUser();
   const commands: BotCommand[] = [
-    { command: "start", description: strings.start_btn },
-    { command: "help", description: strings.help_btn },
+    { command: "start", description: defaultStrings.start_btn },
+    { command: "help", description: defaultStrings.help_btn },
+    { command: "language", description: "🌐 Language / Язык / زبان" },
   ];
 
   for (const key in quizTypes) {
     commands.push({
       command: key,
-      description: strings.show_about(quizTypes[key]),
+      description: defaultStrings.show_about(
+        getQuizTypeName(key as QuizType, Language.Persian)
+      ),
     });
   }
 
@@ -79,15 +101,48 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   bot.command("help", (ctx) => {
     ctx.react("🤔");
+    const strings = getStringsForUser(ctx.from?.id);
     ctx.reply(strings.help);
   });
+
+  bot.command("language", (ctx) => {
+    ctx.react("⚡");
+    const strings = getStringsForUser(ctx.from?.id);
+    const keyboard = new InlineKeyboard()
+      .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
+      .text("🇬🇧 English", `lang:${Language.English}`)
+      .row()
+      .text("🇷🇺 Русский", `lang:${Language.Russian}`);
+    ctx.reply(strings.select_language, { reply_markup: keyboard });
+  });
+
   bot.command("start", (ctx) => {
     ctx.react("❤‍🔥");
     if (typeof ctx.from !== "object") return;
     log.info(BOT_NAME + " > Start", { ...ctx.from });
+    const userId = ctx.from.id;
+    const language = getUserLanguage(userId);
+    const strings = getStringsForUser(userId);
+
+    // Check if user has selected language before (first time users)
+    if (!userLanguages.has(userId)) {
+      const langKeyboard = new InlineKeyboard()
+        .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
+        .text("🇬🇧 English", `lang:${Language.English}`)
+        .row()
+        .text("🇷🇺 Русский", `lang:${Language.Russian}`);
+      ctx.reply(
+        "🌐 Please select your language / Пожалуйста, выберите язык / لطفا زبان خود را انتخاب کنید:",
+        {
+          reply_markup: langKeyboard,
+        }
+      );
+      return;
+    }
+
     const keyboard = new InlineKeyboard();
     Object.keys(quizTypes).forEach((k) =>
-      keyboard.text(quizTypes[k], `quiz:${k}`).row()
+      keyboard.text(getQuizTypeName(k as QuizType, language), `quiz:${k}`).row()
     );
     ctx.reply(strings.welcome, {
       reply_markup: keyboard,
@@ -108,6 +163,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     if (!userId) throw new Error("UserId Inavalid!");
     const user = userData.get(userId);
     if (!user) throw new Error("404 User Not Found!");
+    const strings = getStringsForUser(userId);
 
     const lenght = user.order.length;
 
@@ -130,18 +186,63 @@ const startBot = async (botKey: string, agent: unknown) => {
     await ctx.reply(message, { reply_markup: keyboard });
   }
 
+  // Language Selection
+  bot.callbackQuery(/lang:(.+)/, async (ctx) => {
+    try {
+      const language = ctx.match[1] as Language;
+      const userId = ctx.from?.id;
+      if (!userId) throw new Error("UserId Invalid!");
+      setUserLanguage(userId, language);
+      ctx.answerCallbackQuery();
+      const strings = getStringsForUser(userId);
+      const langName =
+        language === Language.Persian
+          ? "فارسی"
+          : language === Language.English
+            ? "English"
+            : "Русский";
+      ctx.editMessageText(
+        `✅ ${strings.language}: ${langName}\n\n${strings.welcome}`,
+        {
+          reply_markup: undefined,
+        }
+      );
+      const keyboard = new InlineKeyboard();
+      Object.keys(quizTypes).forEach((k) =>
+        keyboard
+          .text(getQuizTypeName(k as QuizType, language), `quiz:${k}`)
+          .row()
+      );
+      ctx.reply(strings.welcome, {
+        reply_markup: keyboard,
+      });
+    } catch (err) {
+      log.error(BOT_NAME + " > Language", err);
+    }
+  });
+
   // Quiz Type
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
     try {
       const type = ctx.match[1] as QuizType;
+      const userId = ctx.from?.id;
+      if (!userId) throw new Error("UserId Invalid!");
+      const language = getUserLanguage(userId);
+      const strings = getStringsForUser(userId);
       ctx.answerCallbackQuery();
-      ctx.editMessageText(`${strings.welcome} \n\n✅  ${quizTypes[type]}`, {
-        reply_markup: undefined,
-      });
+      ctx.editMessageText(
+        `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
+        {
+          reply_markup: undefined,
+        }
+      );
       await setUser(ctx, type);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
-        keyboard.text(quizModes[parseInt(k)].name, `mode:${k}`)
+        keyboard.text(
+          getQuizModeName(parseInt(k) as QuizMode, language),
+          `mode:${k}`
+        )
       );
       ctx.reply(strings.mode, {
         reply_markup: keyboard,
@@ -157,12 +258,16 @@ const startBot = async (botKey: string, agent: unknown) => {
       const mode = parseInt(ctx.match[1]) as QuizMode;
       const user = await getUser(ctx);
       if (!user) throw new Error("404 User Not Found!");
+      const userId = ctx.from?.id;
+      if (!userId) throw new Error("UserId Invalid!");
+      const language = getUserLanguage(userId);
+      const strings = getStringsForUser(userId);
       ctx.answerCallbackQuery();
       ctx.deleteMessage();
       ctx.api.editMessageText(
         ctx.chat!.id!,
         user.welcomeId!,
-        `${strings.welcome} \n\n✅  ${quizTypes[user.quiz]} - ${quizModes[mode].name}`,
+        `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(mode, language)}`,
         { reply_markup: undefined }
       );
       user.mode = mode;
@@ -182,12 +287,16 @@ const startBot = async (botKey: string, agent: unknown) => {
       const gender = ctx.match[1] as Gender;
       const user = await getUser(ctx);
       if (!user) throw new Error("404 User Not Found!");
+      const userId = ctx.from?.id;
+      if (!userId) throw new Error("UserId Invalid!");
+      const language = getUserLanguage(userId);
+      const strings = getStringsForUser(userId);
       ctx.answerCallbackQuery();
       await ctx.deleteMessage();
       ctx.api.editMessageText(
         ctx.chat!.id!,
         user.welcomeId!,
-        `${strings.welcome} \n\n✅  ${quizTypes[user.quiz]} - ${quizModes[user.mode].name} - ${gender === Gender.male ? strings.male : strings.female}`,
+        `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(user.mode, language)} - ${gender === Gender.male ? strings.male : strings.female}`,
         { reply_markup: undefined }
       );
       user.gender = gender;
@@ -203,6 +312,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from.id;
       const user = userData.get(userId);
       if (!user) throw new Error("404 User Not Found!");
+      const strings = getStringsForUser(userId);
       ctx.answerCallbackQuery();
 
       // Save/Update Answer

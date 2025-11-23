@@ -27,6 +27,7 @@ export interface IUserData {
   order: number[];
   quiz: QuizType;
   mode: QuizMode;
+  language?: Language;
 }
 
 export interface IQuest<T> {
@@ -37,6 +38,12 @@ export interface IQuest<T> {
 export enum Gender {
   male = "male",
   female = "female",
+}
+
+export enum Language {
+  Persian = "fa",
+  English = "en",
+  Russian = "ru",
 }
 
 export interface IScore<T> {

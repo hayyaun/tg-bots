@@ -2,8 +2,9 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
 import { quizModes } from "../config";
+import { getUserLanguage } from "../i18n";
 import strings from "../strings";
-import { IUserData, QuizType } from "../types";
+import { IUserData, Language, QuizType } from "../types";
 import personalities from "./personalities";
 import { Dimension, MBTIType } from "./types";
 
@@ -13,6 +14,8 @@ export function setCustomCommands(bot: Bot) {
 }
 
 export async function replyAbout(ctx: Context) {
+  const userId = ctx.from?.id;
+  const language = getUserLanguage(userId);
   const keyboard = new InlineKeyboard();
   const types = [
     [MBTIType.INTJ, MBTIType.INTP, MBTIType.ENTJ, MBTIType.ENTP],
@@ -28,10 +31,13 @@ export async function replyAbout(ctx: Context) {
     keyboard.row();
   });
 
-  await ctx.reply(
-    "آزمون MBTI (مایرز-بریگز) شخصیت شما را در یکی از ۱۶ تیپ شخصیتی مشخص می‌کند. این آزمون بر اساس نظریه‌های کارل یونگ طراحی شده و یکی از معتبرترین آزمون‌های شخصیت‌شناسی است.",
-    { reply_markup: keyboard }
-  );
+  const aboutText = {
+    [Language.Persian]: "آزمون MBTI (مایرز-بریگز) شخصیت شما را در یکی از ۱۶ تیپ شخصیتی مشخص می‌کند. این آزمون بر اساس نظریه‌های کارل یونگ طراحی شده و یکی از معتبرترین آزمون‌های شخصیت‌شناسی است.",
+    [Language.English]: "The MBTI (Myers-Briggs) test identifies your personality as one of 16 personality types. This test is based on Carl Jung's theories and is one of the most reliable personality tests.",
+    [Language.Russian]: "Тест MBTI (Майерс-Бриггс) определяет вашу личность как один из 16 типов личности. Этот тест основан на теориях Карла Юнга и является одним из самых надежных тестов личности.",
+  };
+
+  await ctx.reply(aboutText[language], { reply_markup: keyboard });
 }
 
 function calculateMBTIType(dimensionScores: Map<Dimension, number>): MBTIType {
@@ -105,20 +111,27 @@ export async function replyResult(ctx: Context, user: IUserData) {
   // Determine MBTI type
   const mbtiType = calculateMBTIType(dimensionScores);
   const personality = personalities[mbtiType];
+  const language = user.language || Language.Persian;
 
   // Calculate percentages for display
   const totalQuestions = user.order.length;
   const percentages = getDimensionPercentages(dimensionScores, totalQuestions);
 
+  const labels = {
+    [Language.Persian]: { type: "تیپ شخصیتی شما", distribution: "توزیع ابعاد شخصیتی" },
+    [Language.English]: { type: "Your Personality Type", distribution: "Personality Dimension Distribution" },
+    [Language.Russian]: { type: "Ваш тип личности", distribution: "Распределение измерений личности" },
+  };
+
   // Create message
   const resultText = [
-    `🎯 تیپ شخصیتی شما: *${personality.name}*`,
+    `🎯 ${labels[language].type}: *${personality.name[language]}*`,
     ``,
-    `*${personality.nickname}*`,
+    `*${personality.nickname[language]}*`,
     ``,
-    personality.description,
+    personality.description[language],
     ``,
-    `📊 توزیع ابعاد شخصیتی:`,
+    `📊 ${labels[language].distribution}:`,
     ...percentages.map((p) => `${p.dimension}: ${p.percentage}%`),
   ].join("\n");
 
@@ -137,15 +150,17 @@ export async function replyResult(ctx: Context, user: IUserData) {
 }
 
 export async function replyDetail(ctx: Context, key: MBTIType) {
+  const userId = ctx.from?.id;
+  const language = getUserLanguage(userId);
   const personality = personalities[key];
   if (!personality) throw "Personality type not found!";
 
   const message = [
-    `*${personality.name}*`,
+    `*${personality.name[language]}*`,
     ``,
-    `*${personality.nickname}*`,
+    `*${personality.nickname[language]}*`,
     ``,
-    personality.description,
+    personality.description[language],
   ].join("\n");
 
   ctx.reply(message, { parse_mode: "Markdown" });
