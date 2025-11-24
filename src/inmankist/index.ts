@@ -113,7 +113,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       .text("🇬🇧 English", `lang:${Language.English}`)
       .row()
       .text("🇷🇺 Русский", `lang:${Language.Russian}`)
-      .text("🇸🇦 العربية (Archetype only)", `lang:${Language.Arabic}`);
+      .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
     ctx.reply(strings.select_language, { reply_markup: keyboard });
   });
 
