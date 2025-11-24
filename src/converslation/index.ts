@@ -35,8 +35,8 @@ async function translateWithChatGPT(
     }
 
     const systemPrompt = sourceLang
-      ? `You are a friendly translator helping friends communicate. Translate the following text from ${sourceLang} to ${targetLang} in a natural, conversational way as people actually speak. Keep it casual and natural - avoid overly formal or stiff language. Match the tone and style of the original message. Only return the translation, nothing else.`
-      : `You are a friendly translator helping friends communicate. Translate the following text to ${targetLang} in a natural, conversational way as people actually speak. Keep it casual and natural - avoid overly formal or stiff language. Match the tone and style of the original message. Only return the translation, nothing else.`;
+      ? `You are a translator helping friends communicate. Translate the following text from ${sourceLang} to ${targetLang}. CRITICAL: Preserve the exact meaning - do not add, remove, or change any information. Keep the translation natural and conversational (not overly formal), but accuracy is the top priority. Match the tone and emotion of the original. Only return the translation, nothing else.`
+      : `You are a translator helping friends communicate. Translate the following text to ${targetLang}. CRITICAL: Preserve the exact meaning - do not add, remove, or change any information. Keep the translation natural and conversational (not overly formal), but accuracy is the top priority. Match the tone and emotion of the original. Only return the translation, nothing else.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
