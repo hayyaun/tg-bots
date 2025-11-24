@@ -9,15 +9,6 @@ const BOT_NAME = "Converslation";
 // Store user language preferences (in production, use a database)
 const userLanguages = new Map<number, string>(); // userId -> language
 
-// Cache translations to save API calls
-const translationCache = new Map<string, { text: string; timestamp: number }>();
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
-
-// Debounce inline queries to prevent excessive API calls
-const pendingQueries = new Map<number, NodeJS.Timeout>();
-const DEBOUNCE_DELAY = 800; // Wait 800ms after user stops typing
-const MIN_QUERY_LENGTH = 3; // Minimum characters before translating
-
 // Popular languages for quick selection
 const POPULAR_LANGUAGES = [
   { code: "en", name: "English", flag: "🇬🇧" },
@@ -37,13 +28,6 @@ async function translateWithChatGPT(
   targetLang: string,
   sourceLang?: string
 ): Promise<string> {
-  // Check cache first
-  const cacheKey = `${sourceLang || "auto"}:${targetLang}:${text}`;
-  const cached = translationCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.text;
-  }
-
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -81,12 +65,6 @@ async function translateWithChatGPT(
     if (!translation) {
       throw new Error("No translation received from API");
     }
-
-    // Cache the translation
-    translationCache.set(cacheKey, {
-      text: translation,
-      timestamp: Date.now(),
-    });
 
     return translation;
   } catch (error) {
@@ -133,7 +111,8 @@ const startBot = async (botKey: string, agent: unknown) => {
       "2. In any chat, type @" +
         (bot.botInfo?.username || "converslation_bot") +
         " followed by your message",
-      "3. I'll translate it for you!",
+      "3. End your message with a dot (.) to translate",
+      "4. Tap the result to send!",
       "",
       "💡 Use /help for more information",
     ].join("\n");
@@ -148,7 +127,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       "",
       "Commands:",
       "/start - Start the bot",
-      "/setlang - Set target language for this chat",
+      "/setlang - Set target language",
       "/mylang - Show current language setting",
       "/clearlang - Clear language setting",
       "/help - Show this help message",
@@ -157,11 +136,16 @@ const startBot = async (botKey: string, agent: unknown) => {
       "In any chat, type:",
       "@" +
         (bot.botInfo?.username || "converslation_bot") +
-        " your message here",
+        " your message here.",
       "",
-      "The bot will translate your message to the language you set for this chat.",
+      "⚡ Important: End your message with a dot (.) to trigger translation!",
       "",
-      "💡 Tip: Set different languages for different chats!",
+      "Example:",
+      "@" +
+        (bot.botInfo?.username || "converslation_bot") +
+        " Hello, how are you.",
+      "",
+      "💡 The dot tells the bot you're ready to translate!",
     ].join("\n");
 
     await ctx.reply(helpText);
@@ -243,12 +227,11 @@ const startBot = async (botKey: string, agent: unknown) => {
     }
   });
 
-  // Inline query handler with debouncing
+  // Inline query handler - simple and direct
   bot.on("inline_query", async (ctx) => {
     try {
       const query = ctx.inlineQuery.query;
       const userId = ctx.from.id;
-      const queryId = ctx.inlineQuery.id;
 
       // Get user's target language
       const targetLang = getTargetLanguage(userId);
@@ -271,27 +254,29 @@ const startBot = async (botKey: string, agent: unknown) => {
 
       if (!query || query.trim().length === 0) {
         // Show usage instructions
+        const langInfo = POPULAR_LANGUAGES.find((l) => l.code === targetLang);
         const result = InlineQueryResultBuilder.article(
           "usage",
-          "💬 Type your message to translate",
+          `💬 Type your message and end with a dot (.)`,
           {
-            description: `Will translate to ${targetLang}`,
+            description: `Will translate to ${langInfo?.name || targetLang}`,
           }
         ).text(
-          `Type your message after @${bot.botInfo?.username || "bot"} to translate it.`
+          `Type your message after @${bot.botInfo?.username || "bot"}\n\nEnd your message with a dot (.) to translate.`
         );
 
         await ctx.answerInlineQuery([result], { cache_time: 0 });
         return;
       }
 
-      // Don't translate very short queries (wait for more input)
-      if (query.length < MIN_QUERY_LENGTH) {
+      // Check if query ends with a dot - only then translate
+      if (!query.endsWith(".")) {
+        const langInfo = POPULAR_LANGUAGES.find((l) => l.code === targetLang);
         const result = InlineQueryResultBuilder.article(
-          "typing",
+          "waiting",
           "⌨️ Keep typing...",
           {
-            description: `Type at least ${MIN_QUERY_LENGTH} characters`,
+            description: `Add a dot (.) at the end when ready to translate`,
           }
         ).text(query);
 
@@ -299,53 +284,49 @@ const startBot = async (botKey: string, agent: unknown) => {
         return;
       }
 
-      // Clear previous pending query for this user
-      const existingTimeout = pendingQueries.get(userId);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
+      // Remove the trailing dot before translation
+      const textToTranslate = query.slice(0, -1).trim();
+
+      // Translate the message directly
+      try {
+        const translation = await translateWithChatGPT(
+          textToTranslate,
+          targetLang
+        );
+
+        const langInfo = POPULAR_LANGUAGES.find((l) => l.code === targetLang);
+        const langName = langInfo ? langInfo.name : targetLang;
+
+        // Create inline result with translation
+        const result = InlineQueryResultBuilder.article(
+          "translation-" + Date.now(),
+          `${langInfo?.flag || "🌐"} ${langName}`,
+          {
+            description: translation.substring(0, 100),
+          }
+        ).text(translation);
+
+        await ctx.answerInlineQuery([result], { cache_time: 0 });
+        
+        log.info(BOT_NAME + " > Translation", {
+          userId,
+          originalLength: query.length,
+          translationLength: translation.length,
+        });
+      } catch (error) {
+        // Show error result
+        const errorResult = InlineQueryResultBuilder.article(
+          "error",
+          "❌ Translation Failed",
+          {
+            description: "Could not translate message",
+          }
+        ).text(
+          "❌ Translation failed. Please try again later or check your API configuration."
+        );
+
+        await ctx.answerInlineQuery([errorResult], { cache_time: 0 });
       }
-
-      // Show a "translating..." message immediately
-      const loadingResult = InlineQueryResultBuilder.article(
-        "loading",
-        "⏳ Translating...",
-        {
-          description: "Please wait a moment",
-        }
-      ).text("⏳ Translating your message...");
-
-      await ctx.answerInlineQuery([loadingResult], { cache_time: 0 });
-
-      // Set up debounced translation
-      const timeout = setTimeout(async () => {
-        try {
-          // Translate the message
-          const translation = await translateWithChatGPT(query, targetLang);
-
-          const langInfo = POPULAR_LANGUAGES.find(
-            (l) => l.code === targetLang
-          );
-          const langName = langInfo ? langInfo.name : targetLang;
-
-          // Create inline result with translation
-          const result = InlineQueryResultBuilder.article(
-            "translation-" + Date.now(),
-            `${langInfo?.flag || "🌐"} ${langName}`,
-            {
-              description: translation.substring(0, 100),
-            }
-          ).text(translation);
-
-          // Note: We can't update the same query, but the next query will show the result
-          // This is a limitation of Telegram's inline query API
-          pendingQueries.delete(userId);
-        } catch (error) {
-          log.error(BOT_NAME + " > Translation", error);
-          pendingQueries.delete(userId);
-        }
-      }, DEBOUNCE_DELAY);
-
-      pendingQueries.set(userId, timeout);
     } catch (error) {
       log.error(BOT_NAME + " > Inline Query", error);
     }
