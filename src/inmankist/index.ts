@@ -63,11 +63,18 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   setInterval(() => {
     const now = Date.now();
+    const deletedUsers: number[] = [];
     userData.forEach((ud, key) => {
       if (now - ud.date < USER_MAX_AGE) return;
       userData.delete(key);
+      deletedUsers.push(key);
       log.info(BOT_NAME + " > Delete", { user: key, remaining: userData.size });
     });
+    if (deletedUsers.length > 0) {
+      notifyAdmin(
+        `🗑️ <b>Cleanup</b>\nDeleted ${deletedUsers.length} inactive user(s)\nRemaining: ${userData.size}`
+      );
+    }
   }, PERIODIC_CLEAN);
 
   async function getUser(ctx: Context) {
@@ -82,6 +89,15 @@ const startBot = async (botKey: string, agent: unknown) => {
     if (!userId) throw new Error("UserId Inavalid!");
     const language = getUserLanguage(userId);
     log.info(BOT_NAME + " > Begin", { type, user: ctx.from, language });
+    
+    // Notify admin about quiz start
+    const userName = ctx.from?.username
+      ? `@${ctx.from.username}`
+      : `${ctx.from?.first_name || ""} ${ctx.from?.last_name || ""}`.trim();
+    notifyAdmin(
+      `🎯 <b>Quiz Started</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
+    );
+    
     userData.set(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
