@@ -36,10 +36,30 @@ configDotenv();
 const BOT_NAME = "Inmankist";
 const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 5 * 60_000; // 5m
 const USER_MAX_AGE = (process.env.DEV ? 5 : 24 * 60) * 60_000; // 24h
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID
+  ? parseInt(process.env.ADMIN_USER_ID)
+  : undefined;
 
 const startBot = async (botKey: string, agent: unknown) => {
   // Storage
   const userData = new Map<number, IUserData>();
+
+  // Bot
+  const bot = new Bot(botKey, {
+    client: { baseFetchConfig: { agent } },
+  });
+
+  // Admin notification helper
+  async function notifyAdmin(message: string) {
+    if (!ADMIN_USER_ID) return;
+    try {
+      await bot.api.sendMessage(ADMIN_USER_ID, `🤖 ${BOT_NAME}\n${message}`, {
+        parse_mode: "HTML",
+      });
+    } catch (err) {
+      log.error(BOT_NAME + " > Admin notification failed", err);
+    }
+  }
 
   setInterval(() => {
     const now = Date.now();
@@ -74,11 +94,6 @@ const startBot = async (botKey: string, agent: unknown) => {
       language,
     });
   }
-
-  // Bot
-  const bot = new Bot(botKey, {
-    client: { baseFetchConfig: { agent } },
-  });
 
   // Commands - use default language for commands
   const defaultStrings = getStringsForUser();
@@ -124,6 +139,14 @@ const startBot = async (botKey: string, agent: unknown) => {
     const userId = ctx.from.id;
     const language = getUserLanguage(userId);
     const strings = getStringsForUser(userId);
+
+    // Notify admin about new user
+    const userName = ctx.from.username
+      ? `@${ctx.from.username}`
+      : `${ctx.from.first_name || ""} ${ctx.from.last_name || ""}`.trim();
+    notifyAdmin(
+      `👤 <b>New Start</b>\nUser: ${userName}\nID: <code>${userId}</code>\nLanguage: ${language}`
+    );
 
     // Check if user has selected language before (first time users)
     if (!userLanguages.has(userId)) {
@@ -173,6 +196,15 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Quiz finished
       const result = await replyResult(ctx, user);
       log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
+      
+      // Notify admin about quiz completion
+      const userName = ctx.from?.username
+        ? `@${ctx.from.username}`
+        : `${ctx.from?.first_name || ""} ${ctx.from?.last_name || ""}`.trim();
+      notifyAdmin(
+        `✅ <b>Quiz Completed</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
+      );
+      
       userData.delete(userId);
       return; // end
     }
@@ -222,6 +254,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       });
     } catch (err) {
       log.error(BOT_NAME + " > Language", err);
+      notifyAdmin(
+        `❌ <b>Error in Language</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -253,6 +288,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       });
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Type", err);
+      notifyAdmin(
+        `❌ <b>Error in Quiz Type</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -282,6 +320,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       });
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Mode", err);
+      notifyAdmin(
+        `❌ <b>Error in Quiz Mode</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -308,6 +349,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       sendQuestionOrResult(ctx, 0);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
+      notifyAdmin(
+        `❌ <b>Error in Gender</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -339,6 +383,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (!isRevision) sendQuestionOrResult(ctx, current + 1);
     } catch (err) {
       log.error(BOT_NAME + " > Answer", err);
+      notifyAdmin(
+        `❌ <b>Error in Answer</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -351,16 +398,24 @@ const startBot = async (botKey: string, agent: unknown) => {
       replyDetial(ctx, type, item);
     } catch (err) {
       log.error(BOT_NAME + " > Detail", err);
+      notifyAdmin(
+        `❌ <b>Error in Detail</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
+      );
     }
   });
 
   bot.catch = (err) => {
     log.error(BOT_NAME + " > BOT", err);
+    notifyAdmin(`❌ <b>Critical Bot Error</b>\nError: ${err}`);
   };
 
   bot.start();
 
   await bot.init();
+  
+  // Notify admin that bot started successfully
+  notifyAdmin(`🚀 <b>Bot Started</b>\nBot is now online and ready!`);
+  
   return bot;
 };
 
