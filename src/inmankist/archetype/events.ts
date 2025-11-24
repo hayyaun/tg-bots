@@ -28,6 +28,7 @@ export async function replyAbout(ctx: Context) {
     [Language.Persian]: "آزمون کهن الگوها به شما نشان می دهد که به کدام یک از خدایان باستانی یونانی شباهت دارید.",
     [Language.English]: "The Archetype test shows you which of the ancient Greek deities you resemble.",
     [Language.Russian]: "Тест архетипов показывает, какому из древнегреческих божеств вы похожи.",
+    [Language.Arabic]: "اختبار الأنماط الأصلية يوضح لك أي من الآلهة اليونانية القديمة تشبه.",
   };
 
   await ctx.reply(aboutText[language], { reply_markup: keyboard });

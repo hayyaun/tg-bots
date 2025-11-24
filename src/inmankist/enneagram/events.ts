@@ -58,6 +58,13 @@ export async function replyAbout(ctx: Context) {
       "",
       "💡 Эннеаграмма помогает вам узнать себя глубже.",
     ],
+    [Language.Arabic]: [
+      "اختبار الإنياجرام يحدد شخصيتك كواحد من 9 أنواع شخصية.",
+      "",
+      "تم تصميم هذا النظام بناءً على دوافعك الأساسية ومخاوفك ورغباتك العميقة.",
+      "",
+      "💡 يساعدك الإنياجرام على معرفة نفسك بشكل أعمق.",
+    ],
   };
 
   await ctx.reply(aboutText[language].join("\n"), { reply_markup: keyboard });
@@ -98,6 +105,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
     [Language.Persian]: { traits: "ویژگی‌های اصلی", distribution: "توزیع تیپ‌های شما", type: "تیپ" },
     [Language.English]: { traits: "Main Traits", distribution: "Your Type Distribution", type: "Type" },
     [Language.Russian]: { traits: "Основные черты", distribution: "Распределение ваших типов", type: "Тип" },
+    [Language.Arabic]: { traits: "السمات الرئيسية", distribution: "توزيع أنواعك", type: "النوع" },
   };
 
   // Create message
@@ -149,6 +157,7 @@ export async function replyDetail(ctx: Context, key: EnneagramType) {
     [Language.Persian]: "ویژگی‌های اصلی",
     [Language.English]: "Main Traits",
     [Language.Russian]: "Основные черты",
+      [Language.Arabic]: "Основные черты",
   };
 
   const message = [

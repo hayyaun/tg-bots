@@ -17,11 +17,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۱: اصلاح‌گر",
       [Language.English]: "Type 1: Reformer",
       [Language.Russian]: "Тип 1: Реформатор",
+      [Language.Arabic]: "النوع 1: المصلح",
     },
     nickname: {
       [Language.Persian]: "کمال‌گرا",
       [Language.English]: "Perfectionist",
       [Language.Russian]: "Перфекционист",
+      [Language.Arabic]: "الكمالي",
     },
     emoji: "⚖️",
     description: {
@@ -31,16 +33,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are principled, logical and ethical. You are always striving to improve yourself and the world around you. You value quality, precision and doing things right.",
       [Language.Russian]:
         "Вы принципиальны, логичны и этичны. Вы всегда стремитесь улучшить себя и мир вокруг. Вы цените качество, точность и правильное выполнение дел.",
+      [Language.Arabic]:
+        "أنت مبدئي ومنطقي وأخلاقي. تسعى دائما لتحسين نفسك والعالم من حولك. تقدر الجودة والدقة والقيام بالأشياء بشكل صحيح.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: نادرست بودن، فاسد بودن، بد بودن",
       [Language.English]: "Core Fear: Being wrong, corrupt, bad",
       [Language.Russian]: "Основной страх: Быть неправильным, коррумпированным, плохим",
+      [Language.Arabic]: "الخوف الأساسي: أن تكون مخطئا أو فاسدا أو سيئا",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: درست بودن، خوب بودن، داشتن یکپارچگی",
       [Language.English]: "Core Desire: Being right, good, having integrity",
       [Language.Russian]: "Основное желание: Быть правильным, хорошим, иметь целостность",
+      [Language.Arabic]: "الرغبة الأساسية: أن تكون على صواب وخير ونزيها",
     },
     traits: {
       [Language.Persian]: [
@@ -64,6 +70,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "🔍 Критичный (себя и других)",
         "💪 Этичный и честный",
       ],
+      [Language.Arabic]: [
+        "⚖️ يسعى للعدالة ومبدئي",
+        "🎯 كمالي ودقيق",
+        "📋 مسؤول ومنظم",
+        "🔍 ناقد (للذات والآخرين)",
+        "💪 أخلاقي وصادق",
+      ],
     },
   },
   [EnneagramType.Type2]: {
@@ -71,11 +84,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۲: یاور",
       [Language.English]: "Type 2: Helper",
       [Language.Russian]: "Тип 2: Помощник",
+      [Language.Arabic]: "النوع 2: المساعد",
     },
     nickname: {
       [Language.Persian]: "کمک‌کننده",
       [Language.English]: "Helper",
       [Language.Russian]: "Помощник",
+      [Language.Arabic]: "المساعد",
     },
     emoji: "❤️",
     description: {
@@ -85,16 +100,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are empathetic, kind and generous. You see others' needs before your own and feel satisfaction from helping. Deep connections are important to you.",
       [Language.Russian]:
         "Вы эмпатичны, добры и щедры. Вы видите потребности других раньше своих и чувствуете удовлетворение от помощи. Глубокие связи важны для вас.",
+      [Language.Arabic]:
+        "أنت متعاطف ولطيف وكريم. ترى احتياجات الآخرين قبل احتياجاتك وتشعر بالرضا من المساعدة. الاتصالات العميقة مهمة بالنسبة لك.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: دوست نداشته شدن، ناخواسته بودن",
       [Language.English]: "Core Fear: Being unloved, unwanted",
       [Language.Russian]: "Основной страх: Быть нелюбимым, нежеланным",
+      [Language.Arabic]: "الخوف الأساسي: أن تكون غير محبوب وغير مرغوب فيه",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: دوست داشته شدن، مورد نیاز بودن",
       [Language.English]: "Core Desire: Being loved, needed",
       [Language.Russian]: "Основное желание: Быть любимым, нужным",
+      [Language.Arabic]: "الرغبة الأساسية: أن تكون محبوبا ومطلوبا",
     },
     traits: {
       [Language.Persian]: [
@@ -118,6 +137,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "🌟 Теплый и добросердечный",
         "👥 Внимательный к потребностям других",
       ],
+      [Language.Arabic]: [
+        "❤️ لطيف ومتعاطف",
+        "🤝 متعاون ومضحي",
+        "💝 موجه نحو العلاقات وحميم",
+        "🌟 دافئ وطيب القلب",
+        "👥 منتبه لاحتياجات الآخرين",
+      ],
     },
   },
   [EnneagramType.Type3]: {
@@ -125,11 +151,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۳: موفق",
       [Language.English]: "Type 3: Achiever",
       [Language.Russian]: "Тип 3: Достигающий",
+      [Language.Arabic]: "النوع 3: المنجز",
     },
     nickname: {
       [Language.Persian]: "پیشرو",
       [Language.English]: "Performer",
       [Language.Russian]: "Исполнитель",
+      [Language.Arabic]: "المؤدي",
     },
     emoji: "🏆",
     description: {
@@ -139,16 +167,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are efficient, adaptable and successful. You are committed to your goals and work hard to achieve them. Image and progress matter to you.",
       [Language.Russian]:
         "Вы эффективны, адаптивны и успешны. Вы привержены своим целям и усердно работаете для их достижения. Образ и прогресс важны для вас.",
+      [Language.Arabic]:
+        "أنت كفؤ وقابل للتكيف وناجح. أنت ملتزم بأهدافك وتعمل بجد لتحقيقها. الصورة والتقدم مهمان لك.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: بی‌ارزش بودن، عدم موفقیت",
       [Language.English]: "Core Fear: Being worthless, failure",
       [Language.Russian]: "Основной страх: Быть бесполезным, неудача",
+      [Language.Arabic]: "الخوف الأساسي: أن تكون عديم القيمة أو فاشلا",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: ارزشمند بودن، موفق بودن، تحسین شدن",
       [Language.English]: "Core Desire: Being valuable, successful, admired",
       [Language.Russian]: "Основное желание: Быть ценным, успешным, восхищенным",
+      [Language.Arabic]: "الرغبة الأساسية: أن تكون قيما وناجحا ومعجبا به",
     },
     traits: {
       [Language.Persian]: [
@@ -172,6 +204,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "✨ Очаровательный и убедительный",
         "💼 Профессиональный и организованный",
       ],
+      [Language.Arabic]: [
+        "🏆 موجه نحو الأهداف ومدفوع",
+        "⚡ نشيط وفعال",
+        "🎯 موجه نحو النجاح وتنافسي",
+        "✨ ساحر ومقنع",
+        "💼 محترف ومنظم",
+      ],
     },
   },
   [EnneagramType.Type4]: {
@@ -179,11 +218,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۴: فرد منحصربه‌فرد",
       [Language.English]: "Type 4: Individualist",
       [Language.Russian]: "Тип 4: Индивидуалист",
+      [Language.Arabic]: "النوع 4: الفرداني",
     },
     nickname: {
       [Language.Persian]: "هنرمند",
       [Language.English]: "Artist",
       [Language.Russian]: "Художник",
+      [Language.Arabic]: "الفنان",
     },
     emoji: "🎨",
     description: {
@@ -193,16 +234,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are creative, sensitive and self-aware. You seek your unique identity and authentic expression of emotions. Emotional depth and meaning are important to you.",
       [Language.Russian]:
         "Вы креативны, чувствительны и самосознательны. Вы ищете свою уникальную идентичность и аутентичное выражение эмоций. Эмоциональная глубина и смысл важны для вас.",
+      [Language.Arabic]:
+        "أنت مبدع وحساس وواعٍ بذاتك. تبحث عن هويتك الفريدة والتعبير الأصيل عن المشاعر. العمق العاطفي والمعنى مهمان لك.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: نداشتن هویت، بی‌معنی بودن",
       [Language.English]: "Core Fear: Having no identity, being meaningless",
       [Language.Russian]: "Основной страх: Не иметь идентичности, быть бессмысленным",
+      [Language.Arabic]: "الخوف الأساسي: عدم وجود هوية أو أن تكون بلا معنى",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: پیدا کردن خود، منحصربه‌فرد بودن",
       [Language.English]: "Core Desire: Finding oneself, being unique",
       [Language.Russian]: "Основное желание: Найти себя, быть уникальным",
+      [Language.Arabic]: "الرغبة الأساسية: إيجاد الذات وأن تكون فريدا",
     },
     traits: {
       [Language.Persian]: [
@@ -226,6 +271,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "🎭 Выразительный и уникальный",
         "🌹 Чувствительный и понимающий",
       ],
+      [Language.Arabic]: [
+        "🎨 مبدع وفني",
+        "💭 عميق وعاطفي",
+        "🌟 أصيل وصادق مع الذات",
+        "🎭 معبر وفريد",
+        "🌹 حساس ومتفهم",
+      ],
     },
   },
   [EnneagramType.Type5]: {
@@ -233,11 +285,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۵: محقق",
       [Language.English]: "Type 5: Investigator",
       [Language.Russian]: "Тип 5: Исследователь",
+      [Language.Arabic]: "النوع 5: الباحث",
     },
     nickname: {
       [Language.Persian]: "متفکر",
       [Language.English]: "Thinker",
       [Language.Russian]: "Мыслитель",
+      [Language.Arabic]: "المفكر",
     },
     emoji: "🧠",
     description: {
@@ -247,16 +301,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are intelligent, curious and independent. You are interested in knowledge and deep understanding of issues. You need solitude and your own mental space to recharge.",
       [Language.Russian]:
         "Вы умны, любознательны и независимы. Вас интересуют знания и глубокое понимание вопросов. Вам нужно одиночество и собственное ментальное пространство для подзарядки.",
+      [Language.Arabic]:
+        "أنت ذكي وفضولي ومستقل. أنت مهتم بالمعرفة والفهم العميق للقضايا. تحتاج إلى العزلة ومساحتك الذهنية الخاصة لإعادة الشحن.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: بی‌کفایتی، ناتوانی، تهی بودن",
       [Language.English]: "Core Fear: Incompetence, inability, emptiness",
       [Language.Russian]: "Основной страх: Некомпетентность, неспособность, пустота",
+      [Language.Arabic]: "الخوف الأساسي: عدم الكفاءة والعجز والفراغ",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: دانا بودن، با قابلیت بودن، درک کردن",
       [Language.English]: "Core Desire: Being knowledgeable, capable, understanding",
       [Language.Russian]: "Основное желание: Быть знающим, способным, понимающим",
+      [Language.Arabic]: "الرغبة الأساسية: أن تكون عالما وقادرا وفاهما",
     },
     traits: {
       [Language.Persian]: [
@@ -280,6 +338,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "🏔️ Независимый и самодостаточный",
         "🎯 Глубокий и точный фокус",
       ],
+      [Language.Arabic]: [
+        "🧠 تحليلي وذكي",
+        "📚 باحث عن المعرفة وفضولي",
+        "🔬 ملاحظ ومتأمل",
+        "🏔️ مستقل ومكتفي ذاتيا",
+        "🎯 تركيز عميق ودقيق",
+      ],
     },
   },
   [EnneagramType.Type6]: {
@@ -287,11 +352,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۶: وفادار",
       [Language.English]: "Type 6: Loyalist",
       [Language.Russian]: "Тип 6: Лоялист",
+      [Language.Arabic]: "النوع 6: الموالي",
     },
     nickname: {
       [Language.Persian]: "حامی",
       [Language.English]: "Supporter",
       [Language.Russian]: "Поддерживающий",
+      [Language.Arabic]: "الداعم",
     },
     emoji: "🛡️",
     description: {
@@ -301,16 +368,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are trustworthy, responsive and responsible. You value security and loyalty. You are cautious and ready to face problems.",
       [Language.Russian]:
         "Вы заслуживаете доверия, отзывчивы и ответственны. Вы цените безопасность и лояльность. Вы осторожны и готовы столкнуться с проблемами.",
+      [Language.Arabic]:
+        "أنت جدير بالثقة ومستجيب ومسؤول. تقدر الأمان والولاء. أنت حذر ومستعد لمواجهة المشاكل.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: بدون حمایت، بدون راهنمایی، تنها",
       [Language.English]: "Core Fear: Being without support, guidance, alone",
       [Language.Russian]: "Основной страх: Быть без поддержки, руководства, одиноким",
+      [Language.Arabic]: "الخوف الأساسي: أن تكون بلا دعم أو إرشاد أو وحيدا",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: امنیت، حمایت، اطمینان داشتن",
       [Language.English]: "Core Desire: Security, support, having certainty",
       [Language.Russian]: "Основное желание: Безопасность, поддержка, иметь уверенность",
+      [Language.Arabic]: "الرغبة الأساسية: الأمان والدعم واليقين",
     },
     traits: {
       [Language.Persian]: [
@@ -334,6 +405,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "👥 Командный и совместный",
         "🔍 Бдительный и защищающий",
       ],
+      [Language.Arabic]: [
+        "🛡️ مخلص وجدير بالثقة",
+        "🤝 مسؤول وملتزم",
+        "⚠️ حذر ومستعد",
+        "👥 موجه نحو الفريق وتعاوني",
+        "🔍 يقظ وحامي",
+      ],
     },
   },
   [EnneagramType.Type7]: {
@@ -341,11 +419,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۷: مشتاق",
       [Language.English]: "Type 7: Enthusiast",
       [Language.Russian]: "Тип 7: Энтузиаст",
+      [Language.Arabic]: "النوع 7: المتحمس",
     },
     nickname: {
       [Language.Persian]: "ماجراجو",
       [Language.English]: "Adventurer",
       [Language.Russian]: "Авантюрист",
+      [Language.Arabic]: "المغامر",
     },
     emoji: "🎉",
     description: {
@@ -355,16 +435,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are passionate, optimistic and versatile. You are interested in new experiences and variety. Freedom and enjoying life are important to you.",
       [Language.Russian]:
         "Вы страстны, оптимистичны и универсальны. Вас интересуют новые впечатления и разнообразие. Свобода и наслаждение жизнью важны для вас.",
+      [Language.Arabic]:
+        "أنت شغوف ومتفائل ومتعدد المواهب. أنت مهتم بالتجارب الجديدة والتنوع. الحرية والاستمتاع بالحياة مهمان لك.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: محروم شدن، در درد بودن، محبوس شدن",
       [Language.English]: "Core Fear: Being deprived, in pain, trapped",
       [Language.Russian]: "Основной страх: Быть лишенным, в боли, в ловушке",
+      [Language.Arabic]: "الخوف الأساسي: أن تكون محروما أو في ألم أو محاصرا",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: شاد بودن، راضی بودن، برآورده شدن",
       [Language.English]: "Core Desire: Being happy, satisfied, fulfilled",
       [Language.Russian]: "Основное желание: Быть счастливым, удовлетворенным, исполненным",
+      [Language.Arabic]: "الرغبة الأساسية: أن تكون سعيدا وراضيا ومُرضيا",
     },
     traits: {
       [Language.Persian]: [
@@ -388,6 +472,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "💡 Креативный и инновационный",
         "😊 Веселый и развлекательный",
       ],
+      [Language.Arabic]: [
+        "🎉 شغوف ومتفائل",
+        "🌈 مغامر وباحث عن الخبرة",
+        "⚡ نشيط وعفوي",
+        "💡 مبدع ومبتكر",
+        "😊 مبتهج ومسلي",
+      ],
     },
   },
   [EnneagramType.Type8]: {
@@ -395,11 +486,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۸: رهبر",
       [Language.English]: "Type 8: Challenger",
       [Language.Russian]: "Тип 8: Бросающий вызов",
+      [Language.Arabic]: "النوع 8: المتحدي",
     },
     nickname: {
       [Language.Persian]: "چالشگر",
       [Language.English]: "Leader",
       [Language.Russian]: "Лидер",
+      [Language.Arabic]: "القائد",
     },
     emoji: "💪",
     description: {
@@ -409,16 +502,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are strong, direct and decisive. You have self-confidence and support the weak. Control and power matter to you.",
       [Language.Russian]:
         "Вы сильны, прямолинейны и решительны. Вы уверены в себе и поддерживаете слабых. Контроль и власть важны для вас.",
+      [Language.Arabic]:
+        "أنت قوي ومباشر وحاسم. لديك ثقة بالنفس وتدعم الضعفاء. السيطرة والقوة مهمتان لك.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: ضعیف بودن، کنترل شدن، آسیب‌پذیر بودن",
       [Language.English]: "Core Fear: Being weak, controlled, vulnerable",
       [Language.Russian]: "Основной страх: Быть слабым, контролируемым, уязвимым",
+      [Language.Arabic]: "الخوف الأساسي: أن تكون ضعيفا أو خاضعا للسيطرة أو عرضة للخطر",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: قوی بودن، کنترل داشتن، خودمختار بودن",
       [Language.English]: "Core Desire: Being strong, having control, being autonomous",
       [Language.Russian]: "Основное желание: Быть сильным, иметь контроль, быть автономным",
+      [Language.Arabic]: "الرغبة الأساسية: أن تكون قويا ولديك سيطرة ومستقلا",
     },
     traits: {
       [Language.Persian]: [
@@ -442,6 +539,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "🛡️ Поддерживающий слабых",
         "⚡ Энергичный и смелый",
       ],
+      [Language.Arabic]: [
+        "💪 قوي وحاسم",
+        "👑 قائد وقوي",
+        "🗣️ مباشر وصريح",
+        "🛡️ داعم للضعفاء",
+        "⚡ نشيط وجريء",
+      ],
     },
   },
   [EnneagramType.Type9]: {
@@ -449,11 +553,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
       [Language.Persian]: "تیپ ۹: میانجی",
       [Language.English]: "Type 9: Peacemaker",
       [Language.Russian]: "Тип 9: Миротворец",
+      [Language.Arabic]: "النوع 9: صانع السلام",
     },
     nickname: {
       [Language.Persian]: "صلح‌طلب",
       [Language.English]: "Peacemaker",
       [Language.Russian]: "Миротворец",
+      [Language.Arabic]: "صانع السلام",
     },
     emoji: "☮️",
     description: {
@@ -463,16 +569,20 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "You are calm, accepting and supportive. You value harmony and avoiding conflict. You can see different perspectives and get along with everyone.",
       [Language.Russian]:
         "Вы спокойны, принимающие и поддерживающие. Вы цените гармонию и избегание конфликтов. Вы можете видеть разные точки зрения и ладить со всеми.",
+      [Language.Arabic]:
+        "أنت هادئ ومتقبل وداعم. تقدر الانسجام وتجنب الصراع. يمكنك رؤية وجهات نظر مختلفة والتعايش مع الجميع.",
     },
     coreFear: {
       [Language.Persian]: "ترس اصلی: از دست دادن، جدایی، تعارض",
       [Language.English]: "Core Fear: Loss, separation, conflict",
       [Language.Russian]: "Основной страх: Потеря, разлука, конфликт",
+      [Language.Arabic]: "الخوف الأساسي: الخسارة والانفصال والصراع",
     },
     coreDesire: {
       [Language.Persian]: "آرزوی اصلی: داشتن صلح درونی، ثبات، هماهنگی",
       [Language.English]: "Core Desire: Having inner peace, stability, harmony",
       [Language.Russian]: "Основное желание: Иметь внутренний покой, стабильность, гармонию",
+      [Language.Arabic]: "الرغبة الأساسية: السلام الداخلي والاستقرار والانسجام",
     },
     traits: {
       [Language.Persian]: [
@@ -495,6 +605,13 @@ const descriptions: { [k: string]: IEnneagramDescription } = {
         "😌 Легкий и терпеливый",
         "👥 Гибкий и адаптивный",
         "🌿 Успокаивающий и обнадеживающий",
+      ],
+      [Language.Arabic]: [
+        "☮️ مسالم وهادئ",
+        "🤝 متقبل وداعم",
+        "😌 سهل ومريح وصبور",
+        "👥 مرن وقابل للتكيف",
+        "🌿 مهدئ ومطمئن",
       ],
     },
   },

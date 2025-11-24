@@ -5,19 +5,20 @@ import { Dimension } from "./types";
 
 // Load questions by language
 function loadQuestions(dimension: string, language: Language): string[] {
-  const langDir = language === Language.Persian ? "fa" : language === Language.English ? "en" : "ru";
+  const langDir = language === Language.Persian ? "fa" : (language === Language.English || language === Language.Arabic) ? "en" : "ru";
   try {
     // Dynamic import based on language
     if (language === Language.Persian) {
       return require(`./json/fa/${dimension}.json`);
-    } else if (language === Language.English) {
+    } else if (language === Language.English || language === Language.Arabic) {
+      // Arabic falls back to English for now
       return require(`./json/en/${dimension}.json`);
     } else {
       return require(`./json/ru/${dimension}.json`);
     }
   } catch {
-    // Fallback to Persian if translation not available
-    return require(`./json/fa/${dimension}.json`);
+    // Fallback to English if translation not available
+    return require(`./json/en/${dimension}.json`);
   }
 }
 

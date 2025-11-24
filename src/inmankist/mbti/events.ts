@@ -35,6 +35,7 @@ export async function replyAbout(ctx: Context) {
     [Language.Persian]: "آزمون MBTI (مایرز-بریگز) شخصیت شما را در یکی از ۱۶ تیپ شخصیتی مشخص می‌کند. این آزمون بر اساس نظریه‌های کارل یونگ طراحی شده و یکی از معتبرترین آزمون‌های شخصیت‌شناسی است.",
     [Language.English]: "The MBTI (Myers-Briggs) test identifies your personality as one of 16 personality types. This test is based on Carl Jung's theories and is one of the most reliable personality tests.",
     [Language.Russian]: "Тест MBTI (Майерс-Бриггс) определяет вашу личность как один из 16 типов личности. Этот тест основан на теориях Карла Юнга и является одним из самых надежных тестов личности.",
+      [Language.Arabic]: "Тест MBTI (Майерс-Бриггс) определяет вашу личность как один из 16 типов личности. Этот тест основан на теориях Карла Юнга и является одним из самых надежных тестов личности.",
   };
 
   await ctx.reply(aboutText[language], { reply_markup: keyboard });
@@ -121,6 +122,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
     [Language.Persian]: { type: "تیپ شخصیتی شما", distribution: "توزیع ابعاد شخصیتی" },
     [Language.English]: { type: "Your Personality Type", distribution: "Personality Dimension Distribution" },
     [Language.Russian]: { type: "Ваш тип личности", distribution: "Распределение измерений личности" },
+    [Language.Arabic]: { type: "نوع شخصيتك", distribution: "توزيع أبعاد الشخصية" },
   };
 
   // Create message

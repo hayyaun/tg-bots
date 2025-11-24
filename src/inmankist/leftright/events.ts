@@ -45,6 +45,12 @@ export async function replyAbout(ctx: Context) {
       "⚠️ Примечание: Этот тест измеряет различные когнитивные стили, а не функцию мозга.",
       "Оба полушария мозга работают вместе в большинстве видов деятельности.",
     ],
+    [Language.Arabic]: [
+      "اختبار الأسلوب المعرفي يوضح لك ما هو أسلوب تفكيرك السائد.",
+      "",
+      "⚠️ ملاحظة: يقيس هذا الاختبار أنماط معرفية مختلفة، وليس وظيفة الدماغ.",
+      "كلا نصفي الدماغ يعملان معا في معظم الأنشطة.",
+    ],
   };
 
   await ctx.reply(aboutText[language].join("\n"), { reply_markup: keyboard });
@@ -97,6 +103,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
     [Language.Persian]: { traits: "ویژگی‌های شما", distribution: "توزیع سبک شناختی", analytical: "تحلیلی", creative: "خلاق" },
     [Language.English]: { traits: "Your Traits", distribution: "Cognitive Style Distribution", analytical: "Analytical", creative: "Creative" },
     [Language.Russian]: { traits: "Ваши черты", distribution: "Распределение когнитивного стиля", analytical: "Аналитический", creative: "Творческий" },
+    [Language.Arabic]: { traits: "سماتك", distribution: "توزيع النمط المعرفي", analytical: "تحليلي", creative: "إبداعي" },
   };
 
   // Create message
@@ -137,6 +144,7 @@ export async function replyDetail(ctx: Context, key: ResultType) {
     [Language.Persian]: "ویژگی‌ها",
     [Language.English]: "Traits",
     [Language.Russian]: "Черты",
+      [Language.Arabic]: "Черты",
   };
 
   const message = [
