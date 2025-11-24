@@ -14,7 +14,7 @@ const socksAgent = process.env.PROXY
   : undefined;
 
 const arctypeBot = inmankist.startBot(
-  process.env.ARCHETYPE_BOT_KEY!,
+  process.env.INMANKIST_BOT_KEY!,
   socksAgent
 );
 const ivwhatBot = ivwhat.startBot(process.env.IVWHAT_BOT_KEY!, socksAgent);
