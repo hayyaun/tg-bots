@@ -122,7 +122,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       "",
       "🌐 I help you communicate in any language with your friends!",
       "",
-      "📱 **How to use:**",
+      "📱 How to use:",
       "1. Set your friend's language using /setlang",
       "2. In any chat, type @" +
         (bot.botInfo?.username || "converslation_bot") +
@@ -132,33 +132,33 @@ const startBot = async (botKey: string, agent: unknown) => {
       "💡 Use /help for more information",
     ].join("\n");
 
-    await ctx.reply(welcomeText, { parse_mode: "Markdown" });
+    await ctx.reply(welcomeText);
   });
 
   // Command: /help
   bot.command("help", async (ctx) => {
     const helpText = [
-      "📖 **Converslation Bot Help**",
+      "📖 Converslation Bot Help",
       "",
-      "**Commands:**",
+      "Commands:",
       "/start - Start the bot",
       "/setlang - Set target language for this chat",
       "/mylang - Show current language setting",
       "/clearlang - Clear language setting",
       "/help - Show this help message",
       "",
-      "**Inline Usage:**",
+      "Inline Usage:",
       "In any chat, type:",
-      "`@" +
+      "@" +
         (bot.botInfo?.username || "converslation_bot") +
-        " your message here`",
+        " your message here",
       "",
       "The bot will translate your message to the language you set for this chat.",
       "",
       "💡 Tip: Set different languages for different chats!",
     ].join("\n");
 
-    await ctx.reply(helpText, { parse_mode: "Markdown" });
+    await ctx.reply(helpText);
   });
 
   // Command: /setlang
