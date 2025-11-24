@@ -114,6 +114,17 @@ const startBot = async (botKey: string, agent: unknown) => {
     client: { baseFetchConfig: { agent } },
   });
 
+  // Register bot commands
+  const commands = [
+    { command: "start", description: "Start the bot and see welcome message" },
+    { command: "help", description: "Show help and usage instructions" },
+    { command: "setlang", description: "Set target translation language" },
+    { command: "mylang", description: "Show current language setting" },
+    { command: "clearlang", description: "Clear language setting for this chat" },
+  ];
+
+  await bot.api.setMyCommands(commands);
+
   // Command: /start
   bot.command("start", async (ctx) => {
     ctx.react("🎉");
