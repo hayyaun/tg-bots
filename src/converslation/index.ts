@@ -111,7 +111,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       "2. In any chat, type @" +
         (bot.botInfo?.username || "converslation_bot") +
         " followed by your message",
-      "3. End your message with a dot (.) to translate",
+      "3. End with . ! or ? to translate",
       "4. Tap the result to send!",
       "",
       "💡 Use /help for more information",
@@ -136,16 +136,22 @@ const startBot = async (botKey: string, agent: unknown) => {
       "In any chat, type:",
       "@" +
         (bot.botInfo?.username || "converslation_bot") +
-        " your message here.",
+        " your message here",
       "",
-      "⚡ Important: End your message with a dot (.) to trigger translation!",
+      "⚡ Important: End with . ! or ? to trigger translation!",
       "",
-      "Example:",
+      "Examples:",
       "@" +
         (bot.botInfo?.username || "converslation_bot") +
-        " Hello, how are you.",
+        " Hello!",
+      "@" +
+        (bot.botInfo?.username || "converslation_bot") +
+        " How are you?",
+      "@" +
+        (bot.botInfo?.username || "converslation_bot") +
+        " Good morning.",
       "",
-      "💡 The dot tells the bot you're ready to translate!",
+      "💡 Natural sentence endings trigger translation!",
     ].join("\n");
 
     await ctx.reply(helpText);
@@ -257,26 +263,28 @@ const startBot = async (botKey: string, agent: unknown) => {
         const langInfo = POPULAR_LANGUAGES.find((l) => l.code === targetLang);
         const result = InlineQueryResultBuilder.article(
           "usage",
-          `💬 Type your message and end with a dot (.)`,
+          `💬 Type your message and end with . ! or ?`,
           {
             description: `Will translate to ${langInfo?.name || targetLang}`,
           }
         ).text(
-          `Type your message after @${bot.botInfo?.username || "bot"}\n\nEnd your message with a dot (.) to translate.`
+          `Type your message after @${bot.botInfo?.username || "bot"}\n\nEnd with . ! or ? to translate.`
         );
 
         await ctx.answerInlineQuery([result], { cache_time: 0 });
         return;
       }
 
-      // Check if query ends with a dot - only then translate
-      if (!query.endsWith(".")) {
+      // Check if query ends with punctuation - only then translate
+      const endsWithPunctuation = /[.!?]$/.test(query);
+      
+      if (!endsWithPunctuation) {
         const langInfo = POPULAR_LANGUAGES.find((l) => l.code === targetLang);
         const result = InlineQueryResultBuilder.article(
           "waiting",
           "⌨️ Keep typing...",
           {
-            description: `Add a dot (.) at the end when ready to translate`,
+            description: `End with . ! or ? when ready to translate`,
           }
         ).text(query);
 
@@ -284,7 +292,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         return;
       }
 
-      // Remove the trailing dot before translation
+      // Remove the trailing punctuation before translation
       const textToTranslate = query.slice(0, -1).trim();
 
       // Translate the message directly
