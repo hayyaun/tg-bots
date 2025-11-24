@@ -7,7 +7,7 @@ configDotenv();
 const BOT_NAME = "Converslation";
 
 // Store user language preferences (in production, use a database)
-const userLanguages = new Map<string, string>(); // chatId:userId -> language
+const userLanguages = new Map<number, string>(); // userId -> language
 
 // Cache translations to save API calls
 const translationCache = new Map<string, { text: string; timestamp: number }>();
@@ -90,23 +90,13 @@ async function translateWithChatGPT(
   }
 }
 
-function getUserLanguageKey(userId: number, chatId?: number): string {
-  return chatId ? `${chatId}:${userId}` : `${userId}`;
+function getTargetLanguage(userId: number): string | null {
+  return userLanguages.get(userId) || null;
 }
 
-function getTargetLanguage(userId: number, chatId?: number): string | null {
-  const key = getUserLanguageKey(userId, chatId);
-  return userLanguages.get(key) || null;
-}
-
-function setTargetLanguage(
-  userId: number,
-  language: string,
-  chatId?: number
-): void {
-  const key = getUserLanguageKey(userId, chatId);
-  userLanguages.set(key, language);
-  log.info(BOT_NAME + " > Set Language", { userId, chatId, language });
+function setTargetLanguage(userId: number, language: string): void {
+  userLanguages.set(userId, language);
+  log.info(BOT_NAME + " > Set Language", { userId, language });
 }
 
 const startBot = async (botKey: string, agent: unknown) => {
@@ -183,7 +173,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     });
 
     await ctx.reply(
-      "🌐 Select the language you want to translate to in this chat:",
+      "🌐 Select the language you want to translate to:",
       { reply_markup: keyboard }
     );
   });
@@ -191,14 +181,11 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Command: /mylang
   bot.command("mylang", async (ctx) => {
     const userId = ctx.from?.id;
-    const chatId = ctx.chat?.id;
     if (!userId) return;
 
-    const targetLang = getTargetLanguage(userId, chatId);
+    const targetLang = getTargetLanguage(userId);
     if (!targetLang) {
-      await ctx.reply(
-        "❌ No language set for this chat. Use /setlang to set one."
-      );
+      await ctx.reply("❌ No language set. Use /setlang to set one.");
       return;
     }
 
@@ -207,21 +194,17 @@ const startBot = async (botKey: string, agent: unknown) => {
       ? `${langInfo.flag} ${langInfo.name}`
       : targetLang;
 
-    await ctx.reply(
-      `🌐 Current translation language for this chat: ${langName}`
-    );
+    await ctx.reply(`🌐 Your translation language: ${langName}`);
   });
 
   // Command: /clearlang
   bot.command("clearlang", async (ctx) => {
     const userId = ctx.from?.id;
-    const chatId = ctx.chat?.id;
     if (!userId) return;
 
-    const key = getUserLanguageKey(userId, chatId);
-    userLanguages.delete(key);
+    userLanguages.delete(userId);
 
-    await ctx.reply("✅ Language setting cleared for this chat.");
+    await ctx.reply("✅ Language setting cleared.");
   });
 
   // Callback query handler for language selection
@@ -229,14 +212,13 @@ const startBot = async (botKey: string, agent: unknown) => {
     try {
       const langCode = ctx.match[1];
       const userId = ctx.from?.id;
-      const chatId = ctx.chat?.id;
 
       if (!userId) {
         await ctx.answerCallbackQuery("Error: User ID not found");
         return;
       }
 
-      setTargetLanguage(userId, langCode, chatId);
+      setTargetLanguage(userId, langCode);
 
       const langInfo = POPULAR_LANGUAGES.find((l) => l.code === langCode);
       const langName = langInfo
@@ -245,8 +227,8 @@ const startBot = async (botKey: string, agent: unknown) => {
 
       await ctx.answerCallbackQuery(`✅ Language set to ${langName}`);
       await ctx.editMessageText(
-        `✅ Translation language set to ${langName} for this chat!\n\n` +
-          `Now you can use me inline:\n` +
+        `✅ Translation language set to ${langName}!\n\n` +
+          `Now you can use me inline in any chat:\n` +
           `@${bot.botInfo?.username || "converslation_bot"} your message here`,
         { reply_markup: undefined }
       );
