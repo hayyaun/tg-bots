@@ -61,7 +61,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   });
 
   bot.catch = (err) => {
-    log.error("Inmankist > BOT", err);
+    log.error("IVWhat > BOT", err);
   };
 
   bot.start();

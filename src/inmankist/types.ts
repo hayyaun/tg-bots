@@ -44,6 +44,7 @@ export enum Language {
   Persian = "fa",
   English = "en",
   Russian = "ru",
+  Arabic = "ar",
 }
 
 export interface IScore<T> {

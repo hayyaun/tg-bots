@@ -85,7 +85,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   const commands: BotCommand[] = [
     { command: "start", description: defaultStrings.start_btn },
     { command: "help", description: defaultStrings.help_btn },
-    { command: "language", description: "🌐 Language / Язык / زبان" },
+    { command: "language", description: "🌐 Language / Язык / زبان / اللغة" },
   ];
 
   for (const key in quizTypes) {
@@ -112,7 +112,8 @@ const startBot = async (botKey: string, agent: unknown) => {
       .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
       .text("🇬🇧 English", `lang:${Language.English}`)
       .row()
-      .text("🇷🇺 Русский", `lang:${Language.Russian}`);
+      .text("🇷🇺 Русский", `lang:${Language.Russian}`)
+      .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
     ctx.reply(strings.select_language, { reply_markup: keyboard });
   });
 
@@ -130,9 +131,10 @@ const startBot = async (botKey: string, agent: unknown) => {
         .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
         .text("🇬🇧 English", `lang:${Language.English}`)
         .row()
-        .text("🇷🇺 Русский", `lang:${Language.Russian}`);
+        .text("🇷🇺 Русский", `lang:${Language.Russian}`)
+        .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
       ctx.reply(
-        "🌐 Please select your language / Пожалуйста, выберите язык / لطفا زبان خود را انتخاب کنید:",
+        "🌐 Please select your language / Пожалуйста, выберите язык / لطفا زبان خود را انتخاب کنید / الرجاء اختيار لغتك:",
         {
           reply_markup: langKeyboard,
         }
@@ -200,7 +202,9 @@ const startBot = async (botKey: string, agent: unknown) => {
           ? "فارسی"
           : language === Language.English
             ? "English"
-            : "Русский";
+            : language === Language.Russian
+              ? "Русский"
+              : "العربية";
       ctx.editMessageText(
         `✅ ${strings.language}: ${langName}\n\n${strings.welcome}`,
         {

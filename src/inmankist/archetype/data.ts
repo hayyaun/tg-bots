@@ -6,6 +6,7 @@ import { Deity } from "./types";
 import * as faJson from "./json/fa";
 import * as enJson from "./json/en";
 import * as ruJson from "./json/ru";
+import * as arJson from "./json/ar";
 
 // Build a mapping
 const questions: Record<Deity, Record<Language, string[]>> = Object.values(
@@ -16,6 +17,7 @@ const questions: Record<Deity, Record<Language, string[]>> = Object.values(
       [Language.Persian]: (faJson as any)[deity],
       [Language.English]: (enJson as any)[deity],
       [Language.Russian]: (ruJson as any)[deity],
+      [Language.Arabic]: (arJson as any)[deity],
     };
     return acc;
   },
