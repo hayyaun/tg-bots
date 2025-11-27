@@ -368,7 +368,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       const selectedAnswer = parseInt(ctx.match[2]);
       if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
       const isRevision = typeof user.answers[current] === "number";
-      if (isRevision && user.answers[current] === selectedAnswer) return; // no change
+      if (isRevision) return;
       user.answers[current] = selectedAnswer;
       await updateUserData(userId, { answers: user.answers });
 
