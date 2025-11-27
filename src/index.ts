@@ -4,10 +4,14 @@ import converslation from "./converslation";
 import inmankist from "./inmankist";
 import ivwhat from "./ivwhat";
 import log from "./log";
+import { connectRedis } from "./redis";
 
 configDotenv();
 
 log.info("App Running", { dev: process.env.DEV });
+
+// Connect to Redis before starting bots
+await connectRedis();
 
 const socksAgent = process.env.PROXY
   ? new SocksProxyAgent(process.env.PROXY)

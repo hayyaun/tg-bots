@@ -1,13 +1,13 @@
 import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard, InlineQueryResultBuilder } from "grammy";
 import log from "../log";
+import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
 
 configDotenv();
 
 const BOT_NAME = "Converslation";
-
-// Store user language preferences (in production, use a database)
-const userLanguages = new Map<number, string>(); // userId -> language
+const REDIS_PREFIX = "converslation";
+const USER_LANG_TTL = 14 * 24 * 60 * 60; // 2 weeks in seconds
 
 // Popular languages for quick selection
 const POPULAR_LANGUAGES = [
@@ -73,13 +73,21 @@ async function translateWithChatGPT(
   }
 }
 
-function getTargetLanguage(userId: number): string | null {
-  return userLanguages.get(userId) || null;
+async function getTargetLanguage(userId: number): Promise<string | null> {
+  return await getWithPrefix(REDIS_PREFIX, `user:${userId}:lang`);
 }
 
-function setTargetLanguage(userId: number, language: string): void {
-  userLanguages.set(userId, language);
+async function setTargetLanguage(userId: number, language: string): Promise<void> {
+  await setWithPrefix(REDIS_PREFIX, `user:${userId}:lang`, language, USER_LANG_TTL);
   log.info(BOT_NAME + " > Set Language", { userId, language });
+}
+
+async function refreshLanguageTTL(userId: number): Promise<void> {
+  const targetLang = await getTargetLanguage(userId);
+  if (targetLang) {
+    // Refresh TTL by resetting the key
+    await setWithPrefix(REDIS_PREFIX, `user:${userId}:lang`, targetLang, USER_LANG_TTL);
+  }
 }
 
 const startBot = async (botKey: string, agent: unknown) => {
@@ -178,7 +186,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    const targetLang = getTargetLanguage(userId);
+    const targetLang = await getTargetLanguage(userId);
     if (!targetLang) {
       await ctx.reply("❌ No language set. Use /setlang to set one.");
       return;
@@ -197,7 +205,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    userLanguages.delete(userId);
+    await delWithPrefix(REDIS_PREFIX, `user:${userId}:lang`);
 
     await ctx.reply("✅ Language setting cleared.");
   });
@@ -213,7 +221,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         return;
       }
 
-      setTargetLanguage(userId, langCode);
+      await setTargetLanguage(userId, langCode);
 
       const langInfo = POPULAR_LANGUAGES.find((l) => l.code === langCode);
       const langName = langInfo
@@ -240,7 +248,14 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from.id;
 
       // Get user's target language
-      const targetLang = getTargetLanguage(userId);
+      const targetLang = await getTargetLanguage(userId);
+
+      // Refresh TTL on each use
+      if (targetLang) {
+        refreshLanguageTTL(userId).catch((err) =>
+          log.error(BOT_NAME + " > TTL Refresh Error", err)
+        );
+      }
 
       if (!targetLang) {
         // Show a message to set language

@@ -9,10 +9,13 @@ import {
   quizTypes,
 } from "./config";
 import {
+  getStrings,
   getStringsForUser,
   getUserLanguage,
   setUserLanguage,
-  userLanguages,
+  hasUserLanguage,
+  refreshUserLanguageTTL,
+  DEFAULT_LANGUAGE,
 } from "./i18n";
 import {
   replyAbout,
@@ -24,26 +27,26 @@ import {
 } from "./reducer";
 import {
   Gender,
-  IUserData,
   Language,
   QuizMode,
   QuizType,
   Value,
 } from "./types";
+import {
+  getUserData,
+  setUserData,
+  updateUserData,
+  deleteUserData,
+} from "./userData";
 
 configDotenv();
 
 const BOT_NAME = "Inmankist";
-const PERIODIC_CLEAN = process.env.DEV ? 5_000 : 5 * 60_000; // 5m
-const USER_MAX_AGE = (process.env.DEV ? 5 : 24 * 60) * 60_000; // 24h
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID
   ? parseInt(process.env.ADMIN_USER_ID)
   : undefined;
 
 const startBot = async (botKey: string, agent: unknown) => {
-  // Storage
-  const userData = new Map<number, IUserData>();
-
   // Bot
   const bot = new Bot(botKey, {
     client: { baseFetchConfig: { agent } },
@@ -61,33 +64,12 @@ const startBot = async (botKey: string, agent: unknown) => {
     }
   }
 
-  setInterval(() => {
-    const now = Date.now();
-    const deletedUsers: number[] = [];
-    userData.forEach((ud, key) => {
-      if (now - ud.date < USER_MAX_AGE) return;
-      userData.delete(key);
-      deletedUsers.push(key);
-      log.info(BOT_NAME + " > Delete", { user: key, remaining: userData.size });
-    });
-    if (deletedUsers.length > 0) {
-      notifyAdmin(
-        `🗑️ <b>Cleanup</b>\nDeleted ${deletedUsers.length} inactive user(s)\nRemaining: ${userData.size}`
-      );
-    }
-  }, PERIODIC_CLEAN);
-
-  async function getUser(ctx: Context) {
-    const userId = ctx.from?.id;
-    if (!userId) throw new Error("UserId Inavalid!");
-    const user = userData.get(userId);
-    return user;
-  }
+  // Note: No periodic logging - Redis TTL handles cleanup automatically
 
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
-    const language = getUserLanguage(userId);
+    const language = await getUserLanguage(userId);
     log.info(BOT_NAME + " > Begin", { type, user: ctx.from, language });
     
     // Notify admin about quiz start
@@ -98,7 +80,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       `🎯 <b>Quiz Started</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
     );
     
-    userData.set(userId, {
+    await setUserData(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
       answers: {},
@@ -112,7 +94,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   }
 
   // Commands - use default language for commands
-  const defaultStrings = getStringsForUser();
+  const defaultStrings = getStrings(DEFAULT_LANGUAGE);
   const commands: BotCommand[] = [
     { command: "start", description: defaultStrings.start_btn },
     { command: "help", description: defaultStrings.help_btn },
@@ -123,22 +105,22 @@ const startBot = async (botKey: string, agent: unknown) => {
     commands.push({
       command: key,
       description: defaultStrings.show_about(
-        getQuizTypeName(key as QuizType, Language.Persian)
+        getQuizTypeName(key as QuizType, DEFAULT_LANGUAGE)
       ),
     });
   }
 
   await bot.api.setMyCommands(commands);
 
-  bot.command("help", (ctx) => {
+  bot.command("help", async (ctx) => {
     ctx.react("🤔");
-    const strings = getStringsForUser(ctx.from?.id);
+    const strings = await getStringsForUser(ctx.from?.id);
     ctx.reply(strings.help);
   });
 
-  bot.command("language", (ctx) => {
+  bot.command("language", async (ctx) => {
     ctx.react("⚡");
-    const strings = getStringsForUser(ctx.from?.id);
+    const strings = await getStringsForUser(ctx.from?.id);
     const keyboard = new InlineKeyboard()
       .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
       .text("🇬🇧 English", `lang:${Language.English}`)
@@ -148,13 +130,19 @@ const startBot = async (botKey: string, agent: unknown) => {
     ctx.reply(strings.select_language, { reply_markup: keyboard });
   });
 
-  bot.command("start", (ctx) => {
+  bot.command("start", async (ctx) => {
     ctx.react("❤‍🔥");
     if (typeof ctx.from !== "object") return;
     log.info(BOT_NAME + " > Start", { ...ctx.from });
     const userId = ctx.from.id;
-    const language = getUserLanguage(userId);
-    const strings = getStringsForUser(userId);
+    
+    // Refresh language TTL on interaction
+    refreshUserLanguageTTL(userId).catch((err) =>
+      log.error(BOT_NAME + " > TTL Refresh Error", err)
+    );
+    
+    const language = await getUserLanguage(userId);
+    const strings = await getStringsForUser(userId);
 
     // Notify admin about new user
     const userName = ctx.from.username
@@ -165,7 +153,8 @@ const startBot = async (botKey: string, agent: unknown) => {
     );
 
     // Check if user has selected language before (first time users)
-    if (!userLanguages.has(userId)) {
+    const userHasLanguage = await hasUserLanguage(userId);
+    if (!userHasLanguage) {
       const langKeyboard = new InlineKeyboard()
         .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
         .text("🇬🇧 English", `lang:${Language.English}`)
@@ -202,9 +191,9 @@ const startBot = async (botKey: string, agent: unknown) => {
   async function sendQuestionOrResult(ctx: Context, current: number) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
-    const user = userData.get(userId);
+    const user = await getUserData(userId);
     if (!user) throw new Error("404 User Not Found!");
-    const strings = getStringsForUser(userId);
+    const strings = await getStringsForUser(userId);
 
     const lenght = user.order.length;
 
@@ -221,7 +210,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         `✅ <b>Quiz Completed</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
       );
       
-      userData.delete(userId);
+      await deleteUserData(userId);
       return; // end
     }
 
@@ -242,9 +231,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       const language = ctx.match[1] as Language;
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
-      setUserLanguage(userId, language);
+      await setUserLanguage(userId, language);
       ctx.answerCallbackQuery();
-      const strings = getStringsForUser(userId);
+      const strings = await getStringsForUser(userId);
       const langName =
         language === Language.Persian
           ? "فارسی"
@@ -282,8 +271,8 @@ const startBot = async (botKey: string, agent: unknown) => {
       const type = ctx.match[1] as QuizType;
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
-      const language = getUserLanguage(userId);
-      const strings = getStringsForUser(userId);
+      const language = await getUserLanguage(userId);
+      const strings = await getStringsForUser(userId);
       ctx.answerCallbackQuery();
       ctx.editMessageText(
         `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
@@ -314,12 +303,12 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.callbackQuery(/mode:(\d+)/, async (ctx) => {
     try {
       const mode = parseInt(ctx.match[1]) as QuizMode;
-      const user = await getUser(ctx);
-      if (!user) throw new Error("404 User Not Found!");
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
-      const language = getUserLanguage(userId);
-      const strings = getStringsForUser(userId);
+      const user = await getUserData(userId);
+      if (!user) throw new Error("404 User Not Found!");
+      const language = await getUserLanguage(userId);
+      const strings = await getStringsForUser(userId);
       ctx.answerCallbackQuery();
       ctx.deleteMessage();
       ctx.api.editMessageText(
@@ -328,7 +317,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(mode, language)}`,
         { reply_markup: undefined }
       );
-      user.mode = mode;
+      await updateUserData(userId, { mode });
       ctx.reply(strings.gender, {
         reply_markup: new InlineKeyboard()
           .text(strings.male, `gender:${Gender.male}`)
@@ -346,12 +335,12 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.callbackQuery(/gender:(.+)/, async (ctx) => {
     try {
       const gender = ctx.match[1] as Gender;
-      const user = await getUser(ctx);
-      if (!user) throw new Error("404 User Not Found!");
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
-      const language = getUserLanguage(userId);
-      const strings = getStringsForUser(userId);
+      const user = await getUserData(userId);
+      if (!user) throw new Error("404 User Not Found!");
+      const language = await getUserLanguage(userId);
+      const strings = await getStringsForUser(userId);
       ctx.answerCallbackQuery();
       await ctx.deleteMessage();
       ctx.api.editMessageText(
@@ -362,6 +351,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       );
       user.gender = gender;
       user.order = selectOrder(user);
+      await updateUserData(userId, { gender, order: user.order });
       sendQuestionOrResult(ctx, 0);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
@@ -371,12 +361,12 @@ const startBot = async (botKey: string, agent: unknown) => {
     }
   });
 
-  bot.callbackQuery(/answer:(\d+)-(\d+)/, (ctx) => {
+  bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
     try {
       const userId = ctx.from.id;
-      const user = userData.get(userId);
+      const user = await getUserData(userId);
       if (!user) throw new Error("404 User Not Found!");
-      const strings = getStringsForUser(userId);
+      const strings = await getStringsForUser(userId);
       ctx.answerCallbackQuery();
 
       // Save/Update Answer
@@ -386,6 +376,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       const isRevision = typeof user.answers[current] === "number";
       if (isRevision && user.answers[current] === selectedAnswer) return; // no change
       user.answers[current] = selectedAnswer;
+      await updateUserData(userId, { answers: user.answers });
 
       // Update keyboard
       const keyboard = new InlineKeyboard();

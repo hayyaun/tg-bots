@@ -2,18 +2,16 @@ run: clean
 	@echo ".> Fetching..."
 	git pull
 	@echo ".> Building..."
-	docker build -t tgbots .
-	docker run -d --name tgbots-app --restart always tgbots
+	docker-compose up -d --build
 
 clean: stop
 	@echo ".> Cleaning..."
-	-docker rm tgbots-app
-	-docker rmi tgbots:latest
+	-docker-compose down
 
 stop:
 	@echo ".> Stopping..."
-	-docker stop tgbots-app
+	-docker-compose stop
 
 logs:
 	@echo ".> Listening..."
-	docker logs tgbots-app --follow
+	docker-compose logs -f app
