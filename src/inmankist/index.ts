@@ -25,13 +25,7 @@ import {
   selectQuizQuestion,
   setCustomCommands,
 } from "./reducer";
-import {
-  Gender,
-  Language,
-  QuizMode,
-  QuizType,
-  Value,
-} from "./types";
+import { Gender, Language, QuizMode, QuizType, Value } from "./types";
 import {
   getUserData,
   setUserData,
@@ -71,7 +65,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     if (!userId) throw new Error("UserId Inavalid!");
     const language = await getUserLanguage(userId);
     log.info(BOT_NAME + " > Begin", { type, user: ctx.from, language });
-    
+
     // Notify admin about quiz start
     const userName = ctx.from?.username
       ? `@${ctx.from.username}`
@@ -79,7 +73,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     notifyAdmin(
       `🎯 <b>Quiz Started</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
     );
-    
+
     await setUserData(userId, {
       welcomeId: ctx.callbackQuery?.message?.message_id,
       date: Date.now(),
@@ -135,12 +129,12 @@ const startBot = async (botKey: string, agent: unknown) => {
     if (typeof ctx.from !== "object") return;
     log.info(BOT_NAME + " > Start", { ...ctx.from });
     const userId = ctx.from.id;
-    
+
     // Refresh language TTL on interaction
     refreshUserLanguageTTL(userId).catch((err) =>
       log.error(BOT_NAME + " > TTL Refresh Error", err)
     );
-    
+
     const language = await getUserLanguage(userId);
     const strings = await getStringsForUser(userId);
 
@@ -201,7 +195,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Quiz finished
       const result = await replyResult(ctx, user);
       log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
-      
+
       // Notify admin about quiz completion
       const userName = ctx.from?.username
         ? `@${ctx.from.username}`
@@ -209,7 +203,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       notifyAdmin(
         `✅ <b>Quiz Completed</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
       );
-      
+
       await deleteUserData(userId);
       return; // end
     }
@@ -276,9 +270,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       ctx.answerCallbackQuery();
       ctx.editMessageText(
         `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
-        {
-          reply_markup: undefined,
-        }
+        { reply_markup: undefined }
       );
       await setUser(ctx, type);
       const keyboard = new InlineKeyboard();
@@ -419,10 +411,10 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.start();
 
   await bot.init();
-  
+
   // Notify admin that bot started successfully
   notifyAdmin(`🚀 <b>Bot Started</b>\nBot is now online and ready!`);
-  
+
   return bot;
 };
 
