@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/inmankist/archetype/json dist/inmankist/archetype/ && cp -r src/inmankist/politicalcompass/json dist/inmankist/politicalcompass/ && cp -r src/inmankist/mbti/json dist/inmankist/mbti/ && cp -r src/inmankist/leftright/json dist/inmankist/leftright/ && cp -r src/inmankist/enneagram/json dist/inmankist/enneagram/",
     "start": "node dist/index.js",
     "dev": "clear && ts-node src/index.ts",
     "lint": "eslint src --ext .ts",
