@@ -107,13 +107,13 @@ const startBot = async (botKey: string, agent: unknown) => {
   await bot.api.setMyCommands(commands);
 
   bot.command("help", async (ctx) => {
-    ctx.react("🤔");
+    ctx.react("🤔").catch(() => {});
     const strings = await getStringsForUser(ctx.from?.id);
     ctx.reply(strings.help);
   });
 
   bot.command("language", async (ctx) => {
-    ctx.react("⚡");
+    ctx.react("⚡").catch(() => {});
     const strings = await getStringsForUser(ctx.from?.id);
     const keyboard = new InlineKeyboard()
       .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
@@ -125,7 +125,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   });
 
   bot.command("start", async (ctx) => {
-    ctx.react("❤‍🔥");
+    ctx.react("❤‍🔥").catch(() => {});
     if (typeof ctx.from !== "object") return;
     log.info(BOT_NAME + " > Start", { ...ctx.from });
     const userId = ctx.from.id;
@@ -157,9 +157,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
       ctx.reply(
         "🌐 Please select your language / Пожалуйста, выберите язык / لطفا زبان خود را انتخاب کنید / الرجاء اختيار لغتك:",
-        {
-          reply_markup: langKeyboard,
-        }
+        { reply_markup: langKeyboard }
       );
       return;
     }
@@ -301,18 +299,16 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (!user) throw new Error("404 User Not Found!");
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
-      ctx.answerCallbackQuery();
-      try {
-        await ctx.deleteMessage();
-      } catch (err) {
-        log.error(BOT_NAME + " > Delete Message Failed", err);
-      }
-      ctx.api.editMessageText(
-        ctx.chat!.id!,
-        user.welcomeId!,
-        `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(mode, language)}`,
-        { reply_markup: undefined }
-      );
+      ctx.answerCallbackQuery().catch(() => {});
+      ctx.deleteMessage().catch(() => {});
+      ctx.api
+        .editMessageText(
+          ctx.chat!.id!,
+          user.welcomeId!,
+          `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(mode, language)}`,
+          { reply_markup: undefined }
+        )
+        .catch(() => {});
       await updateUserData(userId, { mode });
       ctx.reply(strings.gender, {
         reply_markup: new InlineKeyboard()
@@ -337,18 +333,16 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (!user) throw new Error("404 User Not Found!");
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
-      ctx.answerCallbackQuery();
-      try {
-        await ctx.deleteMessage();
-      } catch (err) {
-        log.error(BOT_NAME + " > Delete Message Failed", err);
-      }
-      ctx.api.editMessageText(
-        ctx.chat!.id!,
-        user.welcomeId!,
-        `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(user.mode, language)} - ${gender === Gender.male ? strings.male : strings.female}`,
-        { reply_markup: undefined }
-      );
+      ctx.answerCallbackQuery().catch(() => {});
+      ctx.deleteMessage().catch(() => {});
+      ctx.api
+        .editMessageText(
+          ctx.chat!.id!,
+          user.welcomeId!,
+          `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(user.mode, language)} - ${gender === Gender.male ? strings.male : strings.female}`,
+          { reply_markup: undefined }
+        )
+        .catch(() => {});
       user.gender = gender;
       user.order = selectOrder(user);
       await updateUserData(userId, { gender, order: user.order });
@@ -367,7 +361,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       const user = await getUserData(userId);
       if (!user) throw new Error("404 User Not Found!");
       const strings = getStrings(user.language || DEFAULT_LANGUAGE);
-      ctx.answerCallbackQuery();
+      ctx.answerCallbackQuery().catch(() => {});
 
       // Save/Update Answer
       const current = parseInt(ctx.match[1]);
