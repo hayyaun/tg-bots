@@ -9,8 +9,10 @@ function loadQuestions(axis: string, language: Language): string[] {
       return require(`./json/fa/${axis}.json`);
     } else if (language === Language.English) {
       return require(`./json/en/${axis}.json`);
-    } else {
+    } else if (language === Language.Russian) {
       return require(`./json/ru/${axis}.json`);
+    } else {
+      return require(`./json/ar/${axis}.json`);
     }
   } catch {
     // Fallback to Persian if translation not available

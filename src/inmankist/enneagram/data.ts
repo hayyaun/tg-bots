@@ -7,11 +7,12 @@ function loadQuestions(type: string, language: Language): string[] {
   try {
     if (language === Language.Persian) {
       return require(`./json/fa/${type}.json`);
-    } else if (language === Language.English || language === Language.Arabic) {
-      // Arabic falls back to English for now
+    } else if (language === Language.English) {
       return require(`./json/en/${type}.json`);
-    } else {
+    } else if (language === Language.Russian) {
       return require(`./json/ru/${type}.json`);
+    } else {
+      return require(`./json/ar/${type}.json`);
     }
   } catch {
     // Fallback to English if translation not available
