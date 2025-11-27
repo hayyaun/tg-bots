@@ -38,8 +38,8 @@ RUN fc-cache -fv
 # Copy package.json and package-lock.json first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install && npm cache clean --force;
+# Install dependencies and rebuild canvas from source for Alpine
+RUN npm install && npm rebuild canvas --build-from-source && npm cache clean --force;
 
 # Copy the rest of the app
 COPY . .
