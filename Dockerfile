@@ -39,7 +39,7 @@ RUN fc-cache -fv
 COPY package*.json ./
 
 # Install dependencies - force canvas to build from source for Alpine
-RUN npm_config_build_from_source=true npm ci && npm cache clean --force;
+RUN npm ci && npm cache clean --force;
 
 # Copy the rest of the app
 COPY . .
