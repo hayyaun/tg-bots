@@ -17,18 +17,25 @@ export function setCustomCommands(bot: Bot) {
 
 export async function replyAbout(ctx: Context) {
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
   const keyboard = new InlineKeyboard();
   Object.keys(deities).forEach((k, i) => {
-    keyboard.text(deities[k].name[language], `detail:${QuizType.Archetype}:${k}`);
+    keyboard.text(
+      deities[k].name[language],
+      `detail:${QuizType.Archetype}:${k}`
+    );
     if (i % 2) keyboard.row();
   });
 
   const aboutText = {
-    [Language.Persian]: "آزمون کهن الگوها به شما نشان می دهد که به کدام یک از خدایان باستانی یونانی شباهت دارید.",
-    [Language.English]: "The Archetype test shows you which of the ancient Greek deities you resemble.",
-    [Language.Russian]: "Тест архетипов показывает, какому из древнегреческих божеств вы похожи.",
-    [Language.Arabic]: "اختبار الأنماط الأصلية يوضح لك أي من الآلهة اليونانية القديمة تشبه.",
+    [Language.Persian]:
+      "آزمون کهن الگوها به شما نشان می دهد که به کدام یک از خدایان باستانی یونانی شباهت دارید.",
+    [Language.English]:
+      "The Archetype test shows you which of the ancient Greek deities you resemble.",
+    [Language.Russian]:
+      "Тест архетипов показывает, какому из древнегреческих божеств вы похожи.",
+    [Language.Arabic]:
+      "اختبار الأنماط الأصلية يوضح لك أي من الآلهة اليونانية القديمة تشبه.",
   };
 
   await ctx.reply(aboutText[language], { reply_markup: keyboard });
@@ -79,8 +86,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
 }
 
 export async function replyDetail(ctx: Context, key: Deity) {
-  const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
   const deity = deities[key];
   if (!deity) throw "Deity not found!";
   const message = `[\\.\\.\\.](${toIV(key)})`;

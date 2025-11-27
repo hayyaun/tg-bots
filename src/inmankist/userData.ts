@@ -1,4 +1,4 @@
-import redis, { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
+import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
 import { IUserData } from "./types";
 
 const REDIS_PREFIX = "inmankist";

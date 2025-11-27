@@ -10,23 +10,26 @@ configDotenv();
 
 log.info("App Running", { dev: process.env.DEV });
 
-// Connect to Redis before starting bots
-await connectRedis();
+// Main async function
+(async () => {
+  // Connect to Redis before starting bots
+  await connectRedis();
 
-const socksAgent = process.env.PROXY
-  ? new SocksProxyAgent(process.env.PROXY)
-  : undefined;
+  const socksAgent = process.env.PROXY
+    ? new SocksProxyAgent(process.env.PROXY)
+    : undefined;
 
-const arctypeBot = inmankist.startBot(
-  process.env.INMANKIST_BOT_KEY!,
-  socksAgent
-);
-const ivwhatBot = ivwhat.startBot(process.env.IVWHAT_BOT_KEY!, socksAgent);
-const converslationBot = converslation.startBot(
-  process.env.CONVERSLATION_BOT_KEY!,
-  socksAgent
-);
+  const arctypeBot = inmankist.startBot(
+    process.env.INMANKIST_BOT_KEY!,
+    socksAgent
+  );
+  const ivwhatBot = ivwhat.startBot(process.env.IVWHAT_BOT_KEY!, socksAgent);
+  const converslationBot = converslation.startBot(
+    process.env.CONVERSLATION_BOT_KEY!,
+    socksAgent
+  );
 
-Promise.all([arctypeBot, ivwhatBot, converslationBot]).then((bots) => {
-  log.info("Bots Started: " + bots.map((b) => b.botInfo?.username).join(", "));
-});
+  Promise.all([arctypeBot, ivwhatBot, converslationBot]).then((bots) => {
+    log.info("Bots Started: " + bots.map((b) => b.botInfo?.username).join(", "));
+  });
+})();

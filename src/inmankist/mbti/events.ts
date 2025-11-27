@@ -15,7 +15,7 @@ export function setCustomCommands(bot: Bot) {
 
 export async function replyAbout(ctx: Context) {
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
   const keyboard = new InlineKeyboard();
   const types = [
     [MBTIType.INTJ, MBTIType.INTP, MBTIType.ENTJ, MBTIType.ENTP],
@@ -153,7 +153,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
 export async function replyDetail(ctx: Context, key: MBTIType) {
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
   const personality = personalities[key];
   if (!personality) throw "Personality type not found!";
 

@@ -66,8 +66,9 @@ export async function replyAbout(ctx: Context) {
       "💡 يساعدك الإنياجرام على معرفة نفسك بشكل أعمق.",
     ],
   };
-
-  await ctx.reply(aboutText[language].join("\n"), { reply_markup: keyboard });
+  
+  const resolvedLanguage = await language;
+  await ctx.reply(aboutText[resolvedLanguage].join("\n"), { reply_markup: keyboard });
 }
 
 export async function replyResult(ctx: Context, user: IUserData) {
@@ -149,7 +150,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
 export async function replyDetail(ctx: Context, key: EnneagramType) {
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
   const desc = descriptions[key];
   if (!desc) throw "Enneagram type not found!";
 

@@ -15,7 +15,7 @@ export function setCustomCommands(bot: Bot) {
 
 export async function replyAbout(ctx: Context) {
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
   const keyboard = new InlineKeyboard();
   
   Object.values(ResultType).forEach((type) => {
@@ -136,7 +136,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
 export async function replyDetail(ctx: Context, key: ResultType) {
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
   const style = styles[key];
   if (!style) throw "Cognitive style not found!";
 
