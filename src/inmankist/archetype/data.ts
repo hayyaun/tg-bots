@@ -2,30 +2,22 @@ import _ from "lodash";
 import { Gender, IQuest, IUserData, Language } from "../types";
 import { Deity } from "./types";
 
-// Import all JSON files statically
-import * as faJson from "./json/fa";
-import * as enJson from "./json/en";
-import * as ruJson from "./json/ru";
-import * as arJson from "./json/ar";
-
-// Build a mapping
-const questions: Record<Deity, Record<Language, string[]>> = Object.values(
-  Deity
-).reduce(
-  (acc, deity) => {
-    acc[deity] = {
-      [Language.Persian]: (faJson as any)[deity],
-      [Language.English]: (enJson as any)[deity],
-      [Language.Russian]: (ruJson as any)[deity],
-      [Language.Arabic]: (arJson as any)[deity],
-    };
-    return acc;
-  },
-  {} as Record<Deity, Record<Language, string[]>>
-);
-
-export function loadQuestions(deity: Deity, language: Language): string[] {
-  return questions[deity]?.[language] || questions[deity][Language.Persian];
+// Load questions by language
+function loadQuestions(deity: string, language: Language): string[] {
+  try {
+    if (language === Language.Persian) {
+      return require(`./json/fa/${deity}.json`);
+    } else if (language === Language.English) {
+      return require(`./json/en/${deity}.json`);
+    } else if (language === Language.Russian) {
+      return require(`./json/ru/${deity}.json`);
+    } else {
+      return require(`./json/ar/${deity}.json`);
+    }
+  } catch {
+    // Fallback to Persian if translation not available
+    return require(`./json/fa/${deity}.json`);
+  }
 }
 
 interface IListItem {
