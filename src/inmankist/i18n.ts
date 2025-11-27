@@ -6,16 +6,35 @@ export const DEFAULT_LANGUAGE = Language.Persian;
 const REDIS_PREFIX = "inmankist";
 const USER_LANG_TTL = 14 * 24 * 60 * 60; // 2 weeks in seconds
 
+// Simple in-memory cache to avoid repeated Redis calls
+const langCache = new Map<number, { lang: Language; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 minute
+
 // Get user language or default
 export async function getUserLanguage(userId?: number): Promise<Language> {
   if (!userId) return DEFAULT_LANGUAGE;
+  
+  // Check cache first
+  const cached = langCache.get(userId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.lang;
+  }
+  
+  // Fetch from Redis
   const lang = await getWithPrefix(REDIS_PREFIX, `user:${userId}:lang`);
-  return (lang as Language) || DEFAULT_LANGUAGE;
+  const userLang = (lang as Language) || DEFAULT_LANGUAGE;
+  
+  // Cache it
+  langCache.set(userId, { lang: userLang, timestamp: Date.now() });
+  
+  return userLang;
 }
 
 // Set user language
 export async function setUserLanguage(userId: number, language: Language): Promise<void> {
   await setWithPrefix(REDIS_PREFIX, `user:${userId}:lang`, language, USER_LANG_TTL);
+  // Update cache immediately
+  langCache.set(userId, { lang: language, timestamp: Date.now() });
 }
 
 // Check if user has set a language (vs using default)
