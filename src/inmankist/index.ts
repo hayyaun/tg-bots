@@ -302,7 +302,11 @@ const startBot = async (botKey: string, agent: unknown) => {
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
       ctx.answerCallbackQuery();
-      ctx.deleteMessage();
+      try {
+        await ctx.deleteMessage();
+      } catch (err) {
+        log.error(BOT_NAME + " > Delete Message Failed", err);
+      }
       ctx.api.editMessageText(
         ctx.chat!.id!,
         user.welcomeId!,
@@ -334,7 +338,11 @@ const startBot = async (botKey: string, agent: unknown) => {
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
       ctx.answerCallbackQuery();
-      await ctx.deleteMessage();
+      try {
+        await ctx.deleteMessage();
+      } catch (err) {
+        log.error(BOT_NAME + " > Delete Message Failed", err);
+      }
       ctx.api.editMessageText(
         ctx.chat!.id!,
         user.welcomeId!,
