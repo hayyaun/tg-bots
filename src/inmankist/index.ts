@@ -124,6 +124,36 @@ const startBot = async (botKey: string, agent: unknown) => {
     ctx.reply(strings.select_language, { reply_markup: keyboard });
   });
 
+  bot.command("userdata", async (ctx) => {
+    try {
+      const userId = ctx.from?.id;
+      if (!userId) {
+        ctx.reply("❌ Unable to get user ID");
+        return;
+      }
+
+      const userData = await getUserData(userId);
+      if (!userData) {
+        ctx.reply("ℹ️ No user data found. Start a quiz to create data!");
+        return;
+      }
+
+      const dataString = JSON.stringify(userData, null, 2);
+      // Escape HTML special characters
+      const escapedData = dataString
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      
+      await ctx.reply(`🗂 <b>Your User Data:</b>\n<pre><code class="language-json">${escapedData}</code></pre>`, {
+        parse_mode: "HTML",
+      });
+    } catch (err) {
+      log.error(BOT_NAME + " > UserData Command", err);
+      ctx.reply("❌ Error retrieving user data");
+    }
+  });
+
   bot.command("start", async (ctx) => {
     ctx.react("❤‍🔥").catch(() => {});
     if (typeof ctx.from !== "object") return;
