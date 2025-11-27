@@ -368,7 +368,11 @@ const startBot = async (botKey: string, agent: unknown) => {
       const selectedAnswer = parseInt(ctx.match[2]);
       if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
       const isRevision = typeof user.answers[current] === "number";
-      if (isRevision) return;
+      const noChange = user.answers[current] === selectedAnswer;
+
+      // Go next question
+      if (!isRevision || noChange) sendQuestionOrResult(ctx, current + 1);
+
       user.answers[current] = selectedAnswer;
       await updateUserData(userId, { answers: user.answers });
 
@@ -380,8 +384,6 @@ const startBot = async (botKey: string, agent: unknown) => {
 
       // Edit the message with the new keyboard
       ctx.editMessageReplyMarkup({ reply_markup: keyboard });
-      // Go next question
-      if (!isRevision) sendQuestionOrResult(ctx, current + 1);
     } catch (err) {
       log.error(BOT_NAME + " > Answer", err);
       notifyAdmin(
