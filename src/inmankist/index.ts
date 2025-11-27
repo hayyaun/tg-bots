@@ -187,7 +187,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     if (!userId) throw new Error("UserId Inavalid!");
     const user = await getUserData(userId);
     if (!user) throw new Error("404 User Not Found!");
-    const strings = await getStringsForUser(userId);
+    const strings = getStrings(user.language || DEFAULT_LANGUAGE);
 
     const lenght = user.order.length;
 
@@ -299,8 +299,8 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (!userId) throw new Error("UserId Invalid!");
       const user = await getUserData(userId);
       if (!user) throw new Error("404 User Not Found!");
-      const language = await getUserLanguage(userId);
-      const strings = await getStringsForUser(userId);
+      const language = user.language || DEFAULT_LANGUAGE;
+      const strings = getStrings(language);
       ctx.answerCallbackQuery();
       ctx.deleteMessage();
       ctx.api.editMessageText(
@@ -331,8 +331,8 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (!userId) throw new Error("UserId Invalid!");
       const user = await getUserData(userId);
       if (!user) throw new Error("404 User Not Found!");
-      const language = await getUserLanguage(userId);
-      const strings = await getStringsForUser(userId);
+      const language = user.language || DEFAULT_LANGUAGE;
+      const strings = getStrings(language);
       ctx.answerCallbackQuery();
       await ctx.deleteMessage();
       ctx.api.editMessageText(
@@ -358,7 +358,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from.id;
       const user = await getUserData(userId);
       if (!user) throw new Error("404 User Not Found!");
-      const strings = await getStringsForUser(userId);
+      const strings = getStrings(user.language || DEFAULT_LANGUAGE);
       ctx.answerCallbackQuery();
 
       // Save/Update Answer
