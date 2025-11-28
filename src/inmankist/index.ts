@@ -144,10 +144,13 @@ const startBot = async (botKey: string, agent: unknown) => {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
-      
-      await ctx.reply(`🗂 <b>Your User Data:</b>\n<pre><code class="language-json">${escapedData}</code></pre>`, {
-        parse_mode: "HTML",
-      });
+
+      await ctx.reply(
+        `🗂 <b>Your User Data:</b>\n<pre><code class="language-json">${escapedData}</code></pre>`,
+        {
+          parse_mode: "HTML",
+        }
+      );
     } catch (err) {
       log.error(BOT_NAME + " > UserData Command", err);
       ctx.reply("❌ Error retrieving user data");
@@ -402,6 +405,7 @@ const startBot = async (botKey: string, agent: unknown) => {
 
       // Go next question
       if (!isRevision || noChange) sendQuestionOrResult(ctx, current + 1);
+      if (noChange) return;
 
       user.answers[current] = selectedAnswer;
       await updateUserData(userId, { answers: user.answers });
