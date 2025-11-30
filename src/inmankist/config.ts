@@ -31,6 +31,12 @@ export const quizTypes: { [k: string]: { [key in Language]: string } } = {
     [Language.Russian]: "Тест эннеаграммы",
     [Language.Arabic]: "اختبار الإنياجرام",
   },
+  [QuizType.Vision]: {
+    [Language.Persian]: "آزمون ویژن",
+    [Language.English]: "Vision Test",
+    [Language.Russian]: "Тест Видений",
+    [Language.Arabic]: "اختبار الرؤية",
+  },
 };
 
 const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;
