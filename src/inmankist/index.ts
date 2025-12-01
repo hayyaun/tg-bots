@@ -257,7 +257,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
       await setUserLanguage(userId, language);
-      ctx.answerCallbackQuery();
+      ctx.answerCallbackQuery().catch(() => {});
       const strings = await getStringsForUser(userId);
       const langName =
         language === Language.Persian
@@ -272,7 +272,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         {
           reply_markup: undefined,
         }
-      );
+      ).catch(() => {});
       const keyboard = new InlineKeyboard();
       Object.keys(quizTypes).forEach((k) =>
         keyboard
@@ -298,11 +298,11 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (!userId) throw new Error("UserId Invalid!");
       const language = await getUserLanguage(userId);
       const strings = await getStringsForUser(userId);
-      ctx.answerCallbackQuery();
+      ctx.answerCallbackQuery().catch(() => {});
       ctx.editMessageText(
         `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
         { reply_markup: undefined }
-      );
+      ).catch(() => {});
       await setUser(ctx, type);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
@@ -417,7 +417,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       );
 
       // Edit the message with the new keyboard
-      ctx.editMessageReplyMarkup({ reply_markup: keyboard });
+      ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
     } catch (err) {
       log.error(BOT_NAME + " > Answer", err);
       notifyAdmin(
@@ -431,7 +431,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     try {
       const type = ctx.match[1] as QuizType;
       const item = ctx.match[2];
-      ctx.answerCallbackQuery();
+      ctx.answerCallbackQuery().catch(() => {});
       replyDetial(ctx, type, item);
     } catch (err) {
       log.error(BOT_NAME + " > Detail", err);

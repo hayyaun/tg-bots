@@ -8,6 +8,17 @@ import { connectRedis } from "./redis";
 
 configDotenv();
 
+// Global error handlers to prevent app crashes from unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  log.error("Unhandled Rejection", { reason, promise });
+  // Don't exit - just log the error
+});
+
+process.on("uncaughtException", (error) => {
+  log.error("Uncaught Exception", error);
+  // Don't exit - just log the error
+});
+
 log.info("App Running", { dev: process.env.DEV });
 
 // Main async function
