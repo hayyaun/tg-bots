@@ -25,11 +25,12 @@ import {
   selectQuizQuestion,
   setCustomCommands,
 } from "./reducer";
-import { Gender, Language, QuizMode, QuizType, Value } from "./types";
+import { Gender, IUserData, Language, QuizMode, QuizType, Value } from "./types";
 import {
   getUserData,
   setUserData,
   updateUserData,
+  updateUserDataCache,
   deleteUserData,
 } from "./userData";
 
@@ -226,10 +227,10 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Callbacks
 
   // Quiz
-  async function sendQuestionOrResult(ctx: Context, current: number) {
+  async function sendQuestionOrResult(ctx: Context, current: number, userData?: IUserData) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Invalid!");
-    const user = await getUserData(userId);
+    const user = userData || await getUserData(userId);
     if (!user) throw new Error("404 User Not Found!");
     const strings = getStrings(user.language || DEFAULT_LANGUAGE);
 
@@ -338,7 +339,8 @@ const startBot = async (botKey: string, agent: unknown) => {
           { reply_markup: undefined }
         )
         .catch(() => {});
-      await updateUserData(userId, { mode });
+      const updatedUser = await updateUserData(userId, { mode }, user);
+      updateUserDataCache(userId, updatedUser);
       ctx.reply(strings.gender, {
         reply_markup: new InlineKeyboard()
           .text(strings.male, `gender:${Gender.male}`)
@@ -374,8 +376,9 @@ const startBot = async (botKey: string, agent: unknown) => {
         .catch(() => {});
       user.gender = gender;
       user.order = selectOrder(user);
-      await updateUserData(userId, { gender, order: user.order });
-      await sendQuestionOrResult(ctx, 0);
+      const updatedUser = await updateUserData(userId, { gender, order: user.order }, user);
+      updateUserDataCache(userId, updatedUser);
+      await sendQuestionOrResult(ctx, 0, updatedUser);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
       notifyAdmin(
@@ -387,7 +390,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
     try {
       const userId = ctx.from.id;
-      const user = await getUserData(userId);
+      let user = await getUserData(userId);
       if (!user) throw new Error("404 User Not Found!");
       const strings = getStrings(user.language || DEFAULT_LANGUAGE);
       ctx.answerCallbackQuery().catch(() => {});
@@ -403,12 +406,16 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Save answer first if it changed (needed before quiz completion)
       if (!noChange) {
         user.answers[current] = selectedAnswer;
-        await updateUserData(userId, { answers: user.answers });
+        // Pass existing user data to avoid redundant Redis read
+        user = await updateUserData(userId, { answers: user.answers }, user);
+        // Update cache immediately
+        updateUserDataCache(userId, user);
       }
 
       // Go next question (or complete quiz if last question)
       if (!isRevision || noChange) {
-        await sendQuestionOrResult(ctx, current + 1);
+        // Pass user data to avoid redundant Redis read
+        await sendQuestionOrResult(ctx, current + 1, user);
         // If quiz completed, user data is deleted - return early
         if (isLastQuestion) return;
       }

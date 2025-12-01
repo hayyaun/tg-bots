@@ -6,7 +6,7 @@ const USER_DATA_TTL = 24 * 60 * 60; // 24 hours in seconds
 
 // Simple in-memory cache for active quiz sessions
 const userDataCache = new Map<number, { data: IUserData; timestamp: number }>();
-const CACHE_TTL = 60000; // 1 minute
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes (for active quiz sessions)
 
 // Get user data
 export async function getUserData(userId: number): Promise<IUserData | null> {
@@ -37,12 +37,23 @@ export async function setUserData(userId: number, data: IUserData): Promise<void
   userDataCache.set(userId, { data, timestamp: Date.now() });
 }
 
+// Update cache without Redis write (for in-memory updates)
+export function updateUserDataCache(userId: number, data: IUserData): void {
+  userDataCache.set(userId, { data, timestamp: Date.now() });
+}
+
 // Update user data (merge with existing)
-export async function updateUserData(userId: number, updates: Partial<IUserData>): Promise<void> {
-  const existing = await getUserData(userId);
+// Optionally accepts existing data to avoid redundant Redis read
+export async function updateUserData(
+  userId: number,
+  updates: Partial<IUserData>,
+  existingData?: IUserData
+): Promise<IUserData> {
+  const existing = existingData || await getUserData(userId);
   if (!existing) throw new Error("User data not found");
   const updated = { ...existing, ...updates };
   await setUserData(userId, updated);
+  return updated;
 }
 
 // Delete user data
