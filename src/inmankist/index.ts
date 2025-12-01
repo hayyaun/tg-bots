@@ -398,15 +398,21 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
       const isRevision = typeof user.answers[current] === "number";
       const noChange = user.answers[current] === selectedAnswer;
+      const isLastQuestion = current + 1 >= user.order.length;
 
-      // Go next question
+      // Save answer first if it changed (needed before quiz completion)
+      if (!noChange) {
+        user.answers[current] = selectedAnswer;
+        await updateUserData(userId, { answers: user.answers });
+      }
+
+      // Go next question (or complete quiz if last question)
       if (!isRevision || noChange) {
         await sendQuestionOrResult(ctx, current + 1);
+        // If quiz completed, user data is deleted - return early
+        if (isLastQuestion) return;
       }
       if (noChange) return;
-
-      user.answers[current] = selectedAnswer;
-      await updateUserData(userId, { answers: user.answers });
 
       // Update keyboard
       const keyboard = new InlineKeyboard();
