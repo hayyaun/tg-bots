@@ -60,6 +60,23 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   // Note: No periodic logging - Redis TTL handles cleanup automatically
 
+  function createLanguageKeyboard(): InlineKeyboard {
+    return new InlineKeyboard()
+      .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
+      .text("🇬🇧 English", `lang:${Language.English}`)
+      .row()
+      .text("🇷🇺 Русский", `lang:${Language.Russian}`)
+      .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
+  }
+
+  function createQuizTypesKeyboard(language: Language): InlineKeyboard {
+    const keyboard = new InlineKeyboard();
+    Object.keys(quizTypes).forEach((k) =>
+      keyboard.text(getQuizTypeName(k as QuizType, language), `quiz:${k}`).row()
+    );
+    return keyboard;
+  }
+
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Inavalid!");
@@ -115,13 +132,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.command("language", async (ctx) => {
     ctx.react("⚡").catch(() => {});
     const strings = await getStringsForUser(ctx.from?.id);
-    const keyboard = new InlineKeyboard()
-      .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
-      .text("🇬🇧 English", `lang:${Language.English}`)
-      .row()
-      .text("🇷🇺 Русский", `lang:${Language.Russian}`)
-      .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
-    ctx.reply(strings.select_language, { reply_markup: keyboard });
+    ctx.reply(strings.select_language, { reply_markup: createLanguageKeyboard() });
   });
 
   bot.command("userdata", async (ctx) => {
@@ -182,25 +193,15 @@ const startBot = async (botKey: string, agent: unknown) => {
     // Check if user has selected language before (first time users)
     const userHasLanguage = await hasUserLanguage(userId);
     if (!userHasLanguage) {
-      const langKeyboard = new InlineKeyboard()
-        .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
-        .text("🇬🇧 English", `lang:${Language.English}`)
-        .row()
-        .text("🇷🇺 Русский", `lang:${Language.Russian}`)
-        .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
       ctx.reply(
         "🌐 Please select your language / Пожалуйста, выберите язык / لطفا زبان خود را انتخاب کنید / الرجاء اختيار لغتك:",
-        { reply_markup: langKeyboard }
+        { reply_markup: createLanguageKeyboard() }
       );
       return;
     }
 
-    const keyboard = new InlineKeyboard();
-    Object.keys(quizTypes).forEach((k) =>
-      keyboard.text(getQuizTypeName(k as QuizType, language), `quiz:${k}`).row()
-    );
     ctx.reply(strings.welcome, {
-      reply_markup: keyboard,
+      reply_markup: createQuizTypesKeyboard(language),
     });
   });
 
@@ -273,14 +274,8 @@ const startBot = async (botKey: string, agent: unknown) => {
           reply_markup: undefined,
         }
       ).catch(() => {});
-      const keyboard = new InlineKeyboard();
-      Object.keys(quizTypes).forEach((k) =>
-        keyboard
-          .text(getQuizTypeName(k as QuizType, language), `quiz:${k}`)
-          .row()
-      );
       ctx.reply(strings.welcome, {
-        reply_markup: keyboard,
+        reply_markup: createQuizTypesKeyboard(language),
       });
     } catch (err) {
       log.error(BOT_NAME + " > Language", err);
