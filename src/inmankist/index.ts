@@ -77,18 +77,33 @@ const startBot = async (botKey: string, agent: unknown) => {
     return keyboard;
   }
 
+  function getUserName(ctx: Context): string {
+    const from = ctx.from;
+    if (!from) return "Unknown";
+    return from.username
+      ? `@${from.username}`
+      : `${from.first_name || ""} ${from.last_name || ""}`.trim() || "Unknown";
+  }
+
+  function getLanguageName(language: Language): string {
+    const names: { [key in Language]: string } = {
+      [Language.Persian]: "فارسی",
+      [Language.English]: "English",
+      [Language.Russian]: "Русский",
+      [Language.Arabic]: "العربية",
+    };
+    return names[language];
+  }
+
   async function setUser(ctx: Context, type: QuizType) {
     const userId = ctx.from?.id;
-    if (!userId) throw new Error("UserId Inavalid!");
+    if (!userId) throw new Error("UserId Invalid!");
     const language = await getUserLanguage(userId);
     log.info(BOT_NAME + " > Begin", { type, user: ctx.from, language });
 
     // Notify admin about quiz start
-    const userName = ctx.from?.username
-      ? `@${ctx.from.username}`
-      : `${ctx.from?.first_name || ""} ${ctx.from?.last_name || ""}`.trim();
     notifyAdmin(
-      `🎯 <b>Quiz Started</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
+      `🎯 <b>Quiz Started</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
     );
 
     await setUserData(userId, {
@@ -183,11 +198,8 @@ const startBot = async (botKey: string, agent: unknown) => {
     const strings = await getStringsForUser(userId);
 
     // Notify admin about new user
-    const userName = ctx.from.username
-      ? `@${ctx.from.username}`
-      : `${ctx.from.first_name || ""} ${ctx.from.last_name || ""}`.trim();
     notifyAdmin(
-      `👤 <b>New Start</b>\nUser: ${userName}\nID: <code>${userId}</code>\nLanguage: ${language}`
+      `👤 <b>New Start</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nLanguage: ${language}`
     );
 
     // Check if user has selected language before (first time users)
@@ -216,24 +228,21 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Quiz
   async function sendQuestionOrResult(ctx: Context, current: number) {
     const userId = ctx.from?.id;
-    if (!userId) throw new Error("UserId Inavalid!");
+    if (!userId) throw new Error("UserId Invalid!");
     const user = await getUserData(userId);
     if (!user) throw new Error("404 User Not Found!");
     const strings = getStrings(user.language || DEFAULT_LANGUAGE);
 
-    const lenght = user.order.length;
+    const length = user.order.length;
 
-    if (current >= lenght) {
+    if (current >= length) {
       // Quiz finished
       const result = await replyResult(ctx, user);
       log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
 
       // Notify admin about quiz completion
-      const userName = ctx.from?.username
-        ? `@${ctx.from.username}`
-        : `${ctx.from?.first_name || ""} ${ctx.from?.last_name || ""}`.trim();
       notifyAdmin(
-        `✅ <b>Quiz Completed</b>\nUser: ${userName}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
+        `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
       );
 
       await deleteUserData(userId);
@@ -247,7 +256,7 @@ const startBot = async (botKey: string, agent: unknown) => {
 
     const question = selectQuizQuestion(user, current);
     if (!question) throw new Error("Cannot find next question");
-    const message = `${current + 1}/${lenght} \n\n${question.text}`;
+    const message = `${current + 1}/${length} \n\n${question.text}`;
     await ctx.reply(message, { reply_markup: keyboard });
   }
 
@@ -260,16 +269,8 @@ const startBot = async (botKey: string, agent: unknown) => {
       await setUserLanguage(userId, language);
       ctx.answerCallbackQuery().catch(() => {});
       const strings = await getStringsForUser(userId);
-      const langName =
-        language === Language.Persian
-          ? "فارسی"
-          : language === Language.English
-            ? "English"
-            : language === Language.Russian
-              ? "Русский"
-              : "العربية";
       ctx.editMessageText(
-        `✅ ${strings.language}: ${langName}\n\n${strings.welcome}`,
+        `✅ ${strings.language}: ${getLanguageName(language)}\n\n${strings.welcome}`,
         {
           reply_markup: undefined,
         }
@@ -374,7 +375,7 @@ const startBot = async (botKey: string, agent: unknown) => {
       user.gender = gender;
       user.order = selectOrder(user);
       await updateUserData(userId, { gender, order: user.order });
-      sendQuestionOrResult(ctx, 0);
+      await sendQuestionOrResult(ctx, 0);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
       notifyAdmin(
@@ -399,7 +400,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       const noChange = user.answers[current] === selectedAnswer;
 
       // Go next question
-      if (!isRevision || noChange) sendQuestionOrResult(ctx, current + 1);
+      if (!isRevision || noChange) {
+        await sendQuestionOrResult(ctx, current + 1);
+      }
       if (noChange) return;
 
       user.answers[current] = selectedAnswer;
