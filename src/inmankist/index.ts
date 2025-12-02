@@ -62,6 +62,12 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   // Note: No periodic logging - Redis TTL handles cleanup automatically
 
+  // Helper function to handle expired/missing user data
+  async function handleExpiredSession(ctx: Context): Promise<void> {
+    await ctx.answerCallbackQuery("❌ جلسه منقضی شده است").catch(() => {});
+    await ctx.reply("❌ جلسه شما منقضی شده است. لطفا دوباره با دستور /start شروع کنید.").catch(() => {});
+  }
+
   // Save quiz result to PostgreSQL
   async function saveQuizResultToDB(
     userId: number,
@@ -267,7 +273,11 @@ const startBot = async (botKey: string, agent: unknown) => {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Invalid!");
     const user = userData || await getUserData(userId);
-    if (!user) throw new Error("404 User Not Found!");
+    if (!user) {
+      // User data expired or not found - show helpful message
+      await handleExpiredSession(ctx);
+      return;
+    }
     const strings = getStrings(user.language || DEFAULT_LANGUAGE);
 
     const length = user.order.length;
@@ -365,7 +375,10 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
       const user = await getUserData(userId);
-      if (!user) throw new Error("404 User Not Found!");
+      if (!user) {
+        await handleExpiredSession(ctx);
+        return;
+      }
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
       ctx.answerCallbackQuery().catch(() => {});
@@ -400,7 +413,10 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
       const user = await getUserData(userId);
-      if (!user) throw new Error("404 User Not Found!");
+      if (!user) {
+        await handleExpiredSession(ctx);
+        return;
+      }
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
       ctx.answerCallbackQuery().catch(() => {});
@@ -430,7 +446,10 @@ const startBot = async (botKey: string, agent: unknown) => {
     try {
       const userId = ctx.from.id;
       let user = await getUserData(userId);
-      if (!user) throw new Error("404 User Not Found!");
+      if (!user) {
+        await handleExpiredSession(ctx);
+        return;
+      }
       const strings = getStrings(user.language || DEFAULT_LANGUAGE);
       ctx.answerCallbackQuery().catch(() => {});
 
