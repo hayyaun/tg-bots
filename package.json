@@ -14,11 +14,13 @@
   "description": "",
   "dependencies": {
     "@types/lodash": "^4.17.16",
+    "@types/pg": "^8.15.6",
     "canvas": "^3.1.0",
     "dotenv": "^16.4.7",
     "grammy": "^1.35.0",
     "ioredis": "^5.8.2",
     "lodash": "^4.17.21",
+    "pg": "^8.16.3",
     "socks-proxy-agent": "^8.0.5",
     "winston": "^3.17.0"
   },

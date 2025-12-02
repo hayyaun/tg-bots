@@ -2,6 +2,7 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { BotCommand } from "grammy/types";
 import log from "../log";
+import { query } from "../db";
 import {
   getQuizModeName,
   getQuizTypeName,
@@ -60,6 +61,41 @@ const startBot = async (botKey: string, agent: unknown) => {
   }
 
   // Note: No periodic logging - Redis TTL handles cleanup automatically
+
+  // Save quiz result to PostgreSQL
+  async function saveQuizResultToDB(
+    userId: number,
+    quizType: QuizType,
+    result: unknown
+  ): Promise<void> {
+    try {
+      if (quizType === QuizType.Archetype && Array.isArray(result) && result.length > 0) {
+        // result is array of [Deity, number] tuples, get primary archetype
+        const primaryArchetype = result[0][0];
+        await query(
+          `INSERT INTO users (telegram_id, archetype_result, updated_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (telegram_id) 
+           DO UPDATE SET archetype_result = $2, updated_at = NOW()`,
+          [userId, primaryArchetype]
+        );
+        log.info(BOT_NAME + " > Saved archetype result", { userId, archetype: primaryArchetype });
+      } else if (quizType === QuizType.MBTI && typeof result === "string") {
+        // result is MBTI type string
+        await query(
+          `INSERT INTO users (telegram_id, mbti_result, updated_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (telegram_id) 
+           DO UPDATE SET mbti_result = $2, updated_at = NOW()`,
+          [userId, result.toUpperCase()]
+        );
+        log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
+      }
+    } catch (err) {
+      log.error(BOT_NAME + " > Failed to save quiz result to PostgreSQL", err);
+      // Don't fail the quiz completion if DB save fails
+    }
+  }
 
   function createLanguageKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
@@ -240,6 +276,9 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Quiz finished
       const result = await replyResult(ctx, user);
       log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
+
+      // Save quiz result to PostgreSQL
+      await saveQuizResultToDB(userId, user.quiz, result);
 
       // Notify admin about quiz completion
       notifyAdmin(

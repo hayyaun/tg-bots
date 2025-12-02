@@ -4,8 +4,10 @@ import converslation from "./converslation";
 import inmankist from "./inmankist";
 import ivwhat from "./ivwhat";
 import truthcheck from "./truthcheck";
+import matchfound from "./matchfound";
 import log from "./log";
 import { connectRedis } from "./redis";
+import { connectDB } from "./db";
 
 configDotenv();
 
@@ -24,8 +26,9 @@ log.info("App Running", { dev: process.env.DEV });
 
 // Main async function
 (async () => {
-  // Connect to Redis before starting bots
+  // Connect to Redis and PostgreSQL before starting bots
   await connectRedis();
+  await connectDB();
 
   const socksAgent = process.env.PROXY
     ? new SocksProxyAgent(process.env.PROXY)
@@ -44,8 +47,12 @@ log.info("App Running", { dev: process.env.DEV });
     process.env.TRUTHCHECK_BOT_KEY!,
     socksAgent
   );
+  const matchfoundBot = matchfound.startBot(
+    process.env.MATCHFOUND_BOT_KEY!,
+    socksAgent
+  );
 
-  Promise.all([arctypeBot, ivwhatBot, converslationBot, truthcheckBot]).then((bots) => {
+  Promise.all([arctypeBot, ivwhatBot, converslationBot, truthcheckBot, matchfoundBot]).then((bots) => {
     log.info("Bots Started: " + bots.map((b) => b.botInfo?.username).join(", "));
   });
 })();
