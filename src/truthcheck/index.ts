@@ -1,10 +1,14 @@
 import { configDotenv } from "dotenv";
 import { Bot, InlineQueryResultBuilder } from "grammy";
 import log from "../log";
+import { getWithPrefix, setWithPrefix } from "../redis";
+import redis from "../redis";
 
 configDotenv();
 
 const BOT_NAME = "TruthCheck";
+const REDIS_PREFIX = "truthcheck";
+const MAX_DAILY_FACTCHECKS = 1000;
 
 async function factCheckWithChatGPT(text: string): Promise<string> {
   try {
@@ -76,6 +80,48 @@ Keep responses concise but informative (max 500 words). Focus on facts from reli
   }
 }
 
+// Get today's date string in YYYY-MM-DD format (UTC)
+function getTodayDateKey(): string {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(now.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Get remaining seconds until midnight UTC
+function getSecondsUntilMidnightUTC(): number {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  return Math.floor((tomorrow.getTime() - now.getTime()) / 1000);
+}
+
+// Get today's fact-check count for a user
+async function getDailyFactCheckCount(userId: number): Promise<number> {
+  const dateKey = getTodayDateKey();
+  const countKey = `${REDIS_PREFIX}:user:${userId}:factchecks:${dateKey}`;
+  const count = await redis.get(countKey);
+  return count ? parseInt(count, 10) : 0;
+}
+
+// Increment today's fact-check count for a user
+async function incrementDailyFactCheckCount(userId: number): Promise<number> {
+  const dateKey = getTodayDateKey();
+  const countKey = `${REDIS_PREFIX}:user:${userId}:factchecks:${dateKey}`;
+  const ttl = getSecondsUntilMidnightUTC();
+  
+  // Use INCR to atomically increment, and set TTL if key is new
+  const count = await redis.incr(countKey);
+  if (count === 1) {
+    // First increment, set TTL
+    await redis.expire(countKey, ttl);
+  }
+  
+  return count;
+}
+
 const startBot = async (botKey: string, agent: unknown) => {
   const bot = new Bot(botKey, {
     client: { baseFetchConfig: { agent } },
@@ -85,6 +131,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   const commands = [
     { command: "start", description: "Start the bot and see welcome message" },
     { command: "help", description: "Show help and usage instructions" },
+    { command: "usage", description: "Check your daily fact-check usage" },
   ];
 
   await bot.api.setMyCommands(commands);
@@ -127,8 +174,9 @@ const startBot = async (botKey: string, agent: unknown) => {
         " your statement here",
       "",
       "2️⃣ Reply to a message (any chat):",
-      "Reply to a message and mention me: @" +
-        (bot.botInfo?.username || "truthcheck_bot"),
+      "Reply to a message, mention me, and add '?': @" +
+        (bot.botInfo?.username || "truthcheck_bot") +
+        " ?",
       "I'll automatically fact-check the replied message!",
       "",
       "3️⃣ Reply in private chat:",
@@ -151,9 +199,33 @@ const startBot = async (botKey: string, agent: unknown) => {
       "• Evidence and reasoning",
       "",
       "Note: Fact-checking is based on available information and may not cover all contexts or recent developments.",
+      "",
+      "📊 Daily Limit: 1000 fact-checks per day (resets at midnight UTC)",
+      "Use /usage to check your current usage",
     ].join("\n");
 
     await ctx.reply(helpText);
+  });
+
+  // Command: /usage
+  bot.command("usage", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const count = await getDailyFactCheckCount(userId);
+    const remaining = MAX_DAILY_FACTCHECKS - count;
+    const percentage = Math.round((count / MAX_DAILY_FACTCHECKS) * 100);
+
+    const usageText = [
+      "📊 Daily Fact-Check Usage",
+      "",
+      `Used: ${count}/${MAX_DAILY_FACTCHECKS} (${percentage}%)`,
+      `Remaining: ${remaining}`,
+      "",
+      "The limit resets at midnight UTC.",
+    ].join("\n");
+
+    await ctx.reply(usageText);
   });
 
   // Helper function to send fact-check result
@@ -163,9 +235,29 @@ const startBot = async (botKey: string, agent: unknown) => {
     originalMessage?: string
   ) {
     try {
+      const userId = ctx.from?.id;
+      
+      // Check daily limit
+      if (userId) {
+        const currentCount = await getDailyFactCheckCount(userId);
+        if (currentCount >= MAX_DAILY_FACTCHECKS) {
+          await ctx.reply(
+            `⛔ Daily fact-check limit reached!\n\n` +
+            `You've used ${currentCount}/${MAX_DAILY_FACTCHECKS} fact-checks today.\n\n` +
+            `The limit will reset at midnight UTC.`
+          );
+          return;
+        }
+      }
+      
       await ctx.reply("🔍 Analyzing statement... Please wait.");
 
       const factCheckResult = await factCheckWithChatGPT(text);
+
+      // Increment count after successful fact-check
+      if (userId) {
+        await incrementDailyFactCheckCount(userId);
+      }
 
       const resultText =
         `🔍 <b>Fact-Check Report</b>\n\n` +
@@ -183,9 +275,10 @@ const startBot = async (botKey: string, agent: unknown) => {
       });
     } catch (error) {
       log.error(BOT_NAME + " > Fact-Check Error (Message)", error);
-      await ctx.reply(
-        "❌ Fact-check failed. Please try again later or check your API configuration."
-      );
+      const errorMessage = error instanceof Error && error.message.includes("Too Many Requests")
+        ? "❌ Too many requests. Please wait a moment and try again."
+        : "❌ Fact-check failed. Please try again later or check your API configuration.";
+      await ctx.reply(errorMessage);
     }
   }
 
@@ -246,17 +339,55 @@ const startBot = async (botKey: string, agent: unknown) => {
             `@${bot.botInfo?.username?.toLowerCase()}`
       );
       
+      // Check if message ends with "?" (trigger for fact-checking)
+      const endsWithQuestionMark = messageText.trim().endsWith("?");
+      
       if (message.reply_to_message && botMentioned) {
+        // Require "?" at the end to trigger fact-check
+        if (!endsWithQuestionMark) {
+          await ctx.reply(
+            "💡 Tip: Add a question mark (?) at the end to trigger fact-checking!\n\nExample: @" +
+              (bot.botInfo?.username || "bot") +
+              " ?",
+            {
+              reply_to_message_id: message.message_id,
+            }
+          );
+          return;
+        }
+        
         const repliedText =
           message.reply_to_message.text ||
           message.reply_to_message.caption ||
           "";
         
         if (repliedText.trim()) {
+          const userId = ctx.from?.id;
+          if (userId) {
+            // Check daily limit
+            const currentCount = await getDailyFactCheckCount(userId);
+            if (currentCount >= MAX_DAILY_FACTCHECKS) {
+              await ctx.reply(
+                `⛔ Daily fact-check limit reached!\n\n` +
+                `You've used ${currentCount}/${MAX_DAILY_FACTCHECKS} fact-checks today.\n\n` +
+                `The limit will reset at midnight UTC.`,
+                {
+                  reply_to_message_id: message.message_id,
+                }
+              );
+              return;
+            }
+          }
+          
           await ctx.reply("🔍 Analyzing the replied message... Please wait.");
           
           try {
             const factCheckResult = await factCheckWithChatGPT(repliedText);
+            
+            // Increment count after successful fact-check
+            if (userId) {
+              await incrementDailyFactCheckCount(userId);
+            }
             
             const resultText =
               `🔍 <b>Fact-Check Report</b>\n\n` +
@@ -275,12 +406,12 @@ const startBot = async (botKey: string, agent: unknown) => {
             });
           } catch (error) {
             log.error(BOT_NAME + " > Fact-Check Error (Mention)", error);
-            await ctx.reply(
-              "❌ Fact-check failed. Please try again later.",
-              {
-                reply_to_message_id: message.message_id,
-              }
-            );
+            const errorMessage = error instanceof Error && error.message.includes("Too Many Requests")
+              ? "❌ Too many requests. Please wait a moment and try again."
+              : "❌ Fact-check failed. Please try again later.";
+            await ctx.reply(errorMessage, {
+              reply_to_message_id: message.message_id,
+            });
           }
           return; // Don't process further
         } else {
@@ -317,7 +448,7 @@ const startBot = async (botKey: string, agent: unknown) => {
           `1️⃣ <b>Type a statement:</b>\n` +
           `@${bot.botInfo?.username || "bot"} Your statement here\n\n` +
           `2️⃣ <b>Reply to a message:</b>\n` +
-          `Reply to any message and mention me (@${bot.botInfo?.username || "bot"}) to fact-check it automatically\n\n` +
+          `Reply to any message, mention me, and add '?': @${bot.botInfo?.username || "bot"} ?\n\n` +
           `3️⃣ <b>In private chat:</b>\n` +
           `Just reply to a message and I'll fact-check it`,
           { parse_mode: "HTML" }
@@ -327,20 +458,37 @@ const startBot = async (botKey: string, agent: unknown) => {
         return;
       }
 
-      // Show "checking" status
-      const checkingResult = InlineQueryResultBuilder.article(
-        "checking",
-        "🔍 Checking...",
-        {
-          description: "Analyzing statement...",
-        }
-      ).text("🔍 Fact-checking in progress... Please wait.");
+      // Check daily limit first
+      const currentCount = await getDailyFactCheckCount(userId);
+      if (currentCount >= MAX_DAILY_FACTCHECKS) {
+        const errorResult = InlineQueryResultBuilder.article(
+          "limit-reached",
+          "⛔ Daily Limit Reached",
+          {
+            description: `You've reached the daily limit of ${MAX_DAILY_FACTCHECKS} fact-checks`,
+          }
+        ).text(
+          `⛔ Daily fact-check limit reached!\n\n` +
+          `You've used ${currentCount}/${MAX_DAILY_FACTCHECKS} fact-checks today.\n\n` +
+          `The limit will reset at midnight UTC.`
+        );
 
-      await ctx.answerInlineQuery([checkingResult], { cache_time: 0 });
+        await ctx.answerInlineQuery([errorResult], { cache_time: 0 });
+        log.info(BOT_NAME + " > Fact-Check Limit Reached", {
+          userId,
+          count: currentCount,
+          limit: MAX_DAILY_FACTCHECKS,
+        });
+        return;
+      }
 
-      // Perform fact-check
+      // Perform fact-check BEFORE answering inline query
+      // This prevents the "Checking..." stuck issue
       try {
         const factCheckResult = await factCheckWithChatGPT(query);
+
+        // Increment count after successful fact-check
+        await incrementDailyFactCheckCount(userId);
 
         // Create inline result with fact-check
         const result = InlineQueryResultBuilder.article(
@@ -362,18 +510,21 @@ const startBot = async (botKey: string, agent: unknown) => {
           userId,
           queryLength: query.length,
           resultLength: factCheckResult.length,
+          dailyCount: await getDailyFactCheckCount(userId),
         });
       } catch (error) {
         // Show error result
+        const errorMessage = error instanceof Error && error.message.includes("Too Many Requests")
+          ? "❌ Too many requests. Please wait a moment and try again."
+          : "❌ Fact-check failed. Please try again later or check your API configuration.";
+        
         const errorResult = InlineQueryResultBuilder.article(
           "error",
           "❌ Fact-Check Failed",
           {
             description: "Could not fact-check statement",
           }
-        ).text(
-          "❌ Fact-check failed. Please try again later or check your API configuration."
-        );
+        ).text(errorMessage);
 
         await ctx.answerInlineQuery([errorResult], { cache_time: 0 });
         log.error(BOT_NAME + " > Fact-Check Error", error);
