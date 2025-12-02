@@ -363,6 +363,15 @@ export function setupCallbacks(
       keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
+    // Send photos if available
+    if (profile.profile_images && Array.isArray(profile.profile_images) && profile.profile_images.length > 0) {
+      const mediaGroup = profile.profile_images.slice(0, 10).map((fileId) => ({
+        type: "photo" as const,
+        media: fileId,
+      }));
+      await ctx.replyWithMediaGroup(mediaGroup);
+    }
+
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
 
@@ -431,6 +440,15 @@ export function setupCallbacks(
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
       keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    }
+
+    // Send photos if available
+    if (profile.profile_images && Array.isArray(profile.profile_images) && profile.profile_images.length > 0) {
+      const mediaGroup = profile.profile_images.slice(0, 10).map((fileId) => ({
+        type: "photo" as const,
+        media: fileId,
+      }));
+      await ctx.replyWithMediaGroup(mediaGroup);
     }
 
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
