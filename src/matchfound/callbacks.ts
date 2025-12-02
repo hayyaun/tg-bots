@@ -363,16 +363,27 @@ export function setupCallbacks(
       keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
-    // Send photos if available
+    // Send photos if available - attach text to first image
     if (profile.profile_images && Array.isArray(profile.profile_images) && profile.profile_images.length > 0) {
-      const mediaGroup = profile.profile_images.slice(0, 10).map((fileId) => ({
-        type: "photo" as const,
-        media: fileId,
-      }));
-      await ctx.replyWithMediaGroup(mediaGroup);
+      const images = profile.profile_images.slice(0, 10);
+      // Send first image with text as caption
+      await ctx.replyWithPhoto(images[0], {
+        caption: message,
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+      });
+      // Send remaining images if any
+      if (images.length > 1) {
+        const remainingImages = images.slice(1).map((fileId) => ({
+          type: "photo" as const,
+          media: fileId,
+        }));
+        await ctx.replyWithMediaGroup(remainingImages);
+      }
+    } else {
+      // No images - send text message only
+      await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
     }
-
-    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
 
   // Callback: completion:check (from /start command) - redirects to profile
@@ -442,16 +453,27 @@ export function setupCallbacks(
       keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
-    // Send photos if available
+    // Send photos if available - attach text to first image
     if (profile.profile_images && Array.isArray(profile.profile_images) && profile.profile_images.length > 0) {
-      const mediaGroup = profile.profile_images.slice(0, 10).map((fileId) => ({
-        type: "photo" as const,
-        media: fileId,
-      }));
-      await ctx.replyWithMediaGroup(mediaGroup);
+      const images = profile.profile_images.slice(0, 10);
+      // Send first image with text as caption
+      await ctx.replyWithPhoto(images[0], {
+        caption: message,
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+      });
+      // Send remaining images if any
+      if (images.length > 1) {
+        const remainingImages = images.slice(1).map((fileId) => ({
+          type: "photo" as const,
+          media: fileId,
+        }));
+        await ctx.replyWithMediaGroup(remainingImages);
+      }
+    } else {
+      // No images - send text message only
+      await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
     }
-
-    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
 
   // Profile editing callbacks
