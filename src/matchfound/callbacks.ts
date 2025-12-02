@@ -1,12 +1,18 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { query } from "../db";
-import { getUserProfile, updateCompletionScore } from "./database";
+import {
+  getUserProfile,
+  updateCompletionScore,
+  updateUserField,
+  addProfileImage,
+  removeProfileImage,
+} from "./database";
 import { displayMatch, displayLikedUser } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME } from "./constants";
 
 export function setupCallbacks(
   bot: Bot,
@@ -247,8 +253,20 @@ export function setupCallbacks(
     message += `⚧️ جنسیت: ${genderText}\n`;
     message += `🔍 دنبال: ${lookingForText}\n`;
     message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
-    message += `🔮 کهن الگو: ${profile.archetype_result || "ثبت نشده"}\n`;
-    message += `🧠 MBTI: ${profile.mbti_result ? profile.mbti_result.toUpperCase() : "ثبت نشده"}\n`;
+    
+    // Show quiz results with instructions if missing
+    if (profile.archetype_result) {
+      message += `🔮 کهن الگو: ${profile.archetype_result}\n`;
+    } else {
+      message += `🔮 کهن الگو: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
+    if (profile.mbti_result) {
+      message += `🧠 MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+    } else {
+      message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
     message += `📊 تکمیل: ${profile.completion_score}/9`;
 
     const keyboard = new InlineKeyboard()
@@ -262,6 +280,11 @@ export function setupCallbacks(
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username");
+    
+    // Add quiz button if quizzes are missing
+    if (!profile.archetype_result || !profile.mbti_result) {
+      keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    }
 
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
@@ -290,25 +313,189 @@ export function setupCallbacks(
     message += `${profile.birth_date ? "✅" : "❌"} تاریخ تولد\n`;
     message += `${profile.gender ? "✅" : "❌"} جنسیت\n`;
     message += `${profile.looking_for_gender ? "✅" : "❌"} دنبال چه کسی هستید\n`;
-    message += `${profile.archetype_result ? "✅" : "❌"} تست کهن الگو\n`;
-    message += `${profile.mbti_result ? "✅" : "❌"} تست MBTI\n\n`;
+    
+    // Highlight missing quizzes with instructions
+    if (profile.archetype_result) {
+      message += `✅ تست کهن الگو\n`;
+    } else {
+      message += `❌ تست کهن الگو (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
+    if (profile.mbti_result) {
+      message += `✅ تست MBTI\n`;
+    } else {
+      message += `❌ تست MBTI (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
+    message += `\n`;
 
     if (score < 7) {
-      message += `⚠️ برای استفاده از دستور /find باید حداقل 7 مورد را تکمیل کنید.`;
+      message += `⚠️ برای استفاده از دستور /find باید حداقل 7 مورد را تکمیل کنید.\n\n`;
+      if (!profile.archetype_result || !profile.mbti_result) {
+        message += `💡 برای انجام تست‌های شخصیت‌شناسی به ربات @${INMANKIST_BOT_USERNAME} بروید.`;
+      }
     } else {
       message += `✅ پروفایل شما آماده استفاده است!`;
     }
 
-    await ctx.reply(message, { parse_mode: "HTML" });
+    const keyboard = new InlineKeyboard();
+    if (!profile.archetype_result || !profile.mbti_result) {
+      keyboard.url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    }
+
+    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard.inline_keyboard.length > 0 ? keyboard : undefined });
   });
 
-  // Profile editing callbacks (simplified - full implementation would require state management)
+  // Profile editing callbacks
   bot.callbackQuery(/profile:edit:(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
     const action = ctx.match[1];
+    const session = getSession(userId);
     await ctx.answerCallbackQuery();
-    await ctx.reply(
-      `برای ویرایش ${action}، لطفا از دستور /profile استفاده کنید.\nاین قابلیت در نسخه‌های بعدی اضافه خواهد شد.`
-    );
+
+    switch (action) {
+      case "name":
+        session.editingField = "name";
+        await ctx.reply(
+          "لطفا نام نمایشی خود را ارسال کنید (حداکثر 100 کاراکتر):\n\nبرای لغو: /cancel"
+        );
+        break;
+
+      case "bio":
+        session.editingField = "bio";
+        await ctx.reply(
+          "لطفا بیوگرافی خود را ارسال کنید (حداکثر 2000 کاراکتر):\n\nبرای لغو: /cancel"
+        );
+        break;
+
+      case "birthdate":
+        session.editingField = "birthdate";
+        await ctx.reply(
+          "لطفا تاریخ تولد خود را به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15):\n\nبرای لغو: /cancel"
+        );
+        break;
+
+      case "gender":
+        session.editingField = "gender";
+        const genderKeyboard = new InlineKeyboard()
+          .text("مرد", "profile:set:gender:male")
+          .text("زن", "profile:set:gender:female");
+        await ctx.reply("جنسیت خود را انتخاب کنید:", { reply_markup: genderKeyboard });
+        break;
+
+      case "looking_for":
+        session.editingField = "looking_for";
+        const lookingForKeyboard = new InlineKeyboard()
+          .text("مرد", "profile:set:looking_for:male")
+          .text("زن", "profile:set:looking_for:female")
+          .row()
+          .text("هر دو", "profile:set:looking_for:both");
+        await ctx.reply("دنبال چه کسی هستید؟", { reply_markup: lookingForKeyboard });
+        break;
+
+      case "images":
+        session.editingField = "images";
+        const profile = await getUserProfile(userId);
+        if (profile?.profile_images && profile.profile_images.length > 0) {
+          const imagesKeyboard = new InlineKeyboard().text("➕ افزودن تصویر", "profile:images:add");
+          if (profile.profile_images.length > 0) {
+            imagesKeyboard.row().text("🗑️ حذف تصاویر", "profile:images:clear");
+          }
+          await ctx.reply(
+            `شما ${profile.profile_images.length} تصویر دارید.\n\nبرای افزودن تصویر جدید، یک عکس ارسال کنید.\nبرای حذف همه تصاویر، از دکمه زیر استفاده کنید.`,
+            { reply_markup: imagesKeyboard }
+          );
+        } else {
+          await ctx.reply(
+            "شما هنوز تصویری ندارید.\n\nبرای افزودن تصویر، یک عکس ارسال کنید:\n\nبرای لغو: /cancel"
+          );
+        }
+        break;
+
+      case "username":
+        session.editingField = "username";
+        await ctx.reply(
+          "نام کاربری تلگرام شما به صورت خودکار از پروفایل تلگرام شما خوانده می‌شود.\n\nاگر نام کاربری ندارید، لطفا در تنظیمات تلگرام یک نام کاربری تنظیم کنید و سپس دوباره این ربات را باز کنید."
+        );
+        delete session.editingField;
+        break;
+
+      default:
+        await ctx.reply("عملیات نامعتبر است.");
+    }
+  });
+
+  // Handle setting gender
+  bot.callbackQuery(/profile:set:gender:(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const gender = ctx.match[1];
+    await ctx.answerCallbackQuery();
+    await updateUserField(userId, "gender", gender);
+    delete getSession(userId).editingField;
+    await ctx.reply(`✅ جنسیت به "${gender === "male" ? "مرد" : "زن"}" تغییر یافت.`);
+  });
+
+  // Handle setting looking_for
+  bot.callbackQuery(/profile:set:looking_for:(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const lookingFor = ctx.match[1];
+    await ctx.answerCallbackQuery();
+    const text =
+      lookingFor === "male" ? "مرد" : lookingFor === "female" ? "زن" : "هر دو";
+    await updateUserField(userId, "looking_for_gender", lookingFor);
+    delete getSession(userId).editingField;
+    await ctx.reply(`✅ تنظیمات به "${text}" تغییر یافت.`);
+  });
+
+  // Handle image management
+  bot.callbackQuery("profile:images:add", async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await ctx.reply("لطفا یک عکس ارسال کنید:\n\nبرای لغو: /cancel");
+  });
+
+  bot.callbackQuery("profile:images:clear", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+    await updateUserField(userId, "profile_images", []);
+    delete getSession(userId).editingField;
+    await ctx.reply("✅ تمام تصاویر حذف شدند.");
+  });
+
+
+  // Handle photo uploads for profile images
+  bot.on("message:photo", async (ctx, next) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = getSession(userId);
+    if (session.editingField === "images") {
+      const photo = ctx.message.photo;
+      if (photo && photo.length > 0) {
+        // Get the largest photo
+        const largestPhoto = photo[photo.length - 1];
+        const fileId = largestPhoto.file_id;
+
+        try {
+          await addProfileImage(userId, fileId);
+          const profile = await getUserProfile(userId);
+          const imageCount = profile?.profile_images?.length || 0;
+          await ctx.reply(`✅ تصویر اضافه شد. شما اکنون ${imageCount} تصویر دارید.`);
+        } catch (err) {
+          log.error(BOT_NAME + " > Add image failed", err);
+          await ctx.reply("❌ خطا در افزودن تصویر.");
+        }
+      }
+    } else {
+      await next();
+    }
   });
 }
 

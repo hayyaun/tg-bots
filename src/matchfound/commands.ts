@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME } from "./constants";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -36,14 +36,19 @@ export function setupCommands(
 اینجا دیگه خبری از آدمای عجیب غریب با اهداف مختلف نیست، فقط و فقط دوستیابی سالم، دقیقا همونی که تو دنبالشی
 اینجا هیچ محدودیتی وجود نداره و میتونی به بهترین افراد مچ بشی
 هدف اصلی این ربات پیدا کردن دوست یا پارتنر هست و هرچیزی غیر ازین دو مورد گزارش بشه بررسی میشه
-برای اینکه بهترین افراد رو برای دوستی بهت پیشنهاد کنم حتما نیازه چند تا تست رو پاس کنی
+
+برای اینکه بهترین افراد رو برای دوستی بهت پیشنهاد کنم، باید تست‌های شخصیت‌شناسی رو در ربات @${INMANKIST_BOT_USERNAME} پاس کنی:
+• تست کهن الگو (Archetype)
+• تست MBTI
 
 📊 وضعیت تکمیل پروفایل: ${completionScore}/9`;
 
     const keyboard = new InlineKeyboard()
       .text("📝 ویرایش پروفایل", "profile:edit")
       .row()
-      .text("📊 وضعیت تکمیل", "completion:check");
+      .text("📊 وضعیت تکمیل", "completion:check")
+      .row()
+      .url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
     await ctx.reply(welcomeMessage, { reply_markup: keyboard });
   });
@@ -170,8 +175,20 @@ export function setupCommands(
     message += `⚧️ جنسیت: ${genderText}\n`;
     message += `🔍 دنبال: ${lookingForText}\n`;
     message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
-    message += `🔮 کهن الگو: ${profile.archetype_result || "ثبت نشده"}\n`;
-    message += `🧠 MBTI: ${profile.mbti_result ? profile.mbti_result.toUpperCase() : "ثبت نشده"}\n`;
+    
+    // Show quiz results with instructions if missing
+    if (profile.archetype_result) {
+      message += `🔮 کهن الگو: ${profile.archetype_result}\n`;
+    } else {
+      message += `🔮 کهن الگو: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
+    if (profile.mbti_result) {
+      message += `🧠 MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+    } else {
+      message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
     message += `📊 تکمیل: ${profile.completion_score}/9`;
 
     const keyboard = new InlineKeyboard()
@@ -185,6 +202,11 @@ export function setupCommands(
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username");
+    
+    // Add quiz button if quizzes are missing
+    if (!profile.archetype_result || !profile.mbti_result) {
+      keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    }
 
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
@@ -213,16 +235,37 @@ export function setupCommands(
     message += `${profile.birth_date ? "✅" : "❌"} تاریخ تولد\n`;
     message += `${profile.gender ? "✅" : "❌"} جنسیت\n`;
     message += `${profile.looking_for_gender ? "✅" : "❌"} دنبال چه کسی هستید\n`;
-    message += `${profile.archetype_result ? "✅" : "❌"} تست کهن الگو\n`;
-    message += `${profile.mbti_result ? "✅" : "❌"} تست MBTI\n\n`;
+    
+    // Highlight missing quizzes with instructions
+    if (profile.archetype_result) {
+      message += `✅ تست کهن الگو\n`;
+    } else {
+      message += `❌ تست کهن الگو (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
+    if (profile.mbti_result) {
+      message += `✅ تست MBTI\n`;
+    } else {
+      message += `❌ تست MBTI (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+    }
+    
+    message += `\n`;
 
     if (score < 7) {
-      message += `⚠️ برای استفاده از دستور /find باید حداقل 7 مورد را تکمیل کنید.`;
+      message += `⚠️ برای استفاده از دستور /find باید حداقل 7 مورد را تکمیل کنید.\n\n`;
+      if (!profile.archetype_result || !profile.mbti_result) {
+        message += `💡 برای انجام تست‌های شخصیت‌شناسی به ربات @${INMANKIST_BOT_USERNAME} بروید.`;
+      }
     } else {
       message += `✅ پروفایل شما آماده استفاده است!`;
     }
 
-    await ctx.reply(message, { parse_mode: "HTML" });
+    const keyboard = new InlineKeyboard();
+    if (!profile.archetype_result || !profile.mbti_result) {
+      keyboard.url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    }
+
+    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard.inline_keyboard.length > 0 ? keyboard : undefined });
   });
 
   // /settings command

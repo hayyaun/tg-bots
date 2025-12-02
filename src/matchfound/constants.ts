@@ -42,3 +42,6 @@ export const mbtiCompatibility: Record<string, string[]> = {
 
 export const BOT_NAME = "MatchFound";
 
+// Inmankist bot username (for quiz completion links)
+export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inmankist_bot";
+

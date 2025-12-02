@@ -25,5 +25,6 @@ export interface SessionData {
   likedUsers?: MatchUser[];
   currentLikedIndex?: number;
   reportingUserId?: number;
+  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username";
 }
 
