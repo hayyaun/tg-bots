@@ -1,5 +1,6 @@
 import { Context, InlineKeyboard } from "grammy";
 import { MatchUser } from "./types";
+import { MOODS } from "./constants";
 
 export async function displayMatch(ctx: Context, match: MatchUser, showUsername = false) {
   const ageText = match.age ? `${match.age} سال` : "نامشخص";
@@ -17,6 +18,9 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
   message += `📝 ${bioText}\n\n`;
   message += `🔮 ${archetypeText}\n`;
   message += `🧠 ${mbtiText}`;
+  if (match.mood) {
+    message += `\n😊 مود: ${MOODS[match.mood] || match.mood}`;
+  }
 
   if (showUsername) {
     message += `\n\n👤 Username: ${match.username ? `@${match.username}` : "نام کاربری ثبت نشده"}`;
@@ -58,6 +62,9 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
   message += `📝 ${bioText}\n\n`;
   message += `🔮 ${archetypeText}\n`;
   message += `🧠 ${mbtiText}`;
+  if (user.mood) {
+    message += `\n😊 مود: ${MOODS[user.mood] || user.mood}`;
+  }
 
   if (showUsername) {
     message += `\n\n👤 Username: ${user.username ? `@${user.username}` : "نام کاربری ثبت نشده"}`;

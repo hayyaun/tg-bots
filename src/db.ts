@@ -58,6 +58,7 @@ async function initializeSchema(): Promise<void> {
         archetype_result VARCHAR(50),
         mbti_result VARCHAR(10),
         profile_images TEXT[],
+        mood VARCHAR(10),
         completion_score INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()

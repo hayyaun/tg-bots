@@ -9,6 +9,7 @@ export interface UserProfile {
   archetype_result: string | null;
   mbti_result: string | null;
   profile_images: string[] | null;
+  mood: string | null;
   completion_score: number;
   created_at: Date;
   updated_at: Date;
@@ -25,6 +26,6 @@ export interface SessionData {
   likedUsers?: MatchUser[];
   currentLikedIndex?: number;
   reportingUserId?: number;
-  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username";
+  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood";
 }
 

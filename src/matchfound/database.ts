@@ -27,6 +27,7 @@ export async function calculateCompletionScore(
   if (profile.looking_for_gender) score++;
   if (profile.archetype_result) score++;
   if (profile.mbti_result) score++;
+  if (profile.mood) score++;
 
   return score;
 }

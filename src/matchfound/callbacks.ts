@@ -12,7 +12,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS } from "./constants";
 
 export function setupCallbacks(
   bot: Bot,
@@ -344,7 +344,13 @@ export function setupCallbacks(
       message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/9`;
+    if (profile.mood) {
+      message += `😊 مود: ${MOODS[profile.mood] || profile.mood}\n`;
+    } else {
+      message += `😊 مود: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/10`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -356,7 +362,8 @@ export function setupCallbacks(
       .text("🔍 دنبال", "profile:edit:looking_for")
       .text("📷 تصاویر", "profile:edit:images")
       .row()
-      .text("🔗 نام کاربری", "profile:edit:username");
+      .text("🔗 نام کاربری", "profile:edit:username")
+      .text("😊 مود", "profile:edit:mood");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
@@ -434,7 +441,13 @@ export function setupCallbacks(
       message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/9`;
+    if (profile.mood) {
+      message += `😊 مود: ${MOODS[profile.mood] || profile.mood}\n`;
+    } else {
+      message += `😊 مود: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/10`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -446,7 +459,8 @@ export function setupCallbacks(
       .text("🔍 دنبال", "profile:edit:looking_for")
       .text("📷 تصاویر", "profile:edit:images")
       .row()
-      .text("🔗 نام کاربری", "profile:edit:username");
+      .text("🔗 نام کاربری", "profile:edit:username")
+      .text("😊 مود", "profile:edit:mood");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
@@ -561,9 +575,49 @@ export function setupCallbacks(
         delete session.editingField;
         break;
 
+      case "mood":
+        session.editingField = "mood";
+        const moodKeyboard = new InlineKeyboard()
+          .text(`${MOODS.happy} خوشحال`, "profile:set:mood:happy")
+          .text(`${MOODS.sad} غمگین`, "profile:set:mood:sad")
+          .row()
+          .text(`${MOODS.tired} خسته`, "profile:set:mood:tired")
+          .text(`${MOODS.cool} باحال`, "profile:set:mood:cool")
+          .row()
+          .text(`${MOODS.thinking} در حال فکر`, "profile:set:mood:thinking")
+          .text(`${MOODS.excited} هیجان‌زده`, "profile:set:mood:excited")
+          .row()
+          .text(`${MOODS.calm} آرام`, "profile:set:mood:calm")
+          .text(`${MOODS.angry} عصبانی`, "profile:set:mood:angry")
+          .row()
+          .text(`${MOODS.neutral} خنثی`, "profile:set:mood:neutral")
+          .text(`${MOODS.playful} بازیگوش`, "profile:set:mood:playful");
+        await ctx.reply("مود خود را انتخاب کنید:", { reply_markup: moodKeyboard });
+        break;
+
       default:
         await ctx.reply("عملیات نامعتبر است.");
     }
+  });
+
+  // Handle setting mood
+  bot.callbackQuery(/profile:set:mood:(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const mood = ctx.match[1];
+    await ctx.answerCallbackQuery();
+    const session = getSession(userId);
+
+    if (!Object.keys(MOODS).includes(mood)) {
+      await ctx.reply("❌ مود نامعتبر است.");
+      delete session.editingField;
+      return;
+    }
+
+    await updateUserField(userId, "mood", mood);
+    delete session.editingField;
+    await ctx.reply(`✅ مود به ${MOODS[mood]} تغییر یافت.`);
   });
 
   // Handle setting gender

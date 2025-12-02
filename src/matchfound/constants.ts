@@ -45,3 +45,17 @@ export const BOT_NAME = "MatchFound";
 // Inmankist bot username (for quiz completion links)
 export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inmankist_bot";
 
+// Mood emojis for profile mood feature
+export const MOODS: Record<string, string> = {
+  happy: "😊",
+  sad: "😢",
+  tired: "😴",
+  cool: "😎",
+  thinking: "🤔",
+  excited: "😍",
+  calm: "😌",
+  angry: "😤",
+  neutral: "😐",
+  playful: "😋",
+};
+

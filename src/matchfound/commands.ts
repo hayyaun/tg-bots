@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS } from "./constants";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -41,7 +41,7 @@ export function setupCommands(
 • تست کهن الگو (Archetype)
 • تست MBTI
 
-📊 وضعیت تکمیل پروفایل: ${completionScore}/9`;
+        📊 وضعیت تکمیل پروفایل: ${completionScore}/10`;
 
     const keyboard = new InlineKeyboard()
       .text("📝 ویرایش پروفایل", "profile:edit")
@@ -191,7 +191,13 @@ export function setupCommands(
       message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/9`;
+    if (profile.mood) {
+      message += `😊 مود: ${MOODS[profile.mood] || profile.mood}\n`;
+    } else {
+      message += `😊 مود: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/10`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -203,7 +209,8 @@ export function setupCommands(
       .text("🔍 دنبال", "profile:edit:looking_for")
       .text("📷 تصاویر", "profile:edit:images")
       .row()
-      .text("🔗 نام کاربری", "profile:edit:username");
+      .text("🔗 نام کاربری", "profile:edit:username")
+      .text("😊 مود", "profile:edit:mood");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
