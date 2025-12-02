@@ -15,17 +15,27 @@ let isConnected = false;
 export async function connectDB(): Promise<void> {
   if (isConnected) return;
 
-  try {
-    // Test connection
-    await pool.query("SELECT NOW()");
-    isConnected = true;
-    log.info("PostgreSQL > Connected");
+  const maxRetries = 10;
+  const retryDelay = 2000; // 2 seconds
 
-    // Initialize schema
-    await initializeSchema();
-  } catch (err) {
-    log.error("PostgreSQL > Connection failed", err);
-    throw err;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Test connection
+      await pool.query("SELECT NOW()");
+      isConnected = true;
+      log.info("PostgreSQL > Connected");
+
+      // Initialize schema
+      await initializeSchema();
+      return; // Success, exit retry loop
+    } catch (err) {
+      if (attempt === maxRetries) {
+        log.error("PostgreSQL > Connection failed after all retries", err);
+        throw err;
+      }
+      log.info(`PostgreSQL > Connection attempt ${attempt}/${maxRetries} failed, retrying in ${retryDelay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
   }
 }
 
