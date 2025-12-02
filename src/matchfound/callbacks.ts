@@ -214,10 +214,87 @@ export function setupCallbacks(
         await ctx.reply("✅ گزارش شما ثبت شد و به ادمین ارسال شد.");
       } catch (err) {
         log.error(BOT_NAME + " > Report failed", err);
-        await ctx.reply("❌ خطا در ثبت گزارش");
+        delete session.reportingUserId; // Clear session state on error
+        await ctx.reply("❌ خطا در ثبت گزارش. لطفا دوباره تلاش کنید.");
       }
       return;
     }
+
+    // Handle profile editing
+    if (session.editingField) {
+      const text = ctx.message.text;
+      
+      // Handle cancel
+      if (text === "/cancel") {
+        delete session.editingField;
+        await ctx.reply("❌ ویرایش لغو شد.");
+        return;
+      }
+
+      try {
+        switch (session.editingField) {
+          case "name":
+            if (text.length > 100) {
+              await ctx.reply("❌ نام نمایشی نمی‌تواند بیشتر از 100 کاراکتر باشد.");
+              return;
+            }
+            await updateUserField(userId, "display_name", text);
+            delete session.editingField;
+            await ctx.reply(`✅ نام نمایشی به "${text}" تغییر یافت.`);
+            break;
+
+          case "bio":
+            if (text.length > 2000) {
+              await ctx.reply("❌ بیوگرافی نمی‌تواند بیشتر از 2000 کاراکتر باشد.");
+              return;
+            }
+            await updateUserField(userId, "biography", text);
+            delete session.editingField;
+            await ctx.reply("✅ بیوگرافی به‌روزرسانی شد.");
+            break;
+
+          case "birthdate":
+            // Validate date format YYYY-MM-DD
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (!dateRegex.test(text)) {
+              await ctx.reply(
+                "❌ فرمت تاریخ نامعتبر است. لطفا به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15)"
+              );
+              return;
+            }
+            const birthDate = new Date(text);
+            if (isNaN(birthDate.getTime())) {
+              await ctx.reply("❌ تاریخ نامعتبر است.");
+              return;
+            }
+            // Check if date is not in the future
+            if (birthDate > new Date()) {
+              await ctx.reply("❌ تاریخ تولد نمی‌تواند در آینده باشد.");
+              return;
+            }
+            // Check if age is reasonable (between 18 and 120)
+            const age = calculateAge(birthDate);
+            if (!age || age < 18 || age > 120) {
+              await ctx.reply("❌ سن باید بین 18 تا 120 سال باشد.");
+              return;
+            }
+            await updateUserField(userId, "birth_date", text);
+            delete session.editingField;
+            await ctx.reply(`✅ تاریخ تولد ثبت شد. سن شما: ${age} سال`);
+            break;
+
+          default:
+            await next();
+            return;
+        }
+      } catch (err) {
+        log.error(BOT_NAME + " > Profile edit failed", err);
+        await ctx.reply("❌ خطا در به‌روزرسانی پروفایل.");
+        delete session.editingField;
+      }
+      return;
+    }
+
     await next();
   });
 

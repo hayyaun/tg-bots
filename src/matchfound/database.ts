@@ -1,19 +1,19 @@
 import { query } from "../db";
 import { UserProfile } from "./types";
-import { calculateAge } from "./utils";
-import log from "../log";
-import { BOT_NAME } from "./constants";
 
-export async function getUserProfile(userId: number): Promise<UserProfile | null> {
-  const result = await query(
-    "SELECT * FROM users WHERE telegram_id = $1",
-    [userId]
-  );
+export async function getUserProfile(
+  userId: number
+): Promise<UserProfile | null> {
+  const result = await query("SELECT * FROM users WHERE telegram_id = $1", [
+    userId,
+  ]);
   if (result.rows.length === 0) return null;
   return result.rows[0] as UserProfile;
 }
 
-export async function calculateCompletionScore(userId: number): Promise<number> {
+export async function calculateCompletionScore(
+  userId: number
+): Promise<number> {
   const profile = await getUserProfile(userId);
   if (!profile) return 0;
 
@@ -56,7 +56,7 @@ export async function ensureUserExists(
       [userId, username || null]
     );
     await updateCompletionScore(userId);
-    
+
     if (onNewUser) {
       await onNewUser(userId, username);
     }
@@ -82,7 +82,10 @@ export async function updateUserField(
   await updateCompletionScore(userId);
 }
 
-export async function addProfileImage(userId: number, fileId: string): Promise<void> {
+export async function addProfileImage(
+  userId: number,
+  fileId: string
+): Promise<void> {
   const profile = await getUserProfile(userId);
   if (!profile) return;
 
@@ -93,7 +96,10 @@ export async function addProfileImage(userId: number, fileId: string): Promise<v
   }
 }
 
-export async function removeProfileImage(userId: number, fileId: string): Promise<void> {
+export async function removeProfileImage(
+  userId: number,
+  fileId: string
+): Promise<void> {
   const profile = await getUserProfile(userId);
   if (!profile) return;
 
@@ -101,4 +107,3 @@ export async function removeProfileImage(userId: number, fileId: string): Promis
   const newImages = currentImages.filter((id) => id !== fileId);
   await updateUserField(userId, "profile_images", newImages);
 }
-
