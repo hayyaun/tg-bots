@@ -3,6 +3,7 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 import converslation from "./converslation";
 import inmankist from "./inmankist";
 import ivwhat from "./ivwhat";
+import truthcheck from "./truthcheck";
 import log from "./log";
 import { connectRedis } from "./redis";
 
@@ -39,8 +40,12 @@ log.info("App Running", { dev: process.env.DEV });
     process.env.CONVERSLATION_BOT_KEY!,
     socksAgent
   );
+  const truthcheckBot = truthcheck.startBot(
+    process.env.TRUTHCHECK_BOT_KEY!,
+    socksAgent
+  );
 
-  Promise.all([arctypeBot, ivwhatBot, converslationBot]).then((bots) => {
+  Promise.all([arctypeBot, ivwhatBot, converslationBot, truthcheckBot]).then((bots) => {
     log.info("Bots Started: " + bots.map((b) => b.botInfo?.username).join(", "));
   });
 })();
