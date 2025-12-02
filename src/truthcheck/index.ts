@@ -126,10 +126,15 @@ const startBot = async (botKey: string, agent: unknown) => {
         (bot.botInfo?.username || "truthcheck_bot") +
         " your statement here",
       "",
-      "2️⃣ Reply to a message:",
-      "Reply to any message in this chat and I'll fact-check it",
+      "2️⃣ Reply to a message (any chat):",
+      "Reply to a message and mention me: @" +
+        (bot.botInfo?.username || "truthcheck_bot"),
+      "I'll automatically fact-check the replied message!",
       "",
-      "3️⃣ Forward a message:",
+      "3️⃣ Reply in private chat:",
+      "Just reply to any message in this chat and I'll fact-check it",
+      "",
+      "4️⃣ Forward a message:",
       "Forward any message to me and I'll fact-check it",
       "",
       "Examples:",
@@ -222,6 +227,77 @@ const startBot = async (botKey: string, agent: unknown) => {
     }
   });
 
+  // Handle when bot is mentioned in a reply (for group chats)
+  // This handler runs before the text handler to catch mentions
+  bot.on("message", async (ctx) => {
+    try {
+      const message = ctx.message;
+      
+      // Only process text messages
+      if (!("text" in message) || !message.text) return;
+      
+      const messageText = message.text;
+      
+      // Check if bot is mentioned and message is a reply
+      const botMentioned = message.entities?.some(
+        (e) =>
+          e.type === "mention" &&
+          messageText.substring(e.offset, e.offset + e.length).toLowerCase() ===
+            `@${bot.botInfo?.username?.toLowerCase()}`
+      );
+      
+      if (message.reply_to_message && botMentioned) {
+        const repliedText =
+          message.reply_to_message.text ||
+          message.reply_to_message.caption ||
+          "";
+        
+        if (repliedText.trim()) {
+          await ctx.reply("🔍 Analyzing the replied message... Please wait.");
+          
+          try {
+            const factCheckResult = await factCheckWithChatGPT(repliedText);
+            
+            const resultText =
+              `🔍 <b>Fact-Check Report</b>\n\n` +
+              `<i>Original Message:</i> "${repliedText}"\n\n` +
+              `${factCheckResult}`;
+            
+            await ctx.reply(resultText, {
+              parse_mode: "HTML",
+              reply_to_message_id: message.reply_to_message.message_id,
+            });
+            
+            log.info(BOT_NAME + " > Fact-Check (Mentioned in Reply)", {
+              userId: ctx.from?.id,
+              chatId: ctx.chat?.id,
+              textLength: repliedText.length,
+            });
+          } catch (error) {
+            log.error(BOT_NAME + " > Fact-Check Error (Mention)", error);
+            await ctx.reply(
+              "❌ Fact-check failed. Please try again later.",
+              {
+                reply_to_message_id: message.message_id,
+              }
+            );
+          }
+          return; // Don't process further
+        } else {
+          await ctx.reply(
+            "❌ The replied message doesn't contain text to fact-check.",
+            {
+              reply_to_message_id: message.message_id,
+            }
+          );
+          return; // Don't process further
+        }
+      }
+    } catch (error) {
+      log.error(BOT_NAME + " > Mention Handler Error", error);
+    }
+  });
+
   // Inline query handler
   bot.on("inline_query", async (ctx) => {
     try {
@@ -229,15 +305,22 @@ const startBot = async (botKey: string, agent: unknown) => {
       const userId = ctx.from.id;
 
       if (!query || query.length === 0) {
-        // Show usage instructions
+        // Show usage instructions with info about replying
         const result = InlineQueryResultBuilder.article(
           "usage",
-          "🔍 Type a statement to fact-check",
+          "🔍 Fact-Check Options",
           {
-            description: "I'll analyze the truthfulness of your statement",
+            description: "Type a statement or reply to a message",
           }
         ).text(
-          `Type a statement after @${bot.botInfo?.username || "bot"} to fact-check it.\n\nExample:\n@${bot.botInfo?.username || "bot"} The statement you want to verify`
+          `🔍 <b>How to use TruthCheck:</b>\n\n` +
+          `1️⃣ <b>Type a statement:</b>\n` +
+          `@${bot.botInfo?.username || "bot"} Your statement here\n\n` +
+          `2️⃣ <b>Reply to a message:</b>\n` +
+          `Reply to any message and mention me (@${bot.botInfo?.username || "bot"}) to fact-check it automatically\n\n` +
+          `3️⃣ <b>In private chat:</b>\n` +
+          `Just reply to a message and I'll fact-check it`,
+          { parse_mode: "HTML" }
         );
 
         await ctx.answerInlineQuery([result], { cache_time: 0 });
