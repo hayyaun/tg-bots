@@ -2,12 +2,14 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard, InlineQueryResultBuilder } from "grammy";
 import log from "../log";
 import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
+import redis from "../redis";
 
 configDotenv();
 
 const BOT_NAME = "Converslation";
 const REDIS_PREFIX = "converslation";
 const USER_LANG_TTL = 14 * 24 * 60 * 60; // 2 weeks in seconds
+const MAX_DAILY_TRANSLATIONS = 1000;
 
 // Popular languages for quick selection
 const POPULAR_LANGUAGES = [
@@ -90,6 +92,48 @@ async function refreshLanguageTTL(userId: number): Promise<void> {
   }
 }
 
+// Get today's date string in YYYY-MM-DD format (UTC)
+function getTodayDateKey(): string {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(now.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Get remaining seconds until midnight UTC
+function getSecondsUntilMidnightUTC(): number {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  return Math.floor((tomorrow.getTime() - now.getTime()) / 1000);
+}
+
+// Get today's translation count for a user
+async function getDailyTranslationCount(userId: number): Promise<number> {
+  const dateKey = getTodayDateKey();
+  const countKey = `${REDIS_PREFIX}:user:${userId}:translations:${dateKey}`;
+  const count = await redis.get(countKey);
+  return count ? parseInt(count, 10) : 0;
+}
+
+// Increment today's translation count for a user
+async function incrementDailyTranslationCount(userId: number): Promise<number> {
+  const dateKey = getTodayDateKey();
+  const countKey = `${REDIS_PREFIX}:user:${userId}:translations:${dateKey}`;
+  const ttl = getSecondsUntilMidnightUTC();
+  
+  // Use INCR to atomically increment, and set TTL if key is new
+  const count = await redis.incr(countKey);
+  if (count === 1) {
+    // First increment, set TTL
+    await redis.expire(countKey, ttl);
+  }
+  
+  return count;
+}
+
 const startBot = async (botKey: string, agent: unknown) => {
   const bot = new Bot(botKey, {
     client: { baseFetchConfig: { agent } },
@@ -102,6 +146,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     { command: "setlang", description: "Set target translation language" },
     { command: "mylang", description: "Show current language setting" },
     { command: "clearlang", description: "Clear language setting for this chat" },
+    { command: "usage", description: "Check your daily translation usage" },
   ];
 
   await bot.api.setMyCommands(commands);
@@ -210,6 +255,27 @@ const startBot = async (botKey: string, agent: unknown) => {
     await ctx.reply("✅ Language setting cleared.");
   });
 
+  // Command: /usage
+  bot.command("usage", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const count = await getDailyTranslationCount(userId);
+    const remaining = MAX_DAILY_TRANSLATIONS - count;
+    const percentage = Math.round((count / MAX_DAILY_TRANSLATIONS) * 100);
+
+    const usageText = [
+      "📊 Daily Translation Usage",
+      "",
+      `Used: ${count}/${MAX_DAILY_TRANSLATIONS} (${percentage}%)`,
+      `Remaining: ${remaining}`,
+      "",
+      "The limit resets at midnight UTC.",
+    ].join("\n");
+
+    await ctx.reply(usageText);
+  });
+
   // Callback query handler for language selection
   bot.callbackQuery(/lang:(.+)/, async (ctx) => {
     try {
@@ -310,12 +376,40 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Remove the trailing punctuation before translation
       const textToTranslate = query.slice(0, -1).trim();
 
+      // Check daily translation limit
+      const currentCount = await getDailyTranslationCount(userId);
+      if (currentCount >= MAX_DAILY_TRANSLATIONS) {
+        const remaining = MAX_DAILY_TRANSLATIONS - currentCount;
+        const errorResult = InlineQueryResultBuilder.article(
+          "limit-reached",
+          "⛔ Daily Limit Reached",
+          {
+            description: `You've reached the daily limit of ${MAX_DAILY_TRANSLATIONS} translations`,
+          }
+        ).text(
+          `⛔ Daily translation limit reached!\n\n` +
+          `You've used ${currentCount}/${MAX_DAILY_TRANSLATIONS} translations today.\n\n` +
+          `The limit will reset at midnight UTC.`
+        );
+
+        await ctx.answerInlineQuery([errorResult], { cache_time: 0 });
+        log.info(BOT_NAME + " > Translation Limit Reached", {
+          userId,
+          count: currentCount,
+          limit: MAX_DAILY_TRANSLATIONS,
+        });
+        return;
+      }
+
       // Translate the message directly
       try {
         const translation = await translateWithChatGPT(
           textToTranslate,
           targetLang
         );
+
+        // Increment translation count after successful translation
+        const newCount = await incrementDailyTranslationCount(userId);
 
         const langInfo = POPULAR_LANGUAGES.find((l) => l.code === targetLang);
         const langName = langInfo ? langInfo.name : targetLang;
@@ -335,6 +429,8 @@ const startBot = async (botKey: string, agent: unknown) => {
           userId,
           originalLength: query.length,
           translationLength: translation.length,
+          dailyCount: newCount,
+          limit: MAX_DAILY_TRANSLATIONS,
         });
       } catch (error) {
         // Show error result
