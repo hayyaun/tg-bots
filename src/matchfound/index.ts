@@ -35,7 +35,6 @@ const startBot = async (botKey: string, agent: unknown) => {
     { command: "find", description: "پیدا کردن افراد" },
     { command: "liked", description: "افرادی که من را لایک کردند" },
     { command: "profile", description: "مشاهده و ویرایش پروفایل" },
-    { command: "completion", description: "وضعیت تکمیل پروفایل" },
     { command: "settings", description: "تنظیمات" },
   ];
 

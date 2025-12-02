@@ -68,7 +68,7 @@ export function setupCommands(
     // Check minimum completion (7/9) and username requirement
     if (profile.completion_score < 7) {
       await ctx.reply(
-        `برای استفاده از این دستور، باید حداقل 7 مورد از 9 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/9\nاز دستور /completion برای مشاهده جزئیات استفاده کنید.`
+        `برای استفاده از این دستور، باید حداقل 7 مورد از 9 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/9\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
       );
       return;
     }
@@ -150,6 +150,8 @@ export function setupCommands(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    // Recalculate completion score to ensure it's up to date
+    await updateCompletionScore(userId);
     const profile = await getUserProfile(userId);
     if (!profile) {
       await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
@@ -211,70 +213,15 @@ export function setupCommands(
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
 
-  // /completion command
-  bot.command("completion", async (ctx) => {
-    ctx.react("🤔").catch(() => {});
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
-      return;
-    }
-
-    await updateCompletionScore(userId);
-    const updatedProfile = await getUserProfile(userId);
-    const score = updatedProfile?.completion_score || 0;
-
-    let message = `📊 <b>وضعیت تکمیل پروفایل: ${score}/9</b>\n\n`;
-    message += `${profile.username ? "✅" : "❌"} نام کاربری\n`;
-    message += `${profile.profile_images && profile.profile_images.length > 0 ? "✅" : "❌"} تصاویر پروفایل\n`;
-    message += `${profile.display_name ? "✅" : "❌"} نام نمایشی\n`;
-    message += `${profile.biography ? "✅" : "❌"} بیوگرافی\n`;
-    message += `${profile.birth_date ? "✅" : "❌"} تاریخ تولد\n`;
-    message += `${profile.gender ? "✅" : "❌"} جنسیت\n`;
-    message += `${profile.looking_for_gender ? "✅" : "❌"} دنبال چه کسی هستید\n`;
-    
-    // Highlight missing quizzes with instructions
-    if (profile.archetype_result) {
-      message += `✅ تست کهن الگو\n`;
-    } else {
-      message += `❌ تست کهن الگو (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
-    }
-    
-    if (profile.mbti_result) {
-      message += `✅ تست MBTI\n`;
-    } else {
-      message += `❌ تست MBTI (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
-    }
-    
-    message += `\n`;
-
-    if (score < 7) {
-      message += `⚠️ برای استفاده از دستور /find باید حداقل 7 مورد را تکمیل کنید.\n\n`;
-      if (!profile.archetype_result || !profile.mbti_result) {
-        message += `💡 برای انجام تست‌های شخصیت‌شناسی به ربات @${INMANKIST_BOT_USERNAME} بروید.`;
-      }
-    } else {
-      message += `✅ پروفایل شما آماده استفاده است!`;
-    }
-
-    const keyboard = new InlineKeyboard();
-    if (!profile.archetype_result || !profile.mbti_result) {
-      keyboard.url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
-    }
-
-    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard.inline_keyboard.length > 0 ? keyboard : undefined });
-  });
 
   // /settings command
   bot.command("settings", async (ctx) => {
     ctx.react("🤔").catch(() => {});
     await ctx.reply(
       "تنظیمات:\n\n" +
-      "/profile - ویرایش پروفایل\n" +
-      "/completion - وضعیت تکمیل پروفایل"
+      "/profile - مشاهده و ویرایش پروفایل\n" +
+      "/find - پیدا کردن افراد\n" +
+      "/liked - افرادی که من را لایک کردند"
     );
   });
 }

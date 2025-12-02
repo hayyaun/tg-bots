@@ -289,61 +289,74 @@ export function setupCallbacks(
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
 
-  // Callback: completion:check (from /start command)
+  // Callback: completion:check (from /start command) - redirects to profile
   bot.callbackQuery("completion:check", async (ctx) => {
     await ctx.answerCallbackQuery();
+    // Trigger /profile command by simulating it
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    // Recalculate completion score to ensure it's up to date
+    await updateCompletionScore(userId);
     const profile = await getUserProfile(userId);
     if (!profile) {
       await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
       return;
     }
 
-    await updateCompletionScore(userId);
-    const updatedProfile = await getUserProfile(userId);
-    const score = updatedProfile?.completion_score || 0;
+    const ageText = profile.birth_date
+      ? `${calculateAge(profile.birth_date)} سال`
+      : "ثبت نشده";
+    const genderText = profile.gender === "male" ? "مرد" : profile.gender === "female" ? "زن" : "ثبت نشده";
+    const lookingForText =
+      profile.looking_for_gender === "male"
+        ? "مرد"
+        : profile.looking_for_gender === "female"
+        ? "زن"
+        : profile.looking_for_gender === "both"
+        ? "هر دو"
+        : "ثبت نشده";
 
-    let message = `📊 <b>وضعیت تکمیل پروفایل: ${score}/9</b>\n\n`;
-    message += `${profile.username ? "✅" : "❌"} نام کاربری\n`;
-    message += `${profile.profile_images && profile.profile_images.length > 0 ? "✅" : "❌"} تصاویر پروفایل\n`;
-    message += `${profile.display_name ? "✅" : "❌"} نام نمایشی\n`;
-    message += `${profile.biography ? "✅" : "❌"} بیوگرافی\n`;
-    message += `${profile.birth_date ? "✅" : "❌"} تاریخ تولد\n`;
-    message += `${profile.gender ? "✅" : "❌"} جنسیت\n`;
-    message += `${profile.looking_for_gender ? "✅" : "❌"} دنبال چه کسی هستید\n`;
+    let message = `📋 <b>پروفایل شما</b>\n\n`;
+    message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
+    message += `🎂 سن: ${ageText}\n`;
+    message += `⚧️ جنسیت: ${genderText}\n`;
+    message += `🔍 دنبال: ${lookingForText}\n`;
+    message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
     
-    // Highlight missing quizzes with instructions
+    // Show quiz results with instructions if missing
     if (profile.archetype_result) {
-      message += `✅ تست کهن الگو\n`;
+      message += `🔮 کهن الگو: ${profile.archetype_result}\n`;
     } else {
-      message += `❌ تست کهن الگو (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `🔮 کهن الگو: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
     if (profile.mbti_result) {
-      message += `✅ تست MBTI\n`;
+      message += `🧠 MBTI: ${profile.mbti_result.toUpperCase()}\n`;
     } else {
-      message += `❌ تست MBTI (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
-    message += `\n`;
+    message += `📊 تکمیل: ${profile.completion_score}/9`;
 
-    if (score < 7) {
-      message += `⚠️ برای استفاده از دستور /find باید حداقل 7 مورد را تکمیل کنید.\n\n`;
-      if (!profile.archetype_result || !profile.mbti_result) {
-        message += `💡 برای انجام تست‌های شخصیت‌شناسی به ربات @${INMANKIST_BOT_USERNAME} بروید.`;
-      }
-    } else {
-      message += `✅ پروفایل شما آماده استفاده است!`;
-    }
-
-    const keyboard = new InlineKeyboard();
+    const keyboard = new InlineKeyboard()
+      .text("✏️ ویرایش نام", "profile:edit:name")
+      .text("📝 ویرایش بیوگرافی", "profile:edit:bio")
+      .row()
+      .text("🎂 تاریخ تولد", "profile:edit:birthdate")
+      .text("⚧️ جنسیت", "profile:edit:gender")
+      .row()
+      .text("🔍 دنبال", "profile:edit:looking_for")
+      .text("📷 تصاویر", "profile:edit:images")
+      .row()
+      .text("🔗 نام کاربری", "profile:edit:username");
+    
+    // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
-      keyboard.url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+      keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
-    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard.inline_keyboard.length > 0 ? keyboard : undefined });
+    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   });
 
   // Profile editing callbacks
@@ -416,9 +429,18 @@ export function setupCallbacks(
 
       case "username":
         session.editingField = "username";
-        await ctx.reply(
-          "نام کاربری تلگرام شما به صورت خودکار از پروفایل تلگرام شما خوانده می‌شود.\n\nاگر نام کاربری ندارید، لطفا در تنظیمات تلگرام یک نام کاربری تنظیم کنید و سپس دوباره این ربات را باز کنید."
-        );
+        // Update username from current Telegram profile
+        const currentUsername = ctx.from?.username;
+        if (currentUsername) {
+          await updateUserField(userId, "username", currentUsername);
+          await ctx.reply(
+            `✅ نام کاربری به‌روزرسانی شد: @${currentUsername}\n\nنام کاربری شما از پروفایل تلگرام شما خوانده می‌شود و به صورت خودکار به‌روزرسانی می‌شود.`
+          );
+        } else {
+          await ctx.reply(
+            "❌ شما در حال حاضر نام کاربری تلگرام ندارید.\n\nلطفا در تنظیمات تلگرام یک نام کاربری تنظیم کنید و سپس دوباره این دکمه را بزنید."
+          );
+        }
         delete session.editingField;
         break;
 
