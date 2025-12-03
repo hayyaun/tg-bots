@@ -142,8 +142,8 @@ export function setupCommands(
       where: { user_id: BigInt(userId) },
       select: { ignored_user_id: true },
     });
-    const ignoredIds = new Set(ignoredByUser.map((i) => i.ignored_user_id));
-    const filteredLikes = likes.filter((like) => !ignoredIds.has(like.user_id));
+    const ignoredIds = new Set(ignoredByUser.map((i: { ignored_user_id: bigint }) => i.ignored_user_id));
+    const filteredLikes = likes.filter((like: typeof likes[0]) => !ignoredIds.has(like.user_id));
 
     if (filteredLikes.length === 0) {
       await ctx.reply("هنوز کسی شما را لایک نکرده است.");
@@ -152,7 +152,7 @@ export function setupCommands(
 
     // Store in session for pagination
     const session = getSession(userId);
-    session.likedUsers = filteredLikes.map((like) => {
+    session.likedUsers = filteredLikes.map((like: typeof filteredLikes[0]) => {
       const user = like.user;
       return {
         ...user,
@@ -167,7 +167,7 @@ export function setupCommands(
     session.currentLikedIndex = 0;
 
     // Show first person
-    const firstUser = session.likedUsers[0];
+    const firstUser = session.likedUsers![0];
     firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
     await displayLikedUser(ctx, firstUser);
   });

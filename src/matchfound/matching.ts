@@ -19,21 +19,21 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     where: { user_id: BigInt(userId) },
     select: { liked_user_id: true },
   });
-  likes.forEach((like) => excludedIds.push(like.liked_user_id));
+  likes.forEach((like: { liked_user_id: bigint }) => excludedIds.push(like.liked_user_id));
 
   // Get users who ignored this user
   const ignoredBy = await prisma.ignored.findMany({
     where: { ignored_user_id: BigInt(userId) },
     select: { user_id: true },
   });
-  ignoredBy.forEach((ignored) => excludedIds.push(ignored.user_id));
+  ignoredBy.forEach((ignored: { user_id: bigint }) => excludedIds.push(ignored.user_id));
 
   // Get users this user has ignored
   const ignoredByUser = await prisma.ignored.findMany({
     where: { user_id: BigInt(userId) },
     select: { ignored_user_id: true },
   });
-  ignoredByUser.forEach((ignored) => excludedIds.push(ignored.ignored_user_id));
+  ignoredByUser.forEach((ignored: { ignored_user_id: bigint }) => excludedIds.push(ignored.ignored_user_id));
 
   // Get all candidates matching criteria
   const whereClause: any = {

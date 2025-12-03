@@ -41,14 +41,18 @@ COPY package*.json ./
 # Install dependencies - force canvas to build from source for Alpine
 RUN npm i && npm cache clean --force;
 
+# Copy Prisma schema and config first (needed for generating client)
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
+# Generate Prisma Client (must be done before TypeScript build)
+RUN npx prisma generate
+
 # Copy the rest of the app
 COPY . .
 
 # Build TypeScript files
 RUN npm run build
-
-# Generate Prisma Client
-RUN npx prisma generate
 
 # Set environment variables (if needed)
 ENV NODE_ENV=production
