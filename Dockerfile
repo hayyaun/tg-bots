@@ -41,14 +41,14 @@ COPY package*.json ./
 # Install dependencies - force canvas to build from source for Alpine
 RUN npm i && npm cache clean --force;
 
-# Copy Prisma schema first (needed for generating client)
-# Note: We don't copy prisma.config.ts here because it requires DATABASE_URL
-# which isn't available at build time. Prisma Client generation only needs the schema.
+# Copy Prisma schema and config first (needed for generating client)
+# Prisma 7 requires the config file, but we can use a dummy DATABASE_URL for generation
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 
 # Generate Prisma Client (must be done before TypeScript build)
-# Use --schema flag to explicitly specify the schema file
-RUN npx prisma generate --schema=prisma/schema.prisma
+# Use a dummy DATABASE_URL since we only need to generate types, not connect to DB
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
 
 # Copy the rest of the app
 COPY . .
