@@ -361,9 +361,9 @@ export function setupCallbacks(
     }
     
     if (profile.mbti_result) {
-      message += `🧠 MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+      message += `🧠 تست MBTI: ${profile.mbti_result.toUpperCase()}\n`;
     } else {
-      message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `🧠 تست MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
     if (profile.mood) {
@@ -458,9 +458,9 @@ export function setupCallbacks(
     }
     
     if (profile.mbti_result) {
-      message += `🧠 MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+      message += `🧠 تست MBTI: ${profile.mbti_result.toUpperCase()}\n`;
     } else {
-      message += `🧠 MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `🧠 تست MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
     }
     
     if (profile.mood) {

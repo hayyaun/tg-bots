@@ -10,8 +10,8 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
     ? `کهن الگو: ${match.archetype_result}`
     : "کهن الگو: ثبت نشده";
   const mbtiText = match.mbti_result
-    ? `MBTI: ${match.mbti_result.toUpperCase()}`
-    : "MBTI: ثبت نشده";
+    ? `تست MBTI: ${match.mbti_result.toUpperCase()}`
+    : "تست MBTI: ثبت نشده";
 
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}\n\n`;
@@ -54,8 +54,8 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
     ? `کهن الگو: ${user.archetype_result}`
     : "کهن الگو: ثبت نشده";
   const mbtiText = user.mbti_result
-    ? `MBTI: ${user.mbti_result.toUpperCase()}`
-    : "MBTI: ثبت نشده";
+    ? `تست MBTI: ${user.mbti_result.toUpperCase()}`
+    : "تست MBTI: ثبت نشده";
 
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}\n\n`;
