@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.0.1",
     "@prisma/client": "^7.0.1",
     "@types/lodash": "^4.17.16",
     "@types/pg": "^8.15.6",
