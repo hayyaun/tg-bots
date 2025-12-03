@@ -47,11 +47,14 @@ COPY . .
 # Build TypeScript files
 RUN npm run build
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Set environment variables (if needed)
 ENV NODE_ENV=production
 
 # Expose port if necessary
 # EXPOSE 3000
 
-# Command to run the bot
-CMD ["npm", "start"]
+# Command to apply migrations (or sync schema if no migrations exist) and start the bot
+CMD ["sh", "-c", "(npx prisma migrate deploy || npx prisma db push) && npm start"]
