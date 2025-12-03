@@ -48,7 +48,7 @@ COPY prisma.config.ts ./
 
 # Generate Prisma Client (must be done before TypeScript build)
 # Use a dummy DATABASE_URL since we only need to generate types, not connect to DB
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npm run generate
 
 # Copy the rest of the app
 COPY . .

@@ -6,6 +6,7 @@
     "build": "tsc && copyfiles -u 1 'src/**/*.json' dist",
     "start": "node dist/index.js",
     "dev": "clear && ts-node src/index.ts",
+    "generate": "prisma generate",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix"
   },
