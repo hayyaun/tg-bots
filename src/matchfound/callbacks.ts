@@ -341,7 +341,7 @@ export function setupCallbacks(
       profile.looking_for_gender === "male"
         ? "مرد"
         : profile.looking_for_gender === "female"
-        ? "زن"
+        ? "خانم"
         : profile.looking_for_gender === "both"
         ? "هر دو"
         : "ثبت نشده";
@@ -350,7 +350,7 @@ export function setupCallbacks(
     message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
     message += `🎂 سن: ${ageText}\n`;
     message += `⚧️ جنسیت: ${genderText}\n`;
-    message += `🔍 دنبال: ${lookingForText}\n`;
+    message += `💝 پیشنهاد: ${lookingForText}\n`;
     message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
     
     // Show quiz results with instructions if missing
@@ -381,7 +381,7 @@ export function setupCallbacks(
       .text("🎂 تاریخ تولد", "profile:edit:birthdate")
       .text("⚧️ جنسیت", "profile:edit:gender")
       .row()
-      .text("🔍 دنبال", "profile:edit:looking_for")
+      .text("💝 پیشنهاد", "profile:edit:looking_for")
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username")
@@ -438,7 +438,7 @@ export function setupCallbacks(
       profile.looking_for_gender === "male"
         ? "مرد"
         : profile.looking_for_gender === "female"
-        ? "زن"
+        ? "خانم"
         : profile.looking_for_gender === "both"
         ? "هر دو"
         : "ثبت نشده";
@@ -447,7 +447,7 @@ export function setupCallbacks(
     message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
     message += `🎂 سن: ${ageText}\n`;
     message += `⚧️ جنسیت: ${genderText}\n`;
-    message += `🔍 دنبال: ${lookingForText}\n`;
+    message += `💝 پیشنهاد: ${lookingForText}\n`;
     message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
     
     // Show quiz results with instructions if missing
@@ -478,7 +478,7 @@ export function setupCallbacks(
       .text("🎂 تاریخ تولد", "profile:edit:birthdate")
       .text("⚧️ جنسیت", "profile:edit:gender")
       .row()
-      .text("🔍 دنبال", "profile:edit:looking_for")
+      .text("💝 پیشنهاد", "profile:edit:looking_for")
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username")
@@ -555,10 +555,10 @@ export function setupCallbacks(
         session.editingField = "looking_for";
         const lookingForKeyboard = new InlineKeyboard()
           .text("مرد", "profile:set:looking_for:male")
-          .text("زن", "profile:set:looking_for:female")
+          .text("خانم", "profile:set:looking_for:female")
           .row()
           .text("هر دو", "profile:set:looking_for:both");
-        await ctx.reply("دنبال چه کسی هستید؟", { reply_markup: lookingForKeyboard });
+        await ctx.reply("می‌خواهید چه کسی به شما پیشنهاد شود؟", { reply_markup: lookingForKeyboard });
         break;
 
       case "images":
@@ -662,7 +662,7 @@ export function setupCallbacks(
     const lookingFor = ctx.match[1];
     await ctx.answerCallbackQuery();
     const text =
-      lookingFor === "male" ? "مرد" : lookingFor === "female" ? "زن" : "هر دو";
+      lookingFor === "male" ? "مرد" : lookingFor === "female" ? "خانم" : "هر دو";
     await updateUserField(userId, "looking_for_gender", lookingFor);
     delete getSession(userId).editingField;
     await ctx.reply(`✅ تنظیمات به "${text}" تغییر یافت.`);

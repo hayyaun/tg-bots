@@ -194,7 +194,7 @@ export function setupCommands(
       profile.looking_for_gender === "male"
         ? "مرد"
         : profile.looking_for_gender === "female"
-        ? "زن"
+        ? "خانم"
         : profile.looking_for_gender === "both"
         ? "هر دو"
         : "ثبت نشده";
@@ -203,7 +203,7 @@ export function setupCommands(
     message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
     message += `🎂 سن: ${ageText}\n`;
     message += `⚧️ جنسیت: ${genderText}\n`;
-    message += `🔍 دنبال: ${lookingForText}\n`;
+    message += `💝 پیشنهاد: ${lookingForText}\n`;
     message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
     
     // Show quiz results with instructions if missing
@@ -234,7 +234,7 @@ export function setupCommands(
       .text("🎂 تاریخ تولد", "profile:edit:birthdate")
       .text("⚧️ جنسیت", "profile:edit:gender")
       .row()
-      .text("🔍 دنبال", "profile:edit:looking_for")
+      .text("💝 پیشنهاد", "profile:edit:looking_for")
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username")
