@@ -1,14 +1,22 @@
-import { query } from "../db";
+import { prisma } from "../db";
 import { UserProfile } from "./types";
 
 export async function getUserProfile(
   userId: number
 ): Promise<UserProfile | null> {
-  const result = await query("SELECT * FROM users WHERE telegram_id = $1", [
-    userId,
-  ]);
-  if (result.rows.length === 0) return null;
-  return result.rows[0] as UserProfile;
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(userId) },
+  });
+  if (!user) return null;
+  
+  // Convert BigInt to number and Date to Date
+  return {
+    ...user,
+    telegram_id: Number(user.telegram_id),
+    birth_date: user.birth_date || null,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  } as UserProfile;
 }
 
 export async function calculateCompletionScore(
@@ -34,10 +42,10 @@ export async function calculateCompletionScore(
 
 export async function updateCompletionScore(userId: number): Promise<void> {
   const score = await calculateCompletionScore(userId);
-  await query(
-    "UPDATE users SET completion_score = $1, updated_at = NOW() WHERE telegram_id = $2",
-    [score, userId]
-  );
+  await prisma.user.update({
+    where: { telegram_id: BigInt(userId) },
+    data: { completion_score: score },
+  });
 }
 
 export async function ensureUserExists(
@@ -45,41 +53,46 @@ export async function ensureUserExists(
   username?: string,
   onNewUser?: (userId: number, username?: string) => Promise<void>
 ): Promise<void> {
-  const result = await query(
-    "SELECT telegram_id FROM users WHERE telegram_id = $1",
-    [userId]
-  );
-  if (result.rows.length === 0) {
-    await query(
-      `INSERT INTO users (telegram_id, username, created_at, updated_at)
-       VALUES ($1, $2, NOW(), NOW())
-       ON CONFLICT (telegram_id) DO NOTHING`,
-      [userId, username || null]
-    );
+  const existing = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(userId) },
+  });
+
+  if (!existing) {
+    await prisma.user.upsert({
+      where: { telegram_id: BigInt(userId) },
+      create: {
+        telegram_id: BigInt(userId),
+        username: username || null,
+      },
+      update: {},
+    });
     await updateCompletionScore(userId);
 
     if (onNewUser) {
       await onNewUser(userId, username);
     }
-  } else if (username) {
-    // Update username if provided
-    await query(
-      "UPDATE users SET username = $1, updated_at = NOW() WHERE telegram_id = $2",
-      [username, userId]
-    );
+  } else if (username && existing.username !== username) {
+    // Update username if provided and different
+    await prisma.user.update({
+      where: { telegram_id: BigInt(userId) },
+      data: { username },
+    });
     await updateCompletionScore(userId);
   }
 }
 
 export async function updateUserField(
   userId: number,
-  field: string,
+  field: keyof UserProfile,
   value: unknown
 ): Promise<void> {
-  await query(
-    `UPDATE users SET ${field} = $1, updated_at = NOW() WHERE telegram_id = $2`,
-    [value, userId]
-  );
+  // Map TypeScript field names to Prisma field names (they should match, but handle any differences)
+  const data: Record<string, unknown> = { [field]: value };
+  
+  await prisma.user.update({
+    where: { telegram_id: BigInt(userId) },
+    data,
+  });
   await updateCompletionScore(userId);
 }
 
@@ -93,7 +106,11 @@ export async function addProfileImage(
   const currentImages = profile.profile_images || [];
   if (!currentImages.includes(fileId)) {
     const newImages = [...currentImages, fileId];
-    await updateUserField(userId, "profile_images", newImages);
+    await prisma.user.update({
+      where: { telegram_id: BigInt(userId) },
+      data: { profile_images: newImages },
+    });
+    await updateCompletionScore(userId);
   }
 }
 
@@ -106,5 +123,9 @@ export async function removeProfileImage(
 
   const currentImages = profile.profile_images || [];
   const newImages = currentImages.filter((id) => id !== fileId);
-  await updateUserField(userId, "profile_images", newImages);
+  await prisma.user.update({
+    where: { telegram_id: BigInt(userId) },
+    data: { profile_images: newImages },
+  });
+  await updateCompletionScore(userId);
 }

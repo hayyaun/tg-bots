@@ -1,4 +1,4 @@
-import { query } from "../db";
+import { prisma } from "../db";
 import { UserProfile, MatchUser } from "./types";
 import { archetypeCompatibility, mbtiCompatibility } from "./constants";
 import { calculateAge } from "./utils";
@@ -12,65 +12,71 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
   if (!userAge) return [];
 
   // Get all excluded user IDs
-  const excludedIds = [userId];
-  
+  const excludedIds: bigint[] = [BigInt(userId)];
+
   // Get users already liked
-  const likedResult = await query(
-    "SELECT liked_user_id FROM likes WHERE user_id = $1",
-    [userId]
-  );
-  likedResult.rows.forEach((row) => excludedIds.push(row.liked_user_id));
+  const likes = await prisma.like.findMany({
+    where: { user_id: BigInt(userId) },
+    select: { liked_user_id: true },
+  });
+  likes.forEach((like) => excludedIds.push(like.liked_user_id));
 
   // Get users who ignored this user
-  const ignoredResult = await query(
-    "SELECT user_id FROM ignored WHERE ignored_user_id = $1",
-    [userId]
-  );
-  ignoredResult.rows.forEach((row) => excludedIds.push(row.user_id));
+  const ignoredBy = await prisma.ignored.findMany({
+    where: { ignored_user_id: BigInt(userId) },
+    select: { user_id: true },
+  });
+  ignoredBy.forEach((ignored) => excludedIds.push(ignored.user_id));
 
   // Get users this user has ignored
-  const ignoredByUserResult = await query(
-    "SELECT ignored_user_id FROM ignored WHERE user_id = $1",
-    [userId]
-  );
-  ignoredByUserResult.rows.forEach((row) => excludedIds.push(row.ignored_user_id));
+  const ignoredByUser = await prisma.ignored.findMany({
+    where: { user_id: BigInt(userId) },
+    select: { ignored_user_id: true },
+  });
+  ignoredByUser.forEach((ignored) => excludedIds.push(ignored.ignored_user_id));
 
-  // Base query: gender filter + age filter + minimum completion + not excluded
-  let baseQuery = `
-    SELECT u.*,
-           EXTRACT(YEAR FROM AGE(u.birth_date))::INTEGER as age
-    FROM users u
-    WHERE u.telegram_id != $1
-      AND NOT (u.telegram_id = ANY($2::bigint[]))
-      AND u.completion_score >= 7
-      AND u.username IS NOT NULL
-      AND u.gender IS NOT NULL
-      AND u.birth_date IS NOT NULL
-  `;
+  // Get all candidates matching criteria
+  const whereClause: any = {
+    telegram_id: { not: BigInt(userId), notIn: excludedIds },
+    completion_score: { gte: 7 },
+    username: { not: null },
+    gender: { not: null },
+    birth_date: { not: null },
+  };
 
-  const params: unknown[] = [userId, excludedIds];
-  let paramIndex = 3;
-
-  // Gender filter
+  // Build gender filter
   if (user.looking_for_gender === "both") {
-    baseQuery += ` AND u.gender IN ('male', 'female')`;
+    whereClause.gender = { in: ["male", "female"] };
   } else {
-    baseQuery += ` AND u.gender = $${paramIndex}`;
-    params.push(user.looking_for_gender);
-    paramIndex++;
+    whereClause.gender = user.looking_for_gender;
   }
 
-  // Age filter (max 8 years difference)
-  baseQuery += ` AND ABS(EXTRACT(YEAR FROM AGE(u.birth_date))::INTEGER - $${paramIndex}) <= 8`;
-  params.push(userAge);
-  paramIndex++;
+  const candidates = await prisma.user.findMany({
+    where: whereClause,
+  });
 
-  const allCandidates = await query(baseQuery, params);
+  // Filter by age (max 8 years difference) and calculate compatibility
   const matches: MatchUser[] = [];
+  const minAge = userAge - 8;
+  const maxAge = userAge + 8;
 
-  for (const candidate of allCandidates.rows) {
-    const matchUser = candidate as MatchUser;
-    let matchPriority = 999; // Lower is better
+  for (const candidate of candidates) {
+    const candidateAge = calculateAge(candidate.birth_date);
+    if (!candidateAge || candidateAge < minAge || candidateAge > maxAge) {
+      continue;
+    }
+
+    const matchUser: MatchUser = {
+      ...candidate,
+      telegram_id: Number(candidate.telegram_id),
+      birth_date: candidate.birth_date || null,
+      created_at: candidate.created_at,
+      updated_at: candidate.updated_at,
+      age: candidateAge,
+      match_priority: 999,
+    } as MatchUser;
+
+    let matchPriority = 999;
 
     // Check archetype compatibility
     let archetypeMatch = false;
@@ -109,7 +115,6 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     }
 
     matchUser.match_priority = matchPriority;
-    matchUser.age = matchUser.age || calculateAge(matchUser.birth_date);
     matches.push(matchUser);
   }
 
@@ -128,4 +133,3 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
 
   return matches;
 }
-

@@ -1,5 +1,5 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { query } from "../db";
+import { prisma } from "../db";
 import { getUserProfile, ensureUserExists, updateCompletionScore } from "./database";
 import { findMatches } from "./matching";
 import { displayMatch, displayLikedUser } from "./display";
@@ -117,29 +117,57 @@ export function setupCommands(
     if (!userId) return;
 
     // Get users who liked this user (and not ignored)
-    const result = await query(
-      `SELECT u.*, EXTRACT(YEAR FROM AGE(u.birth_date))::INTEGER as age
-       FROM users u
-       INNER JOIN likes l ON u.telegram_id = l.user_id
-       LEFT JOIN ignored i ON i.user_id = $1 AND i.ignored_user_id = u.telegram_id
-       WHERE l.liked_user_id = $1
-         AND i.id IS NULL
-       ORDER BY l.created_at DESC`,
-      [userId]
-    );
+    // Get users who liked this user, excluding ignored ones
+    const likes = await prisma.like.findMany({
+      where: {
+        liked_user_id: BigInt(userId),
+        user: {
+          ignoredReceived: {
+            none: {
+              user_id: BigInt(userId),
+            },
+          },
+        },
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    });
 
-    if (result.rows.length === 0) {
+    // Filter out users that this user has ignored
+    const ignoredByUser = await prisma.ignored.findMany({
+      where: { user_id: BigInt(userId) },
+      select: { ignored_user_id: true },
+    });
+    const ignoredIds = new Set(ignoredByUser.map((i) => i.ignored_user_id));
+    const filteredLikes = likes.filter((like) => !ignoredIds.has(like.user_id));
+
+    if (filteredLikes.length === 0) {
       await ctx.reply("هنوز کسی شما را لایک نکرده است.");
       return;
     }
 
     // Store in session for pagination
     const session = getSession(userId);
-    session.likedUsers = result.rows as MatchUser[];
+    session.likedUsers = filteredLikes.map((like) => {
+      const user = like.user;
+      return {
+        ...user,
+        telegram_id: Number(user.telegram_id),
+        birth_date: user.birth_date || null,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        age: calculateAge(user.birth_date),
+        match_priority: 0,
+      } as MatchUser;
+    });
     session.currentLikedIndex = 0;
 
     // Show first person
-    const firstUser = result.rows[0] as MatchUser;
+    const firstUser = session.likedUsers[0];
     firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
     await displayLikedUser(ctx, firstUser);
   });

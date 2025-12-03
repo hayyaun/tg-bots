@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  telegram_id        BigInt    @id @db.BigInt
+  username           String?   @db.VarChar(255)
+  display_name       String?   @db.VarChar(100)
+  biography          String?   @db.Text
+  birth_date         DateTime? @db.Date
+  gender             String?   @db.VarChar(20)
+  looking_for_gender String?   @db.VarChar(20)
+  archetype_result   String?   @db.VarChar(50)
+  mbti_result        String?   @db.VarChar(10)
+  profile_images     String[]  @default([])
+  mood               String?   @db.VarChar(10)
+  completion_score   Int       @default(0)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now()) @updatedAt
+
+  // Relations
+  likesGiven    Like[]     @relation("UserLikes")
+  likesReceived Like[]     @relation("LikedByUser")
+  ignoredGiven  Ignored[]  @relation("UserIgnores")
+  ignoredReceived Ignored[] @relation("IgnoredByUser")
+  reportsGiven  Report[]   @relation("Reporter")
+  reportsReceived Report[] @relation("ReportedUser")
+
+  @@map("users")
+}
+
+model Like {
+  id           BigInt   @id @default(autoincrement()) @db.BigInt
+  user_id      BigInt   @db.BigInt
+  liked_user_id BigInt  @db.BigInt
+  created_at   DateTime @default(now())
+
+  user      User @relation("UserLikes", fields: [user_id], references: [telegram_id], onDelete: Cascade)
+  likedUser User @relation("LikedByUser", fields: [liked_user_id], references: [telegram_id], onDelete: Cascade)
+
+  @@unique([user_id, liked_user_id])
+  @@index([user_id])
+  @@index([liked_user_id])
+  @@map("likes")
+}
+
+model Ignored {
+  id            BigInt   @id @default(autoincrement()) @db.BigInt
+  user_id       BigInt   @db.BigInt
+  ignored_user_id BigInt @db.BigInt
+  created_at    DateTime @default(now())
+
+  user        User @relation("UserIgnores", fields: [user_id], references: [telegram_id], onDelete: Cascade)
+  ignoredUser User @relation("IgnoredByUser", fields: [ignored_user_id], references: [telegram_id], onDelete: Cascade)
+
+  @@unique([user_id, ignored_user_id])
+  @@index([user_id])
+  @@index([ignored_user_id])
+  @@map("ignored")
+}
+
+model Report {
+  id              BigInt   @id @default(autoincrement()) @db.BigInt
+  reporter_id     BigInt   @db.BigInt
+  reported_user_id BigInt  @db.BigInt
+  reason          String?  @db.Text
+  created_at      DateTime @default(now())
+
+  reporter    User @relation("Reporter", fields: [reporter_id], references: [telegram_id], onDelete: Cascade)
+  reportedUser User @relation("ReportedUser", fields: [reported_user_id], references: [telegram_id], onDelete: Cascade)
+
+  @@index([reporter_id])
+  @@index([reported_user_id])
+  @@map("reports")
+}

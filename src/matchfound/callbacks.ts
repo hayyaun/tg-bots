@@ -1,5 +1,5 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { query } from "../db";
+import { prisma } from "../db";
 import {
   getUserProfile,
   updateCompletionScore,
@@ -31,20 +31,31 @@ export function setupCallbacks(
 
     try {
       // Add like
-      await query(
-        `INSERT INTO likes (user_id, liked_user_id, created_at)
-         VALUES ($1, $2, NOW())
-         ON CONFLICT (user_id, liked_user_id) DO NOTHING`,
-        [userId, likedUserId]
-      );
+      await prisma.like.upsert({
+        where: {
+          user_id_liked_user_id: {
+            user_id: BigInt(userId),
+            liked_user_id: BigInt(likedUserId),
+          },
+        },
+        create: {
+          user_id: BigInt(userId),
+          liked_user_id: BigInt(likedUserId),
+        },
+        update: {},
+      });
 
       // Check for mutual like
-      const mutualResult = await query(
-        "SELECT id FROM likes WHERE user_id = $1 AND liked_user_id = $2",
-        [likedUserId, userId]
-      );
+      const mutualLike = await prisma.like.findUnique({
+        where: {
+          user_id_liked_user_id: {
+            user_id: BigInt(likedUserId),
+            liked_user_id: BigInt(userId),
+          },
+        },
+      });
 
-      if (mutualResult.rows.length > 0) {
+      if (mutualLike) {
         // Mutual like!
         await ctx.answerCallbackQuery("🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!");
         await ctx.reply("🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!");
@@ -93,17 +104,22 @@ export function setupCallbacks(
     if (!userId) return;
 
     const likedUserId = parseInt(ctx.match[1]);
-    const userResult = await query(
-      "SELECT * FROM users WHERE telegram_id = $1",
-      [likedUserId]
-    );
+    const userData = await prisma.user.findUnique({
+      where: { telegram_id: BigInt(likedUserId) },
+    });
 
-    if (userResult.rows.length === 0) {
+    if (!userData) {
       await ctx.answerCallbackQuery("کاربر یافت نشد");
       return;
     }
 
-    const user = userResult.rows[0] as UserProfile;
+    const user: UserProfile = {
+      ...userData,
+      telegram_id: Number(userData.telegram_id),
+      birth_date: userData.birth_date || null,
+      created_at: userData.created_at,
+      updated_at: userData.updated_at,
+    };
     const age = calculateAge(user.birth_date);
     const matchUser: MatchUser = { ...user, age, match_priority: 0 };
 
@@ -118,12 +134,19 @@ export function setupCallbacks(
 
     const likedUserId = parseInt(ctx.match[1]);
     try {
-      await query(
-        `INSERT INTO ignored (user_id, ignored_user_id, created_at)
-         VALUES ($1, $2, NOW())
-         ON CONFLICT (user_id, ignored_user_id) DO NOTHING`,
-        [userId, likedUserId]
-      );
+      await prisma.ignored.upsert({
+        where: {
+          user_id_ignored_user_id: {
+            user_id: BigInt(userId),
+            ignored_user_id: BigInt(likedUserId),
+          },
+        },
+        create: {
+          user_id: BigInt(userId),
+          ignored_user_id: BigInt(likedUserId),
+        },
+        update: {},
+      });
 
       await ctx.answerCallbackQuery("✅ حذف شد");
 
@@ -181,24 +204,23 @@ export function setupCallbacks(
       }
 
       try {
-        await query(
-          `INSERT INTO reports (reporter_id, reported_user_id, reason, created_at)
-           VALUES ($1, $2, $3, NOW())`,
-          [userId, reportedUserId, reason]
-        );
+        await prisma.report.create({
+          data: {
+            reporter_id: BigInt(userId),
+            reported_user_id: BigInt(reportedUserId),
+            reason,
+          },
+        });
 
         // Get user info for admin notification
-        const reporterResult = await query(
-          "SELECT username, display_name FROM users WHERE telegram_id = $1",
-          [userId]
-        );
-        const reportedResult = await query(
-          "SELECT username, display_name FROM users WHERE telegram_id = $1",
-          [reportedUserId]
-        );
-
-        const reporter = reporterResult.rows[0];
-        const reported = reportedResult.rows[0];
+        const reporter = await prisma.user.findUnique({
+          where: { telegram_id: BigInt(userId) },
+          select: { username: true, display_name: true },
+        });
+        const reported = await prisma.user.findUnique({
+          where: { telegram_id: BigInt(reportedUserId) },
+          select: { username: true, display_name: true },
+        });
 
         // Notify admin immediately
         notifyAdmin(

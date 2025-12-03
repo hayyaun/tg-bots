@@ -2,7 +2,7 @@ import { configDotenv } from "dotenv";
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { BotCommand } from "grammy/types";
 import log from "../log";
-import { query } from "../db";
+import { prisma } from "../db";
 import {
   getQuizModeName,
   getQuizTypeName,
@@ -78,23 +78,29 @@ const startBot = async (botKey: string, agent: unknown) => {
       if (quizType === QuizType.Archetype && Array.isArray(result) && result.length > 0) {
         // result is array of [Deity, number] tuples, get primary archetype
         const primaryArchetype = result[0][0];
-        await query(
-          `INSERT INTO users (telegram_id, archetype_result, updated_at)
-           VALUES ($1, $2, NOW())
-           ON CONFLICT (telegram_id) 
-           DO UPDATE SET archetype_result = $2, updated_at = NOW()`,
-          [userId, primaryArchetype]
-        );
+        await prisma.user.upsert({
+          where: { telegram_id: BigInt(userId) },
+          create: {
+            telegram_id: BigInt(userId),
+            archetype_result: primaryArchetype,
+          },
+          update: {
+            archetype_result: primaryArchetype,
+          },
+        });
         log.info(BOT_NAME + " > Saved archetype result", { userId, archetype: primaryArchetype });
       } else if (quizType === QuizType.MBTI && typeof result === "string") {
         // result is MBTI type string
-        await query(
-          `INSERT INTO users (telegram_id, mbti_result, updated_at)
-           VALUES ($1, $2, NOW())
-           ON CONFLICT (telegram_id) 
-           DO UPDATE SET mbti_result = $2, updated_at = NOW()`,
-          [userId, result.toUpperCase()]
-        );
+        await prisma.user.upsert({
+          where: { telegram_id: BigInt(userId) },
+          create: {
+            telegram_id: BigInt(userId),
+            mbti_result: result.toUpperCase(),
+          },
+          update: {
+            mbti_result: result.toUpperCase(),
+          },
+        });
         log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
       }
     } catch (err) {
