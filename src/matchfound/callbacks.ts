@@ -56,10 +56,6 @@ function buildInterestsKeyboard(
     }
   }
 
-  // Add save and cancel buttons
-  keyboard.row().text("✅ ذخیره", "profile:save:interests");
-  keyboard.text("❌ لغو", "profile:cancel:interests");
-
   return keyboard;
 }
 
@@ -691,15 +687,14 @@ export function setupCallbacks(
       case "interests":
         session.editingField = "interests";
         const profileForInterests = await getUserProfile(userId);
-        // Initialize session with current interests
-        session.editingInterests = new Set(profileForInterests?.interests || []);
+        const currentInterests = new Set(profileForInterests?.interests || []);
         session.interestsPage = 0; // Start at first page
         
-        const interestsKeyboard = buildInterestsKeyboard(session.editingInterests!, session.interestsPage);
-        const selectedCount = session.editingInterests!.size;
+        const interestsKeyboard = buildInterestsKeyboard(currentInterests, session.interestsPage);
+        const selectedCount = currentInterests.size;
         const totalPages = Math.ceil(INTERESTS.length / 20);
         await ctx.reply(
-          `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه 1/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+          `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه 1/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
           { reply_markup: interestsKeyboard }
         );
         break;
@@ -772,7 +767,7 @@ export function setupCallbacks(
   });
 
 
-  // Handle toggling interests
+  // Handle toggling interests (saves immediately to database)
   bot.callbackQuery(/profile:toggle:interest:(.+)/, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
@@ -780,38 +775,40 @@ export function setupCallbacks(
     const interest = ctx.match[1];
     const session = getSession(userId);
     
-    if (!session.editingInterests) {
-      // Initialize if not set
-      const profile = await getUserProfile(userId);
-      session.editingInterests = new Set(profile?.interests || []);
-    }
-    if (session.interestsPage === undefined) {
-      session.interestsPage = 0;
-    }
+    // Get current interests from database
+    const profile = await getUserProfile(userId);
+    const currentInterests = new Set(profile?.interests || []);
     
     // Toggle interest
-    if (session.editingInterests.has(interest)) {
-      session.editingInterests.delete(interest);
+    if (currentInterests.has(interest)) {
+      currentInterests.delete(interest);
     } else {
-      session.editingInterests.add(interest);
+      currentInterests.add(interest);
     }
+    
+    // Save to database immediately
+    const interestsArray = Array.from(currentInterests);
+    await updateUserField(userId, "interests", interestsArray);
     
     await ctx.answerCallbackQuery();
     
+    // Get current page from session or default to 0
+    const currentPage = session.interestsPage ?? 0;
+    
     // Update the keyboard to reflect the new state (stay on same page)
-    const interestsKeyboard = buildInterestsKeyboard(session.editingInterests, session.interestsPage);
-    const selectedCount = session.editingInterests.size;
+    const interestsKeyboard = buildInterestsKeyboard(currentInterests, currentPage);
+    const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / 20);
     
     try {
       await ctx.editMessageText(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${session.interestsPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${currentPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
         { reply_markup: interestsKeyboard }
       );
     } catch (err) {
       // If edit fails, send a new message
       await ctx.reply(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${session.interestsPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${currentPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
         { reply_markup: interestsKeyboard }
       );
     }
@@ -825,27 +822,25 @@ export function setupCallbacks(
     const page = parseInt(ctx.match[1]);
     const session = getSession(userId);
     
-    if (!session.editingInterests) {
-      // Initialize if not set
-      const profile = await getUserProfile(userId);
-      session.editingInterests = new Set(profile?.interests || []);
-    }
+    // Get current interests from database
+    const profile = await getUserProfile(userId);
+    const currentInterests = new Set(profile?.interests || []);
     
     session.interestsPage = page;
     await ctx.answerCallbackQuery();
     
-    const interestsKeyboard = buildInterestsKeyboard(session.editingInterests, page);
-    const selectedCount = session.editingInterests.size;
+    const interestsKeyboard = buildInterestsKeyboard(currentInterests, page);
+    const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / 20);
     
     try {
       await ctx.editMessageText(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
         { reply_markup: interestsKeyboard }
       );
     } catch (err) {
       await ctx.reply(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
         { reply_markup: interestsKeyboard }
       );
     }
@@ -856,42 +851,6 @@ export function setupCallbacks(
     await ctx.answerCallbackQuery();
   });
 
-  // Handle saving interests
-  bot.callbackQuery("profile:save:interests", async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    await ctx.answerCallbackQuery();
-    const session = getSession(userId);
-    
-    if (!session.editingInterests) {
-      await ctx.reply("❌ خطا در ذخیره علایق.");
-      delete session.editingField;
-      delete session.interestsPage;
-      return;
-    }
-    
-    // Save the interests from session
-    const interestsArray = Array.from(session.editingInterests);
-    await updateUserField(userId, "interests", interestsArray);
-    delete session.editingField;
-    delete session.editingInterests;
-    delete session.interestsPage;
-    await ctx.reply(`✅ علایق شما ذخیره شد (${interestsArray.length} مورد).`);
-  });
-
-  // Handle canceling interests editing
-  bot.callbackQuery("profile:cancel:interests", async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    await ctx.answerCallbackQuery();
-    const session = getSession(userId);
-    delete session.editingField;
-    delete session.editingInterests;
-    delete session.interestsPage;
-    await ctx.reply("❌ ویرایش علایق لغو شد.");
-  });
 
   // Handle photo uploads for profile images
   bot.on("message:photo", async (ctx, next) => {

@@ -28,7 +28,6 @@ export interface SessionData {
   currentLikedIndex?: number;
   reportingUserId?: number;
   editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood" | "interests";
-  editingInterests?: Set<string>;
   interestsPage?: number; // Current page for interests pagination (0-indexed)
 }
 
