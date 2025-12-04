@@ -9,7 +9,7 @@
   "compilerOptions": {
     "resolveJsonModule": true,
     "outDir": "./dist", // Output compiled JS files into dist/
-    "rootDir": "./src", // Tell TypeScript where your source files are
+    "rootDir": "./src",
     /* Visit https://aka.ms/tsconfig to read more about this file */
     /* Projects */
     // "incremental": true,                              /* Save .tsbuildinfo files to allow for incremental compilation of projects. */
