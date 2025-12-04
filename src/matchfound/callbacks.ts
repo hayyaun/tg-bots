@@ -772,6 +772,9 @@ export function setupCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    // Answer callback query immediately to prevent timeout
+    ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
+
     const interest = ctx.match[1];
     const session = getSession(userId);
     
@@ -789,8 +792,6 @@ export function setupCallbacks(
     // Save to database immediately
     const interestsArray = Array.from(currentInterests);
     await updateUserField(userId, "interests", interestsArray);
-    
-    await ctx.answerCallbackQuery();
     
     // Get current page from session or default to 0
     const currentPage = session.interestsPage ?? 0;
@@ -819,6 +820,9 @@ export function setupCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    // Answer callback query immediately to prevent timeout
+    ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
+
     const page = parseInt(ctx.match[1]);
     const session = getSession(userId);
     
@@ -827,7 +831,6 @@ export function setupCallbacks(
     const currentInterests = new Set(profile?.interests || []);
     
     session.interestsPage = page;
-    await ctx.answerCallbackQuery();
     
     const interestsKeyboard = buildInterestsKeyboard(currentInterests, page);
     const selectedCount = currentInterests.size;
@@ -848,7 +851,7 @@ export function setupCallbacks(
 
   // Handle no-op callback (for disabled pagination buttons)
   bot.callbackQuery("profile:interests:noop", async (ctx) => {
-    await ctx.answerCallbackQuery();
+    ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
   });
 
 
