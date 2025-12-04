@@ -1,6 +1,6 @@
 import { Context, InlineKeyboard } from "grammy";
 import { MatchUser } from "./types";
-import { MOODS } from "./constants";
+import { MOODS, INTEREST_NAMES } from "./constants";
 
 export async function displayMatch(ctx: Context, match: MatchUser, showUsername = false) {
   const ageText = match.age ? `${match.age} سال` : "نامشخص";
@@ -20,6 +20,12 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
   message += `🧠 ${mbtiText}`;
   if (match.mood) {
     message += `\n😊 مود: ${MOODS[match.mood] || match.mood}`;
+  }
+  if (match.interests && match.interests.length > 0) {
+    const interestNames = match.interests
+      .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+      .join(", ");
+    message += `\n🎯 علایق: ${interestNames}`;
   }
 
   if (showUsername) {
@@ -64,6 +70,12 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
   message += `🧠 ${mbtiText}`;
   if (user.mood) {
     message += `\n😊 مود: ${MOODS[user.mood] || user.mood}`;
+  }
+  if (user.interests && user.interests.length > 0) {
+    const interestNames = user.interests
+      .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+      .join(", ");
+    message += `\n🎯 علایق: ${interestNames}`;
   }
 
   if (showUsername) {

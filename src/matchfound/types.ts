@@ -10,6 +10,7 @@ export interface UserProfile {
   mbti_result: string | null;
   profile_images: string[] | null;
   mood: string | null;
+  interests: string[] | null;
   completion_score: number;
   created_at: Date;
   updated_at: Date;
@@ -26,6 +27,8 @@ export interface SessionData {
   likedUsers?: MatchUser[];
   currentLikedIndex?: number;
   reportingUserId?: number;
-  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood";
+  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood" | "interests";
+  editingInterests?: Set<string>;
+  interestsPage?: number; // Current page for interests pagination (0-indexed)
 }
 

@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTEREST_NAMES } from "./constants";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -44,7 +44,7 @@ export function setupCommands(
 • تست کهن الگو (Archetype)
 • تست MBTI
 
-        📊 وضعیت تکمیل پروفایل: ${completionScore}/10`;
+📊 وضعیت تکمیل پروفایل: ${completionScore}/11`;
 
     const keyboard = new InlineKeyboard()
       .text("📝 ویرایش پروفایل", "profile:edit")
@@ -71,7 +71,7 @@ export function setupCommands(
     // Check minimum completion (7/9) and username requirement
     if (profile.completion_score < 7) {
       await ctx.reply(
-        `برای استفاده از این دستور، باید حداقل 7 مورد از 9 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/9\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
+        `برای استفاده از این دستور، باید حداقل 7 مورد از 11 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/11\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
       );
       return;
     }
@@ -228,7 +228,16 @@ export function setupCommands(
       message += `😊 مود: ثبت نشده\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/10`;
+    if (profile.interests && profile.interests.length > 0) {
+      const interestNames = profile.interests
+        .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+        .join(", ");
+      message += `🎯 علایق: ${interestNames}\n`;
+    } else {
+      message += `🎯 علایق: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/11`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -241,7 +250,9 @@ export function setupCommands(
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username")
-      .text("😊 مود", "profile:edit:mood");
+      .text("😊 مود", "profile:edit:mood")
+      .row()
+      .text("🎯 علایق", "profile:edit:interests");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {

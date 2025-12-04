@@ -103,26 +103,59 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
       mbtiMatch = compatible.includes(targetMBTI);
     }
 
-    // Set priority
+    // Calculate mutual interests
+    let mutualInterestsCount = 0;
+    if (user.interests && matchUser.interests && user.interests.length > 0 && matchUser.interests.length > 0) {
+      const userInterestsSet = new Set(user.interests);
+      const candidateInterestsSet = new Set(matchUser.interests);
+      mutualInterestsCount = Array.from(userInterestsSet).filter(interest => candidateInterestsSet.has(interest)).length;
+    }
+
+    // Set priority based on archetype, MBTI, and mutual interests
+    // Priority levels:
+    // 1 = both archetype and MBTI match
+    // 2 = archetype only
+    // 3 = MBTI only
+    // 4 = no archetype/MBTI match but has mutual interests
+    // We'll use a decimal system where mutual interests reduce the priority (lower is better)
+    // For example: 1.0 = perfect match, 1.5 = perfect match with many mutual interests
     if (archetypeMatch && mbtiMatch) {
       matchPriority = 1;
     } else if (archetypeMatch) {
       matchPriority = 2;
     } else if (mbtiMatch) {
       matchPriority = 3;
+    } else if (mutualInterestsCount > 0) {
+      matchPriority = 4;
     } else {
-      continue; // Skip if no match
+      continue; // Skip if no match at all
     }
+
+    // Adjust priority based on mutual interests (reduce priority number for more interests)
+    // Each mutual interest reduces priority by 0.1 (max reduction of 0.5 for 5+ interests)
+    const interestBonus = Math.min(mutualInterestsCount * 0.1, 0.5);
+    matchPriority = matchPriority - interestBonus;
 
     matchUser.match_priority = matchPriority;
     matches.push(matchUser);
   }
 
-  // Sort by priority, then by completion score, then by age difference
+  // Sort by priority (lower is better), then by mutual interests count, then by completion score, then by age difference
   matches.sort((a, b) => {
-    if (a.match_priority !== b.match_priority) {
+    if (Math.abs(a.match_priority - b.match_priority) > 0.01) {
       return a.match_priority - b.match_priority;
     }
+    
+    // If priorities are very close, prioritize by mutual interests
+    const aInterests = a.interests || [];
+    const bInterests = b.interests || [];
+    const userInterestsSet = new Set(user.interests || []);
+    const aMutualCount = aInterests.filter(i => userInterestsSet.has(i)).length;
+    const bMutualCount = bInterests.filter(i => userInterestsSet.has(i)).length;
+    if (aMutualCount !== bMutualCount) {
+      return bMutualCount - aMutualCount; // More mutual interests = better
+    }
+    
     if (a.completion_score !== b.completion_score) {
       return b.completion_score - a.completion_score;
     }

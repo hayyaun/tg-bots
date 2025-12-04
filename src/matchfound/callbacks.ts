@@ -12,7 +12,56 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES } from "./constants";
+
+// Helper function to build interests keyboard with pagination
+function buildInterestsKeyboard(
+  selectedInterests: Set<string>,
+  currentPage: number,
+  itemsPerPage: number = 20
+): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  const totalItems = INTERESTS.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const pageItems = INTERESTS.slice(startIndex, endIndex);
+
+  // Add interest buttons (2 per row)
+  let rowCount = 0;
+  for (const interest of pageItems) {
+    const isSelected = selectedInterests.has(interest);
+    const displayName = INTEREST_NAMES[interest];
+    const prefix = isSelected ? "✅ " : "";
+    keyboard.text(`${prefix}${displayName}`, `profile:toggle:interest:${interest}`);
+    rowCount++;
+    if (rowCount % 2 === 0) {
+      keyboard.row();
+    }
+  }
+
+  // Add pagination buttons
+  if (totalPages > 1) {
+    keyboard.row();
+    if (currentPage > 0) {
+      keyboard.text("◀️ قبلی", `profile:interests:page:${currentPage - 1}`);
+    } else {
+      keyboard.text(" ", "profile:interests:noop"); // Placeholder for spacing
+    }
+    keyboard.text(`صفحه ${currentPage + 1}/${totalPages}`, "profile:interests:noop");
+    if (currentPage < totalPages - 1) {
+      keyboard.text("بعدی ▶️", `profile:interests:page:${currentPage + 1}`);
+    } else {
+      keyboard.text(" ", "profile:interests:noop"); // Placeholder for spacing
+    }
+  }
+
+  // Add save and cancel buttons
+  keyboard.row().text("✅ ذخیره", "profile:save:interests");
+  keyboard.text("❌ لغو", "profile:cancel:interests");
+
+  return keyboard;
+}
 
 export function setupCallbacks(
   bot: Bot,
@@ -372,7 +421,16 @@ export function setupCallbacks(
       message += `😊 مود: ثبت نشده\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/10`;
+    if (profile.interests && profile.interests.length > 0) {
+      const interestNames = profile.interests
+        .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+        .join(", ");
+      message += `🎯 علایق: ${interestNames}\n`;
+    } else {
+      message += `🎯 علایق: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/11`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -385,7 +443,9 @@ export function setupCallbacks(
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username")
-      .text("😊 مود", "profile:edit:mood");
+      .text("😊 مود", "profile:edit:mood")
+      .row()
+      .text("🎯 علایق", "profile:edit:interests");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
@@ -469,7 +529,16 @@ export function setupCallbacks(
       message += `😊 مود: ثبت نشده\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/10`;
+    if (profile.interests && profile.interests.length > 0) {
+      const interestNames = profile.interests
+        .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+        .join(", ");
+      message += `🎯 علایق: ${interestNames}\n`;
+    } else {
+      message += `🎯 علایق: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/11`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -482,7 +551,9 @@ export function setupCallbacks(
       .text("📷 تصاویر", "profile:edit:images")
       .row()
       .text("🔗 نام کاربری", "profile:edit:username")
-      .text("😊 مود", "profile:edit:mood");
+      .text("😊 مود", "profile:edit:mood")
+      .row()
+      .text("🎯 علایق", "profile:edit:interests");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
@@ -617,6 +688,22 @@ export function setupCallbacks(
         await ctx.reply("مود خود را انتخاب کنید:", { reply_markup: moodKeyboard });
         break;
 
+      case "interests":
+        session.editingField = "interests";
+        const profileForInterests = await getUserProfile(userId);
+        // Initialize session with current interests
+        session.editingInterests = new Set(profileForInterests?.interests || []);
+        session.interestsPage = 0; // Start at first page
+        
+        const interestsKeyboard = buildInterestsKeyboard(session.editingInterests!, session.interestsPage);
+        const selectedCount = session.editingInterests!.size;
+        const totalPages = Math.ceil(INTERESTS.length / 20);
+        await ctx.reply(
+          `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه 1/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+          { reply_markup: interestsKeyboard }
+        );
+        break;
+
       default:
         await ctx.reply("عملیات نامعتبر است.");
     }
@@ -684,6 +771,127 @@ export function setupCallbacks(
     await ctx.reply("✅ تمام تصاویر حذف شدند.");
   });
 
+
+  // Handle toggling interests
+  bot.callbackQuery(/profile:toggle:interest:(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const interest = ctx.match[1];
+    const session = getSession(userId);
+    
+    if (!session.editingInterests) {
+      // Initialize if not set
+      const profile = await getUserProfile(userId);
+      session.editingInterests = new Set(profile?.interests || []);
+    }
+    if (session.interestsPage === undefined) {
+      session.interestsPage = 0;
+    }
+    
+    // Toggle interest
+    if (session.editingInterests.has(interest)) {
+      session.editingInterests.delete(interest);
+    } else {
+      session.editingInterests.add(interest);
+    }
+    
+    await ctx.answerCallbackQuery();
+    
+    // Update the keyboard to reflect the new state (stay on same page)
+    const interestsKeyboard = buildInterestsKeyboard(session.editingInterests, session.interestsPage);
+    const selectedCount = session.editingInterests.size;
+    const totalPages = Math.ceil(INTERESTS.length / 20);
+    
+    try {
+      await ctx.editMessageText(
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${session.interestsPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        { reply_markup: interestsKeyboard }
+      );
+    } catch (err) {
+      // If edit fails, send a new message
+      await ctx.reply(
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${session.interestsPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        { reply_markup: interestsKeyboard }
+      );
+    }
+  });
+
+  // Handle pagination for interests
+  bot.callbackQuery(/profile:interests:page:(\d+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const page = parseInt(ctx.match[1]);
+    const session = getSession(userId);
+    
+    if (!session.editingInterests) {
+      // Initialize if not set
+      const profile = await getUserProfile(userId);
+      session.editingInterests = new Set(profile?.interests || []);
+    }
+    
+    session.interestsPage = page;
+    await ctx.answerCallbackQuery();
+    
+    const interestsKeyboard = buildInterestsKeyboard(session.editingInterests, page);
+    const selectedCount = session.editingInterests.size;
+    const totalPages = Math.ceil(INTERESTS.length / 20);
+    
+    try {
+      await ctx.editMessageText(
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        { reply_markup: interestsKeyboard }
+      );
+    } catch (err) {
+      await ctx.reply(
+        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید.`,
+        { reply_markup: interestsKeyboard }
+      );
+    }
+  });
+
+  // Handle no-op callback (for disabled pagination buttons)
+  bot.callbackQuery("profile:interests:noop", async (ctx) => {
+    await ctx.answerCallbackQuery();
+  });
+
+  // Handle saving interests
+  bot.callbackQuery("profile:save:interests", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+    const session = getSession(userId);
+    
+    if (!session.editingInterests) {
+      await ctx.reply("❌ خطا در ذخیره علایق.");
+      delete session.editingField;
+      delete session.interestsPage;
+      return;
+    }
+    
+    // Save the interests from session
+    const interestsArray = Array.from(session.editingInterests);
+    await updateUserField(userId, "interests", interestsArray);
+    delete session.editingField;
+    delete session.editingInterests;
+    delete session.interestsPage;
+    await ctx.reply(`✅ علایق شما ذخیره شد (${interestsArray.length} مورد).`);
+  });
+
+  // Handle canceling interests editing
+  bot.callbackQuery("profile:cancel:interests", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+    const session = getSession(userId);
+    delete session.editingField;
+    delete session.editingInterests;
+    delete session.interestsPage;
+    await ctx.reply("❌ ویرایش علایق لغو شد.");
+  });
 
   // Handle photo uploads for profile images
   bot.on("message:photo", async (ctx, next) => {
