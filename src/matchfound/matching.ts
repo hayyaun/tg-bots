@@ -42,7 +42,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     username: { not: null },
     gender: { not: null },
     birth_date: { not: null },
-    interests: { not: null },
+    interests: { isEmpty: false },
   };
 
   // Build gender filter
