@@ -31,28 +31,36 @@ export function setupCommands(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    const username = ctx.from?.username;
-    const firstName = ctx.from?.first_name;
-    const lastName = ctx.from?.last_name;
-    await ensureUserExists(userId, username, async (uid, uname) => {
-      await notifyAdmin(
-        `👤 <b>New User Registration</b>\nUser: ${uname ? `@${uname}` : `ID: ${uid}`}\nID: <code>${uid}</code>`
+    try {
+      const username = ctx.from?.username;
+      const firstName = ctx.from?.first_name;
+      const lastName = ctx.from?.last_name;
+      await ensureUserExists(userId, username, async (uid, uname) => {
+        await notifyAdmin(
+          `👤 <b>New User Registration</b>\nUser: ${uname ? `@${uname}` : `ID: ${uid}`}\nID: <code>${uid}</code>`
+        );
+      }, firstName, lastName);
+
+      const profile = await getUserProfile(userId);
+      const completionScore = profile?.completion_score || 0;
+
+      const welcomeMessage = getWelcomeMessage(completionScore);
+
+      const keyboard = new InlineKeyboard()
+        .text(buttons.editProfile, "profile:edit")
+        .row()
+        .text(buttons.completionStatus, "completion:check")
+        .row()
+        .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+
+      await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+    } catch (err) {
+      log.error(BOT_NAME + " > Start command failed", err);
+      await ctx.reply("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Start Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
-    }, firstName, lastName);
-
-    const profile = await getUserProfile(userId);
-    const completionScore = profile?.completion_score || 0;
-
-    const welcomeMessage = getWelcomeMessage(completionScore);
-
-    const keyboard = new InlineKeyboard()
-      .text(buttons.editProfile, "profile:edit")
-      .row()
-      .text(buttons.completionStatus, "completion:check")
-      .row()
-      .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
-
-    await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+    }
   });
 
   // /find command
@@ -61,55 +69,63 @@ export function setupCommands(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      await ctx.reply(errors.startFirst);
-      return;
+    try {
+      const profile = await getUserProfile(userId);
+      if (!profile) {
+        await ctx.reply(errors.startFirst);
+        return;
+      }
+
+      // Check required fields first (these are mandatory for matching to work)
+      const missingRequiredFields: string[] = [];
+      if (!profile.username) missingRequiredFields.push(fields.username);
+      if (!profile.display_name) missingRequiredFields.push(fields.displayName);
+      if (!profile.gender) missingRequiredFields.push(fields.gender);
+      if (!profile.looking_for_gender) missingRequiredFields.push(fields.lookingForGender);
+      if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
+
+      if (missingRequiredFields.length > 0) {
+        await ctx.reply(errors.missingRequiredFields(missingRequiredFields));
+        return;
+      }
+
+      // Check minimum completion (7/12) for other optional fields
+      if (profile.completion_score < 7) {
+        await ctx.reply(errors.incompleteProfile(profile.completion_score));
+        return;
+      }
+
+      // Rate limiting (once per hour)
+      const now = Date.now();
+      const lastFind = findRateLimit.get(userId);
+      if (lastFind && now - lastFind < 3600000) {
+        const remainingMinutes = Math.ceil((3600000 - (now - lastFind)) / 60000);
+        await ctx.reply(errors.rateLimit(remainingMinutes));
+        return;
+      }
+
+      findRateLimit.set(userId, now);
+
+      const matches = await findMatches(userId);
+      if (matches.length === 0) {
+        await ctx.reply(errors.noMatches);
+        return;
+      }
+
+      // Store matches in session for pagination
+      const session = getSession(userId);
+      session.matches = matches;
+      session.currentMatchIndex = 0;
+
+      // Show first match
+      await displayMatch(ctx, matches[0]);
+    } catch (err) {
+      log.error(BOT_NAME + " > Find command failed", err);
+      await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Find Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
     }
-
-    // Check required fields first (these are mandatory for matching to work)
-    const missingRequiredFields: string[] = [];
-    if (!profile.username) missingRequiredFields.push(fields.username);
-    if (!profile.display_name) missingRequiredFields.push(fields.displayName);
-    if (!profile.gender) missingRequiredFields.push(fields.gender);
-    if (!profile.looking_for_gender) missingRequiredFields.push(fields.lookingForGender);
-    if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
-
-    if (missingRequiredFields.length > 0) {
-      await ctx.reply(errors.missingRequiredFields(missingRequiredFields));
-      return;
-    }
-
-    // Check minimum completion (7/12) for other optional fields
-    if (profile.completion_score < 7) {
-      await ctx.reply(errors.incompleteProfile(profile.completion_score));
-      return;
-    }
-
-    // Rate limiting (once per hour)
-    const now = Date.now();
-    const lastFind = findRateLimit.get(userId);
-    if (lastFind && now - lastFind < 3600000) {
-      const remainingMinutes = Math.ceil((3600000 - (now - lastFind)) / 60000);
-      await ctx.reply(errors.rateLimit(remainingMinutes));
-      return;
-    }
-
-    findRateLimit.set(userId, now);
-
-    const matches = await findMatches(userId);
-    if (matches.length === 0) {
-      await ctx.reply(errors.noMatches);
-      return;
-    }
-
-    // Store matches in session for pagination
-    const session = getSession(userId);
-    session.matches = matches;
-    session.currentMatchIndex = 0;
-
-    // Show first match
-    await displayMatch(ctx, matches[0]);
   });
 
   // /liked command
@@ -118,60 +134,68 @@ export function setupCommands(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    // Get users who liked this user (and not ignored)
-    // Get users who liked this user, excluding ignored ones
-    const likes = await prisma.like.findMany({
-      where: {
-        liked_user_id: BigInt(userId),
-        user: {
-          ignoredReceived: {
-            none: {
-              user_id: BigInt(userId),
+    try {
+      // Get users who liked this user (and not ignored)
+      // Get users who liked this user, excluding ignored ones
+      const likes = await prisma.like.findMany({
+        where: {
+          liked_user_id: BigInt(userId),
+          user: {
+            ignoredReceived: {
+              none: {
+                user_id: BigInt(userId),
+              },
             },
           },
         },
-      },
-      include: {
-        user: true,
-      },
-      orderBy: {
-        created_at: "desc",
-      },
-    });
+        include: {
+          user: true,
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+      });
 
-    // Filter out users that this user has ignored
-    const ignoredByUser = await prisma.ignored.findMany({
-      where: { user_id: BigInt(userId) },
-      select: { ignored_user_id: true },
-    });
-    const ignoredIds = new Set(ignoredByUser.map((i: { ignored_user_id: bigint }) => i.ignored_user_id));
-    const filteredLikes = likes.filter((like: typeof likes[0]) => !ignoredIds.has(like.user_id));
+      // Filter out users that this user has ignored
+      const ignoredByUser = await prisma.ignored.findMany({
+        where: { user_id: BigInt(userId) },
+        select: { ignored_user_id: true },
+      });
+      const ignoredIds = new Set(ignoredByUser.map((i: { ignored_user_id: bigint }) => i.ignored_user_id));
+      const filteredLikes = likes.filter((like: typeof likes[0]) => !ignoredIds.has(like.user_id));
 
-    if (filteredLikes.length === 0) {
-      await ctx.reply(errors.noLikes);
-      return;
+      if (filteredLikes.length === 0) {
+        await ctx.reply(errors.noLikes);
+        return;
+      }
+
+      // Store in session for pagination
+      const session = getSession(userId);
+      session.likedUsers = filteredLikes.map((like: typeof filteredLikes[0]) => {
+        const user = like.user;
+        return {
+          ...user,
+          telegram_id: Number(user.telegram_id),
+          birth_date: user.birth_date || null,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+          age: calculateAge(user.birth_date),
+          match_priority: 0,
+        } as MatchUser;
+      });
+      session.currentLikedIndex = 0;
+
+      // Show first person
+      const firstUser = session.likedUsers![0];
+      firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
+      await displayLikedUser(ctx, firstUser);
+    } catch (err) {
+      log.error(BOT_NAME + " > Liked command failed", err);
+      await ctx.reply("❌ خطا در دریافت لیست لایک‌ها. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Liked Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
     }
-
-    // Store in session for pagination
-    const session = getSession(userId);
-    session.likedUsers = filteredLikes.map((like: typeof filteredLikes[0]) => {
-      const user = like.user;
-      return {
-        ...user,
-        telegram_id: Number(user.telegram_id),
-        birth_date: user.birth_date || null,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        age: calculateAge(user.birth_date),
-        match_priority: 0,
-      } as MatchUser;
-    });
-    session.currentLikedIndex = 0;
-
-    // Show first person
-    const firstUser = session.likedUsers![0];
-    firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
-    await displayLikedUser(ctx, firstUser);
   });
 
   // /profile command
@@ -180,13 +204,14 @@ export function setupCommands(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    // Recalculate completion score to ensure it's up to date
-    await updateCompletionScore(userId);
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      await ctx.reply(errors.startFirst);
-      return;
-    }
+    try {
+      // Recalculate completion score to ensure it's up to date
+      await updateCompletionScore(userId);
+      const profile = await getUserProfile(userId);
+      if (!profile) {
+        await ctx.reply(errors.startFirst);
+        return;
+      }
 
     const ageText = profile.birth_date
       ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
@@ -286,18 +311,34 @@ export function setupCommands(
       // No images - send text message only
       await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
     }
+    } catch (err) {
+      log.error(BOT_NAME + " > Profile command failed", err);
+      await ctx.reply("❌ خطا در نمایش پروفایل. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Profile Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
   });
 
 
   // /settings command
   bot.command("settings", async (ctx) => {
     ctx.react("🤔").catch(() => {});
-    await ctx.reply(
-      settings.title +
-      settings.profile +
-      settings.find +
-      settings.liked
-    );
+    const userId = ctx.from?.id;
+    try {
+      await ctx.reply(
+        settings.title +
+        settings.profile +
+        settings.find +
+        settings.liked
+      );
+    } catch (err) {
+      log.error(BOT_NAME + " > Settings command failed", err);
+      await ctx.reply("❌ خطا در نمایش تنظیمات. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Settings Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
   });
 }
 

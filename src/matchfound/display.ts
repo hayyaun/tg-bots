@@ -2,6 +2,8 @@ import { Context, InlineKeyboard } from "grammy";
 import { MatchUser } from "./types";
 import { MOODS, INTEREST_NAMES } from "./constants";
 import { buttons, display } from "./strings";
+import log from "../log";
+import { BOT_NAME } from "./constants";
 
 export async function displayMatch(ctx: Context, match: MatchUser, showUsername = false) {
   const ageText = match.age ? `${match.age} سال` : display.unknownAge;
@@ -41,16 +43,27 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
   }
   keyboard.text(buttons.report, `report:${match.telegram_id}`);
 
-  // Send photos if available
-  if (match.profile_images && Array.isArray(match.profile_images) && match.profile_images.length > 0) {
-    const mediaGroup = match.profile_images.slice(0, 10).map((fileId) => ({
-      type: "photo" as const,
-      media: fileId,
-    }));
-    await ctx.replyWithMediaGroup(mediaGroup);
-  }
+  try {
+    // Send photos if available
+    if (match.profile_images && Array.isArray(match.profile_images) && match.profile_images.length > 0) {
+      const mediaGroup = match.profile_images.slice(0, 10).map((fileId) => ({
+        type: "photo" as const,
+        media: fileId,
+      }));
+      await ctx.replyWithMediaGroup(mediaGroup);
+    }
 
-  await ctx.reply(message, { reply_markup: keyboard });
+    await ctx.reply(message, { reply_markup: keyboard });
+  } catch (err) {
+    log.error(BOT_NAME + " > Display match failed", err);
+    // Try to send just the message without images if media group fails
+    try {
+      await ctx.reply(message, { reply_markup: keyboard });
+    } catch (replyErr) {
+      log.error(BOT_NAME + " > Display match reply failed", replyErr);
+      throw err; // Re-throw original error
+    }
+  }
 }
 
 export async function displayLikedUser(ctx: Context, user: MatchUser, showUsername = false) {
@@ -91,15 +104,26 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
   }
   keyboard.text(buttons.report, `report:${user.telegram_id}`);
 
-  // Send photos if available
-  if (user.profile_images && Array.isArray(user.profile_images) && user.profile_images.length > 0) {
-    const mediaGroup = user.profile_images.slice(0, 10).map((fileId) => ({
-      type: "photo" as const,
-      media: fileId,
-    }));
-    await ctx.replyWithMediaGroup(mediaGroup);
-  }
+  try {
+    // Send photos if available
+    if (user.profile_images && Array.isArray(user.profile_images) && user.profile_images.length > 0) {
+      const mediaGroup = user.profile_images.slice(0, 10).map((fileId) => ({
+        type: "photo" as const,
+        media: fileId,
+      }));
+      await ctx.replyWithMediaGroup(mediaGroup);
+    }
 
-  await ctx.reply(message, { reply_markup: keyboard });
+    await ctx.reply(message, { reply_markup: keyboard });
+  } catch (err) {
+    log.error(BOT_NAME + " > Display liked user failed", err);
+    // Try to send just the message without images if media group fails
+    try {
+      await ctx.reply(message, { reply_markup: keyboard });
+    } catch (replyErr) {
+      log.error(BOT_NAME + " > Display liked user reply failed", replyErr);
+      throw err; // Re-throw original error
+    }
+  }
 }
 

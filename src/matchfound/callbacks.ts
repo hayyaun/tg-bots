@@ -177,6 +177,9 @@ export function setupCallbacks(
     } catch (err) {
       log.error(BOT_NAME + " > Like action failed", err);
       await ctx.answerCallbackQuery("❌ خطا در ثبت لایک"); // TODO: Add to strings
+      notifyAdmin(
+        `❌ <b>Like Action Failed</b>\nUser: <code>${userId}</code>\nLiked User: <code>${likedUserId}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -264,6 +267,9 @@ export function setupCallbacks(
     } catch (err) {
       log.error(BOT_NAME + " > Delete liked failed", err);
       await ctx.answerCallbackQuery("❌ خطا"); // TODO: Add to strings
+      notifyAdmin(
+        `❌ <b>Delete Liked User Failed</b>\nUser: <code>${userId}</code>\nLiked User: <code>${likedUserId}</code>\nError: ${err}`
+      );
     }
   });
 
@@ -337,6 +343,9 @@ export function setupCallbacks(
         log.error(BOT_NAME + " > Report failed", err);
         delete session.reportingUserId; // Clear session state on error
         await ctx.reply(errors.reportFailed);
+        notifyAdmin(
+          `❌ <b>Report Submission Failed</b>\nReporter: <code>${userId}</code>\nReported: <code>${reportedUserId}</code>\nError: ${err}`
+        );
       }
       return;
     }
@@ -408,8 +417,12 @@ export function setupCallbacks(
         }
       } catch (err) {
         log.error(BOT_NAME + " > Profile edit failed", err);
+        const editingField = session.editingField || "unknown";
         await ctx.reply(errors.updateFailed);
         delete session.editingField;
+        notifyAdmin(
+          `❌ <b>Profile Edit Failed</b>\nUser: <code>${userId}</code>\nField: ${editingField}\nError: ${err}`
+        );
       }
       return;
     }
@@ -1022,6 +1035,9 @@ export function setupCallbacks(
         } catch (err) {
           log.error(BOT_NAME + " > Add image failed", err);
           await ctx.reply(errors.addImageFailed);
+          notifyAdmin(
+            `❌ <b>Add Profile Image Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+          );
         }
       }
     } else {
