@@ -3,8 +3,7 @@ import _ from "lodash";
 import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
 import { quizModes } from "../config";
-import { getUserLanguage } from "../i18n";
-import strings from "../strings";
+import { getUserLanguage, getStringsForUser } from "../i18n";
 import { IUserData, Language, QuizType } from "../types";
 import { addTextBoxToImage } from "./canvas";
 import deities from "./deities";
@@ -72,6 +71,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
   );
 
   // add buttons
+  const userId = ctx.from?.id;
+  const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard();
   sortedResults.slice(0, 3).forEach((r) => {
     const text = strings.show_about(`کهن الگو ${deities[r[0]].name[language]}`);

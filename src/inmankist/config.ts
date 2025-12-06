@@ -81,3 +81,6 @@ export function getQuizTypeName(type: QuizType, language: Language): string {
 export function getQuizModeName(mode: QuizMode, language: Language): string {
   return quizModes[mode]?.name[language] || quizModes[mode].name[Language.Persian];
 }
+
+// Matchfound bot username (for redirect after quiz completion)
+export const MATCHFOUND_BOT_USERNAME = process.env.MATCHFOUND_BOT_USERNAME || "match_found_bot";

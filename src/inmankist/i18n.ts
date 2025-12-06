@@ -51,6 +51,8 @@ export interface IStrings {
   quick: string;
   normal: string;
   complete: string;
+  matchfound_message: string;
+  matchfound_button: string;
 }
 
 const translations: { [key in Language]: IStrings } = {
@@ -77,6 +79,8 @@ const translations: { [key in Language]: IStrings } = {
     quick: "سریع",
     normal: "عادی",
     complete: "کامل",
+    matchfound_message: "🎯 آیا مایلید با افرادی هم تایپ خودتون آشنا بشید؟",
+    matchfound_button: "✅ بله",
   },
   [Language.English]: {
     welcome: [
@@ -101,6 +105,8 @@ const translations: { [key in Language]: IStrings } = {
     quick: "Quick",
     normal: "Normal",
     complete: "Complete",
+    matchfound_message: "🎯 Would you like to meet people of your type?",
+    matchfound_button: "✅ Yes",
   },
   [Language.Russian]: {
     welcome: [
@@ -125,6 +131,8 @@ const translations: { [key in Language]: IStrings } = {
     quick: "Быстрый",
     normal: "Обычный",
     complete: "Полный",
+    matchfound_message: "🎯 Хотите ли вы познакомиться с людьми вашего типа?",
+    matchfound_button: "✅ Да",
   },
   [Language.Arabic]: {
     welcome: [
@@ -149,6 +157,8 @@ const translations: { [key in Language]: IStrings } = {
     quick: "سريع",
     normal: "عادي",
     complete: "كامل",
+    matchfound_message: "🎯 هل تريد التعرف على أشخاص من نوعك؟",
+    matchfound_button: "✅ نعم",
   },
 };
 

@@ -1,6 +1,6 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { getQuestion } from ".";
-import strings from "../strings";
+import { getStringsForUser } from "../i18n";
 import { IUserData, QuizType } from "../types";
 import quadrants from "./quadrants";
 import { PoliticalAxis, Quadrant } from "./types";
@@ -148,6 +148,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
   ].join("\n");
 
   // Add button for detailed view
+  const userId = ctx.from?.id;
+  const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard().text(
     strings.show_about(`قطب ${quadrantInfo.name}`),
     `detail:${QuizType.PoliticalCompass}:${quadrant}`

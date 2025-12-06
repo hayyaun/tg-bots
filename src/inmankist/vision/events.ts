@@ -1,8 +1,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
-import { getUserLanguage } from "../i18n";
-import strings from "../strings";
+import { getUserLanguage, getStringsForUser } from "../i18n";
 import { IUserData, Language, QuizType } from "../types";
 import { descriptions } from "./descriptions";
 import { Vision } from "./types";
@@ -154,6 +153,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
   ].join("\n");
 
   // Add buttons for top 3 visions
+  const userId = ctx.from?.id;
+  const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard();
   topVisions.forEach(([vision]) => {
     const desc = descriptions[vision];

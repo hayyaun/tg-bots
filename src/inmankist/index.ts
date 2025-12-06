@@ -18,6 +18,7 @@ import {
   refreshUserLanguageTTL,
   DEFAULT_LANGUAGE,
 } from "./i18n";
+import { MATCHFOUND_BOT_USERNAME } from "./config";
 import {
   replyAbout,
   replyDetial,
@@ -41,7 +42,6 @@ const BOT_NAME = "Inmankist";
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID
   ? parseInt(process.env.ADMIN_USER_ID)
   : undefined;
-const MATCHFOUND_BOT_USERNAME = process.env.MATCHFOUND_BOT_USERNAME || "match_found_bot";
 
 const startBot = async (botKey: string, agent: unknown) => {
   // Bot
@@ -328,28 +328,12 @@ const startBot = async (botKey: string, agent: unknown) => {
         `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
       );
 
-      // Ask user if they want to connect with people of their chemistry
-      const language = user.language || DEFAULT_LANGUAGE;
-      const matchMessages: Record<Language, string> = {
-        [Language.Persian]: "🎯 آیا می‌خواهید با افرادی که با شما هم‌شیمی هستند ارتباط برقرار کنید؟",
-        [Language.English]: "🎯 Would you like to connect with people who share your chemistry?",
-        [Language.Russian]: "🎯 Хотите ли вы связаться с людьми, которые разделяют вашу химию?",
-        [Language.Arabic]: "🎯 هل تريد التواصل مع الأشخاص الذين يتشاركون كيمياءك؟",
-      };
-      const matchButtons: Record<Language, string> = {
-        [Language.Persian]: "✅ بله، برو به ربات دوستیابی",
-        [Language.English]: "✅ Yes, go to dating bot",
-        [Language.Russian]: "✅ Да, перейти к боту знакомств",
-        [Language.Arabic]: "✅ نعم، اذهب إلى بوت التعارف",
-      };
-
-      const matchMessage = matchMessages[language] || matchMessages[Language.Persian];
-      const matchButton = matchButtons[language] || matchButtons[Language.Persian];
-
+      // Ask user if they want to connect with people of their type
+      const strings = getStrings(user.language || DEFAULT_LANGUAGE);
       const matchKeyboard = new InlineKeyboard()
-        .url(matchButton, `https://t.me/${MATCHFOUND_BOT_USERNAME}?start=quiz_complete`);
+        .url(strings.matchfound_button, `https://t.me/${MATCHFOUND_BOT_USERNAME}?start=quiz_complete`);
 
-      await ctx.reply(matchMessage, { reply_markup: matchKeyboard });
+      await ctx.reply(strings.matchfound_message, { reply_markup: matchKeyboard });
 
       await deleteUserData(userId);
       return; // end

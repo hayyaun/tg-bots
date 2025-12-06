@@ -2,8 +2,7 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
 import { quizModes } from "../config";
-import { getUserLanguage } from "../i18n";
-import strings from "../strings";
+import { getUserLanguage, getStringsForUser } from "../i18n";
 import { IUserData, Language, QuizType } from "../types";
 import styles from "./styles";
 import { CognitiveStyle, ResultType } from "./types";
@@ -121,6 +120,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
   ].join("\n");
 
   // Add button for detailed view
+  const userId = ctx.from?.id;
+  const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard().text(
     strings.show_about(`سبک ${style.name[language]}`),
     `detail:${QuizType.LeftRight}:${resultType}`
