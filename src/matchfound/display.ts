@@ -1,17 +1,18 @@
 import { Context, InlineKeyboard } from "grammy";
 import { MatchUser } from "./types";
 import { MOODS, INTEREST_NAMES } from "./constants";
+import { buttons, display } from "./strings";
 
 export async function displayMatch(ctx: Context, match: MatchUser, showUsername = false) {
-  const ageText = match.age ? `${match.age} سال` : "نامشخص";
-  const nameText = match.display_name || "بدون نام";
-  const bioText = match.biography || "بیوگرافی ثبت نشده";
+  const ageText = match.age ? `${match.age} سال` : display.unknownAge;
+  const nameText = match.display_name || display.noName;
+  const bioText = match.biography || display.noBio;
   const archetypeText = match.archetype_result
     ? `کهن الگو: ${match.archetype_result}`
-    : "کهن الگو: ثبت نشده";
+    : display.archetypeNotSet;
   const mbtiText = match.mbti_result
     ? `تست MBTI: ${match.mbti_result.toUpperCase()}`
-    : "تست MBTI: ثبت نشده";
+    : display.mbtiNotSet;
 
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}\n\n`;
@@ -29,16 +30,16 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
   }
 
   if (showUsername) {
-    message += `\n\n👤 Username: ${match.username ? `@${match.username}` : "نام کاربری ثبت نشده"}`;
+    message += `\n\n👤 Username: ${match.username ? `@${match.username}` : display.usernameNotSet}`;
   }
 
   const keyboard = new InlineKeyboard();
   if (!showUsername) {
-    keyboard.text("❤️ لایک", `like:${match.telegram_id}`);
-    keyboard.text("❌ رد", `dislike:${match.telegram_id}`);
+    keyboard.text(buttons.like, `like:${match.telegram_id}`);
+    keyboard.text(buttons.dislike, `dislike:${match.telegram_id}`);
     keyboard.row();
   }
-  keyboard.text("🚫 گزارش", `report:${match.telegram_id}`);
+  keyboard.text(buttons.report, `report:${match.telegram_id}`);
 
   // Send photos if available
   if (match.profile_images && Array.isArray(match.profile_images) && match.profile_images.length > 0) {
@@ -53,15 +54,15 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
 }
 
 export async function displayLikedUser(ctx: Context, user: MatchUser, showUsername = false) {
-  const ageText = user.age ? `${user.age} سال` : "نامشخص";
-  const nameText = user.display_name || "بدون نام";
-  const bioText = user.biography || "بیوگرافی ثبت نشده";
+  const ageText = user.age ? `${user.age} سال` : display.unknownAge;
+  const nameText = user.display_name || display.noName;
+  const bioText = user.biography || display.noBio;
   const archetypeText = user.archetype_result
     ? `کهن الگو: ${user.archetype_result}`
-    : "کهن الگو: ثبت نشده";
+    : display.archetypeNotSet;
   const mbtiText = user.mbti_result
     ? `تست MBTI: ${user.mbti_result.toUpperCase()}`
-    : "تست MBTI: ثبت نشده";
+    : display.mbtiNotSet;
 
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}\n\n`;
@@ -79,16 +80,16 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
   }
 
   if (showUsername) {
-    message += `\n\n👤 Username: ${user.username ? `@${user.username}` : "نام کاربری ثبت نشده"}`;
+    message += `\n\n👤 Username: ${user.username ? `@${user.username}` : display.usernameNotSet}`;
   }
 
   const keyboard = new InlineKeyboard();
   if (!showUsername) {
-    keyboard.text("👁️ نمایش", `show_liked:${user.telegram_id}`);
-    keyboard.text("🗑️ حذف", `delete_liked:${user.telegram_id}`);
+    keyboard.text(buttons.show, `show_liked:${user.telegram_id}`);
+    keyboard.text(buttons.delete, `delete_liked:${user.telegram_id}`);
     keyboard.row();
   }
-  keyboard.text("🚫 گزارش", `report:${user.telegram_id}`);
+  keyboard.text(buttons.report, `report:${user.telegram_id}`);
 
   // Send photos if available
   if (user.profile_images && Array.isArray(user.profile_images) && user.profile_images.length > 0) {

@@ -8,6 +8,15 @@ import { calculateAge } from "./utils";
 import { MatchUser } from "./types";
 import log from "../log";
 import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTEREST_NAMES, PROVINCE_NAMES } from "./constants";
+import {
+  getWelcomeMessage,
+  errors,
+  success,
+  fields,
+  profileValues,
+  buttons,
+  settings,
+} from "./strings";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -34,26 +43,14 @@ export function setupCommands(
     const profile = await getUserProfile(userId);
     const completionScore = profile?.completion_score || 0;
 
-    const welcomeMessage = `🎉 به ربات دوستیابی خوش اومدی! 
-
-✨ اینجا یه فضای متفاوت و امن برای پیدا کردن دوست یا پارتنر هست. برخلاف ربات‌های دیگه، اینجا فقط و فقط دوستیابی سالم و واقعی رو دنبال می‌کنیم.
-
-💫 هیچ محدودیتی وجود نداره و می‌تونی با بهترین افراد مچ بشی که دقیقا همون چیزی هستن که تو دنبالشی.
-
-🤝 هدف ما پیدا کردن دوست یا پارتنر هست و هر رفتاری که خارج از این دو مورد باشه، سریع گزارش و بررسی میشه تا فضای سالم و امنی برای همه حفظ بشه.
-
-برای اینکه بهترین افراد رو برای دوستی بهت پیشنهاد کنم، باید تست‌های شخصیت‌شناسی رو در ربات @${INMANKIST_BOT_USERNAME} پاس کنی:
-• تست کهن الگو (Archetype)
-• تست MBTI
-
-📊 وضعیت تکمیل پروفایل: ${completionScore}/12`;
+    const welcomeMessage = getWelcomeMessage(completionScore);
 
     const keyboard = new InlineKeyboard()
-      .text("📝 ویرایش پروفایل", "profile:edit")
+      .text(buttons.editProfile, "profile:edit")
       .row()
-      .text("📊 وضعیت تکمیل", "completion:check")
+      .text(buttons.completionStatus, "completion:check")
       .row()
-      .url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+      .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
     await ctx.reply(welcomeMessage, { reply_markup: keyboard });
   });
@@ -66,32 +63,26 @@ export function setupCommands(
 
     const profile = await getUserProfile(userId);
     if (!profile) {
-      await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
+      await ctx.reply(errors.startFirst);
       return;
     }
 
     // Check required fields first (these are mandatory for matching to work)
     const missingRequiredFields: string[] = [];
-    if (!profile.username) missingRequiredFields.push("نام کاربری");
-    if (!profile.display_name) missingRequiredFields.push("نام نمایشی");
-    if (!profile.gender) missingRequiredFields.push("جنسیت");
-    if (!profile.looking_for_gender) missingRequiredFields.push("پیشنهاد (جنسیت مورد نظر)");
-    if (!profile.birth_date) missingRequiredFields.push("تاریخ تولد");
+    if (!profile.username) missingRequiredFields.push(fields.username);
+    if (!profile.display_name) missingRequiredFields.push(fields.displayName);
+    if (!profile.gender) missingRequiredFields.push(fields.gender);
+    if (!profile.looking_for_gender) missingRequiredFields.push(fields.lookingForGender);
+    if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
 
     if (missingRequiredFields.length > 0) {
-      await ctx.reply(
-        `برای استفاده از این دستور، باید فیلدهای اجباری زیر را تکمیل کنید:\n\n` +
-        `❌ ${missingRequiredFields.join("\n❌ ")}\n\n` +
-        `از دستور /profile برای ویرایش پروفایل استفاده کنید.`
-      );
+      await ctx.reply(errors.missingRequiredFields(missingRequiredFields));
       return;
     }
 
     // Check minimum completion (7/12) for other optional fields
     if (profile.completion_score < 7) {
-      await ctx.reply(
-        `برای استفاده از این دستور، باید حداقل 7 مورد از 12 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/12\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
-      );
+      await ctx.reply(errors.incompleteProfile(profile.completion_score));
       return;
     }
 
@@ -100,9 +91,7 @@ export function setupCommands(
     const lastFind = findRateLimit.get(userId);
     if (lastFind && now - lastFind < 3600000) {
       const remainingMinutes = Math.ceil((3600000 - (now - lastFind)) / 60000);
-      await ctx.reply(
-        `⏰ شما می‌توانید هر ساعت یک بار از این دستور استفاده کنید.\nزمان باقی‌مانده: ${remainingMinutes} دقیقه`
-      );
+      await ctx.reply(errors.rateLimit(remainingMinutes));
       return;
     }
 
@@ -110,9 +99,7 @@ export function setupCommands(
 
     const matches = await findMatches(userId);
     if (matches.length === 0) {
-      await ctx.reply(
-        "شما تمام افراد موجود را دیده‌اید. لطفا بعدا دوباره تلاش کنید!"
-      );
+      await ctx.reply(errors.noMatches);
       return;
     }
 
@@ -161,7 +148,7 @@ export function setupCommands(
     const filteredLikes = likes.filter((like: typeof likes[0]) => !ignoredIds.has(like.user_id));
 
     if (filteredLikes.length === 0) {
-      await ctx.reply("هنوز کسی شما را لایک نکرده است.");
+      await ctx.reply(errors.noLikes);
       return;
     }
 
@@ -197,85 +184,85 @@ export function setupCommands(
     await updateCompletionScore(userId);
     const profile = await getUserProfile(userId);
     if (!profile) {
-      await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
+      await ctx.reply(errors.startFirst);
       return;
     }
 
     const ageText = profile.birth_date
-      ? `${calculateAge(profile.birth_date)} سال`
-      : "ثبت نشده";
-    const genderText = profile.gender === "male" ? "مرد" : profile.gender === "female" ? "زن" : "ثبت نشده";
+      ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
+      : fields.notSet;
+    const genderText = profile.gender === "male" ? profileValues.male : profile.gender === "female" ? profileValues.female : fields.notSet;
     const lookingForText =
       profile.looking_for_gender === "male"
-        ? "مرد"
+        ? profileValues.male
         : profile.looking_for_gender === "female"
-        ? "خانم"
+        ? profileValues.female
         : profile.looking_for_gender === "both"
-        ? "هر دو"
-        : "ثبت نشده";
+        ? profileValues.both
+        : fields.notSet;
 
-    let message = `📋 <b>پروفایل شما</b>\n\n`;
-    message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
-    message += `🎂 سن: ${ageText}\n`;
-    message += `⚧️ جنسیت: ${genderText}\n`;
-    message += `💝 پیشنهاد: ${lookingForText}\n`;
-    message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
+    let message = `${fields.profileTitle}\n\n`;
+    message += `${fields.name}: ${profile.display_name || fields.notSet}\n`;
+    message += `${fields.age}: ${ageText}\n`;
+    message += `${fields.genderLabel}: ${genderText}\n`;
+    message += `${fields.lookingFor}: ${lookingForText}\n`;
+    message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
     
     // Show quiz results with instructions if missing
     if (profile.archetype_result) {
-      message += `🔮 کهن الگو: ${profile.archetype_result}\n`;
+      message += `${fields.archetype}: ${profile.archetype_result}\n`;
     } else {
-      message += `🔮 کهن الگو: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}\n`;
     }
     
     if (profile.mbti_result) {
-      message += `🧠 تست MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+      message += `${fields.mbti}: ${profile.mbti_result.toUpperCase()}\n`;
     } else {
-      message += `🧠 تست MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}\n`;
     }
     
     if (profile.mood) {
-      message += `😊 مود: ${MOODS[profile.mood] || profile.mood}\n`;
+      message += `${fields.mood}: ${MOODS[profile.mood] || profile.mood}\n`;
     } else {
-      message += `😊 مود: ثبت نشده\n`;
+      message += `${fields.mood}: ${fields.notSet}\n`;
     }
     
     if (profile.interests && profile.interests.length > 0) {
       const interestNames = profile.interests
         .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
         .join(", ");
-      message += `🎯 علایق: ${interestNames}\n`;
+      message += `${fields.interests}: ${interestNames}\n`;
     } else {
-      message += `🎯 علایق: ثبت نشده\n`;
+      message += `${fields.interests}: ${fields.notSet}\n`;
     }
     
     if (profile.location) {
-      message += `📍 استان: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+      message += `${fields.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
     } else {
-      message += `📍 استان: ثبت نشده\n`;
+      message += `${fields.location}: ${fields.notSet}\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/12`;
+    message += `${fields.completion}: ${profile.completion_score}/12`;
 
     const keyboard = new InlineKeyboard()
-      .text("✏️ ویرایش نام", "profile:edit:name")
-      .text("📝 ویرایش بیوگرافی", "profile:edit:bio")
+      .text(buttons.editName, "profile:edit:name")
+      .text(buttons.editBio, "profile:edit:bio")
       .row()
-      .text("🎂 تاریخ تولد", "profile:edit:birthdate")
-      .text("⚧️ جنسیت", "profile:edit:gender")
+      .text(buttons.editBirthdate, "profile:edit:birthdate")
+      .text(buttons.editGender, "profile:edit:gender")
       .row()
-      .text("💝 پیشنهاد", "profile:edit:looking_for")
-      .text("📷 تصاویر", "profile:edit:images")
+      .text(buttons.editLookingFor, "profile:edit:looking_for")
+      .text(buttons.editImages, "profile:edit:images")
       .row()
-      .text("🔗 نام کاربری", "profile:edit:username")
-      .text("😊 مود", "profile:edit:mood")
+      .text(buttons.editUsername, "profile:edit:username")
+      .text(buttons.editMood, "profile:edit:mood")
       .row()
-      .text("🎯 علایق", "profile:edit:interests")
-      .text("📍 استان", "profile:edit:location");
+      .text(buttons.editInterests, "profile:edit:interests")
+      .text(buttons.editLocation, "profile:edit:location");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
-      keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+      keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
     // Send photos if available - attach text to first image
@@ -306,10 +293,10 @@ export function setupCommands(
   bot.command("settings", async (ctx) => {
     ctx.react("🤔").catch(() => {});
     await ctx.reply(
-      "تنظیمات:\n\n" +
-      "/profile - مشاهده و ویرایش پروفایل\n" +
-      "/find - پیدا کردن افراد\n" +
-      "/liked - افرادی که من را لایک کردند"
+      settings.title +
+      settings.profile +
+      settings.find +
+      settings.liked
     );
   });
 }

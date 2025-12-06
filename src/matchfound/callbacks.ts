@@ -13,6 +13,17 @@ import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
 import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES, IRAN_PROVINCES, PROVINCE_NAMES } from "./constants";
+import {
+  errors,
+  success,
+  fields,
+  profileValues,
+  buttons,
+  editPrompts,
+  report,
+  callbacks,
+  display,
+} from "./strings";
 
 // Helper function to build interests keyboard with pagination
 function buildInterestsKeyboard(
@@ -44,13 +55,13 @@ function buildInterestsKeyboard(
   if (totalPages > 1) {
     keyboard.row();
     if (currentPage > 0) {
-      keyboard.text("◀️ قبلی", `profile:interests:page:${currentPage - 1}`);
+      keyboard.text(buttons.previous, `profile:interests:page:${currentPage - 1}`);
     } else {
       keyboard.text(" ", "profile:interests:noop"); // Placeholder for spacing
     }
     keyboard.text(`صفحه ${currentPage + 1}/${totalPages}`, "profile:interests:noop");
     if (currentPage < totalPages - 1) {
-      keyboard.text("بعدی ▶️", `profile:interests:page:${currentPage + 1}`);
+      keyboard.text(buttons.next, `profile:interests:page:${currentPage + 1}`);
     } else {
       keyboard.text(" ", "profile:interests:noop"); // Placeholder for spacing
     }
@@ -89,13 +100,13 @@ function buildLocationKeyboard(
   if (totalPages > 1) {
     keyboard.row();
     if (currentPage > 0) {
-      keyboard.text("◀️ قبلی", `profile:location:page:${currentPage - 1}`);
+      keyboard.text(buttons.previous, `profile:location:page:${currentPage - 1}`);
     } else {
       keyboard.text(" ", "profile:location:noop"); // Placeholder for spacing
     }
     keyboard.text(`صفحه ${currentPage + 1}/${totalPages}`, "profile:location:noop");
     if (currentPage < totalPages - 1) {
-      keyboard.text("بعدی ▶️", `profile:location:page:${currentPage + 1}`);
+      keyboard.text(buttons.next, `profile:location:page:${currentPage + 1}`);
     } else {
       keyboard.text(" ", "profile:location:noop"); // Placeholder for spacing
     }
@@ -115,7 +126,7 @@ export function setupCallbacks(
 
     const likedUserId = parseInt(ctx.match[1]);
     if (userId === likedUserId) {
-      await ctx.answerCallbackQuery("شما نمی‌توانید خودتان را لایک کنید!");
+      await ctx.answerCallbackQuery(errors.cannotLikeSelf);
       return;
     }
 
@@ -147,10 +158,10 @@ export function setupCallbacks(
 
       if (mutualLike) {
         // Mutual like!
-        await ctx.answerCallbackQuery("🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!");
-        await ctx.reply("🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!");
+        await ctx.answerCallbackQuery(callbacks.mutualLike);
+        await ctx.reply(success.mutualLike);
       } else {
-        await ctx.answerCallbackQuery("✅ لایک ثبت شد!");
+        await ctx.answerCallbackQuery(callbacks.likeRegistered);
       }
 
       // Show next match
@@ -160,12 +171,12 @@ export function setupCallbacks(
         if (session.currentMatchIndex < session.matches.length) {
           await displayMatch(ctx, session.matches[session.currentMatchIndex]);
         } else {
-          await ctx.reply("شما تمام افراد موجود را دیده‌اید. لطفا بعدا دوباره تلاش کنید!");
+          await ctx.reply(errors.noMatches);
         }
       }
     } catch (err) {
       log.error(BOT_NAME + " > Like action failed", err);
-      await ctx.answerCallbackQuery("❌ خطا در ثبت لایک");
+      await ctx.answerCallbackQuery("❌ خطا در ثبت لایک"); // TODO: Add to strings
     }
   });
 
@@ -174,7 +185,7 @@ export function setupCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
     
-    await ctx.answerCallbackQuery("✅ رد شد");
+    await ctx.answerCallbackQuery(callbacks.disliked);
     
     // Show next match
     const session = getSession(userId);
@@ -183,7 +194,7 @@ export function setupCallbacks(
       if (session.currentMatchIndex < session.matches.length) {
         await displayMatch(ctx, session.matches[session.currentMatchIndex]);
       } else {
-        await ctx.reply("شما تمام افراد موجود را دیده‌اید. لطفا بعدا دوباره تلاش کنید!");
+        await ctx.reply(errors.noMatches);
       }
     }
   });
@@ -199,7 +210,7 @@ export function setupCallbacks(
     });
 
     if (!userData) {
-      await ctx.answerCallbackQuery("کاربر یافت نشد");
+      await ctx.answerCallbackQuery(errors.userNotFound);
       return;
     }
 
@@ -213,7 +224,7 @@ export function setupCallbacks(
     const age = calculateAge(user.birth_date);
     const matchUser: MatchUser = { ...user, age, match_priority: 0 };
 
-    await ctx.answerCallbackQuery("✅");
+    await ctx.answerCallbackQuery(callbacks.showUsername);
     await displayLikedUser(ctx, matchUser, true);
   });
 
@@ -238,7 +249,7 @@ export function setupCallbacks(
         update: {},
       });
 
-      await ctx.answerCallbackQuery("✅ حذف شد");
+      await ctx.answerCallbackQuery(callbacks.deleted);
 
       // Show next liked user
       const session = getSession(userId);
@@ -247,12 +258,12 @@ export function setupCallbacks(
         if (session.currentLikedIndex < session.likedUsers.length) {
           await displayLikedUser(ctx, session.likedUsers[session.currentLikedIndex]);
         } else {
-          await ctx.reply("تمام افرادی که شما را لایک کرده‌اند را دیده‌اید.");
+          await ctx.reply(display.allLikedSeen);
         }
       }
     } catch (err) {
       log.error(BOT_NAME + " > Delete liked failed", err);
-      await ctx.answerCallbackQuery("❌ خطا");
+      await ctx.answerCallbackQuery("❌ خطا"); // TODO: Add to strings
     }
   });
 
@@ -263,7 +274,7 @@ export function setupCallbacks(
 
     const reportedUserId = parseInt(ctx.match[1]);
     if (userId === reportedUserId) {
-      await ctx.answerCallbackQuery("شما نمی‌توانید خودتان را گزارش دهید!");
+      await ctx.answerCallbackQuery(errors.cannotReportSelf);
       return;
     }
 
@@ -272,9 +283,7 @@ export function setupCallbacks(
     session.reportingUserId = reportedUserId;
 
     await ctx.answerCallbackQuery();
-    await ctx.reply(
-      "لطفا دلیل گزارش را ارسال کنید (یا /cancel برای لغو):"
-    );
+    await ctx.reply(report.prompt);
   });
 
   // Handle report reason
@@ -289,7 +298,7 @@ export function setupCallbacks(
 
       if (reason === "/cancel") {
         delete session.reportingUserId;
-        await ctx.reply("گزارش لغو شد.");
+        await ctx.reply(report.cancelled);
         return;
       }
 
@@ -323,11 +332,11 @@ export function setupCallbacks(
         );
 
         delete session.reportingUserId;
-        await ctx.reply("✅ گزارش شما ثبت شد و به ادمین ارسال شد.");
+        await ctx.reply(success.reportSubmitted);
       } catch (err) {
         log.error(BOT_NAME + " > Report failed", err);
         delete session.reportingUserId; // Clear session state on error
-        await ctx.reply("❌ خطا در ثبت گزارش. لطفا دوباره تلاش کنید.");
+        await ctx.reply(errors.reportFailed);
       }
       return;
     }
@@ -339,7 +348,7 @@ export function setupCallbacks(
       // Handle cancel
       if (text === "/cancel") {
         delete session.editingField;
-        await ctx.reply("❌ ویرایش لغو شد.");
+        await ctx.reply(errors.editCancelled);
         return;
       }
 
@@ -347,52 +356,50 @@ export function setupCallbacks(
         switch (session.editingField) {
           case "name":
             if (text.length > 100) {
-              await ctx.reply("❌ نام نمایشی نمی‌تواند بیشتر از 100 کاراکتر باشد.");
+              await ctx.reply(errors.nameTooLong);
               return;
             }
             await updateUserField(userId, "display_name", text);
             delete session.editingField;
-            await ctx.reply(`✅ نام نمایشی به "${text}" تغییر یافت.`);
+            await ctx.reply(success.nameUpdated(text));
             break;
 
           case "bio":
             if (text.length > 2000) {
-              await ctx.reply("❌ بیوگرافی نمی‌تواند بیشتر از 2000 کاراکتر باشد.");
+              await ctx.reply(errors.bioTooLong);
               return;
             }
             await updateUserField(userId, "biography", text);
             delete session.editingField;
-            await ctx.reply("✅ بیوگرافی به‌روزرسانی شد.");
+            await ctx.reply(success.bioUpdated);
             break;
 
           case "birthdate":
             // Validate date format YYYY-MM-DD
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (!dateRegex.test(text)) {
-              await ctx.reply(
-                "❌ فرمت تاریخ نامعتبر است. لطفا به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15)"
-              );
+              await ctx.reply(errors.invalidDate);
               return;
             }
             const birthDate = new Date(text);
             if (isNaN(birthDate.getTime())) {
-              await ctx.reply("❌ تاریخ نامعتبر است.");
+              await ctx.reply(errors.invalidDateValue);
               return;
             }
             // Check if date is not in the future
             if (birthDate > new Date()) {
-              await ctx.reply("❌ تاریخ تولد نمی‌تواند در آینده باشد.");
+              await ctx.reply(errors.futureDate);
               return;
             }
             // Check if age is reasonable (between 18 and 120)
             const age = calculateAge(birthDate);
             if (!age || age < 18 || age > 120) {
-              await ctx.reply("❌ سن باید بین 18 تا 120 سال باشد.");
+              await ctx.reply(errors.invalidAge);
               return;
             }
             await updateUserField(userId, "birth_date", text);
             delete session.editingField;
-            await ctx.reply(`✅ تاریخ تولد ثبت شد. سن شما: ${age} سال`);
+            await ctx.reply(success.birthdateUpdated(age));
             break;
 
           default:
@@ -401,7 +408,7 @@ export function setupCallbacks(
         }
       } catch (err) {
         log.error(BOT_NAME + " > Profile edit failed", err);
-        await ctx.reply("❌ خطا در به‌روزرسانی پروفایل.");
+        await ctx.reply(errors.updateFailed);
         delete session.editingField;
       }
       return;
@@ -419,85 +426,85 @@ export function setupCallbacks(
     // Trigger /profile command handler
     const profile = await getUserProfile(userId);
     if (!profile) {
-      await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
+      await ctx.reply(errors.startFirst);
       return;
     }
 
     const ageText = profile.birth_date
-      ? `${calculateAge(profile.birth_date)} سال`
-      : "ثبت نشده";
-    const genderText = profile.gender === "male" ? "مرد" : profile.gender === "female" ? "زن" : "ثبت نشده";
+      ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
+      : fields.notSet;
+    const genderText = profile.gender === "male" ? profileValues.male : profile.gender === "female" ? profileValues.female : fields.notSet;
     const lookingForText =
       profile.looking_for_gender === "male"
-        ? "مرد"
+        ? profileValues.male
         : profile.looking_for_gender === "female"
-        ? "خانم"
+        ? profileValues.female
         : profile.looking_for_gender === "both"
-        ? "هر دو"
-        : "ثبت نشده";
+        ? profileValues.both
+        : fields.notSet;
 
-    let message = `📋 <b>پروفایل شما</b>\n\n`;
-    message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
-    message += `🎂 سن: ${ageText}\n`;
-    message += `⚧️ جنسیت: ${genderText}\n`;
-    message += `💝 پیشنهاد: ${lookingForText}\n`;
-    message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
+    let message = `${fields.profileTitle}\n\n`;
+    message += `${fields.name}: ${profile.display_name || fields.notSet}\n`;
+    message += `${fields.age}: ${ageText}\n`;
+    message += `${fields.genderLabel}: ${genderText}\n`;
+    message += `${fields.lookingFor}: ${lookingForText}\n`;
+    message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
     
     // Show quiz results with instructions if missing
     if (profile.archetype_result) {
-      message += `🔮 کهن الگو: ${profile.archetype_result}\n`;
+      message += `${fields.archetype}: ${profile.archetype_result}\n`;
     } else {
-      message += `🔮 کهن الگو: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}\n`;
     }
     
     if (profile.mbti_result) {
-      message += `🧠 تست MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+      message += `${fields.mbti}: ${profile.mbti_result.toUpperCase()}\n`;
     } else {
-      message += `🧠 تست MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}\n`;
     }
     
     if (profile.mood) {
-      message += `😊 مود: ${MOODS[profile.mood] || profile.mood}\n`;
+      message += `${fields.mood}: ${MOODS[profile.mood] || profile.mood}\n`;
     } else {
-      message += `😊 مود: ثبت نشده\n`;
+      message += `${fields.mood}: ${fields.notSet}\n`;
     }
     
     if (profile.interests && profile.interests.length > 0) {
       const interestNames = profile.interests
         .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
         .join(", ");
-      message += `🎯 علایق: ${interestNames}\n`;
+      message += `${fields.interests}: ${interestNames}\n`;
     } else {
-      message += `🎯 علایق: ثبت نشده\n`;
+      message += `${fields.interests}: ${fields.notSet}\n`;
     }
     
     if (profile.location) {
-      message += `📍 استان: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+      message += `${fields.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
     } else {
-      message += `📍 استان: ثبت نشده\n`;
+      message += `${fields.location}: ${fields.notSet}\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/12`;
+    message += `${fields.completion}: ${profile.completion_score}/12`;
 
     const keyboard = new InlineKeyboard()
-      .text("✏️ ویرایش نام", "profile:edit:name")
-      .text("📝 ویرایش بیوگرافی", "profile:edit:bio")
+      .text(buttons.editName, "profile:edit:name")
+      .text(buttons.editBio, "profile:edit:bio")
       .row()
-      .text("🎂 تاریخ تولد", "profile:edit:birthdate")
-      .text("⚧️ جنسیت", "profile:edit:gender")
+      .text(buttons.editBirthdate, "profile:edit:birthdate")
+      .text(buttons.editGender, "profile:edit:gender")
       .row()
-      .text("💝 پیشنهاد", "profile:edit:looking_for")
-      .text("📷 تصاویر", "profile:edit:images")
+      .text(buttons.editLookingFor, "profile:edit:looking_for")
+      .text(buttons.editImages, "profile:edit:images")
       .row()
-      .text("🔗 نام کاربری", "profile:edit:username")
-      .text("😊 مود", "profile:edit:mood")
+      .text(buttons.editUsername, "profile:edit:username")
+      .text(buttons.editMood, "profile:edit:mood")
       .row()
-      .text("🎯 علایق", "profile:edit:interests")
-      .text("📍 استان", "profile:edit:location");
+      .text(buttons.editInterests, "profile:edit:interests")
+      .text(buttons.editLocation, "profile:edit:location");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
-      keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+      keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
     // Send photos if available - attach text to first image
@@ -534,85 +541,85 @@ export function setupCallbacks(
     await updateCompletionScore(userId);
     const profile = await getUserProfile(userId);
     if (!profile) {
-      await ctx.reply("لطفا ابتدا با دستور /start شروع کنید.");
+      await ctx.reply(errors.startFirst);
       return;
     }
 
     const ageText = profile.birth_date
-      ? `${calculateAge(profile.birth_date)} سال`
-      : "ثبت نشده";
-    const genderText = profile.gender === "male" ? "مرد" : profile.gender === "female" ? "زن" : "ثبت نشده";
+      ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
+      : fields.notSet;
+    const genderText = profile.gender === "male" ? profileValues.male : profile.gender === "female" ? profileValues.female : fields.notSet;
     const lookingForText =
       profile.looking_for_gender === "male"
-        ? "مرد"
+        ? profileValues.male
         : profile.looking_for_gender === "female"
-        ? "خانم"
+        ? profileValues.female
         : profile.looking_for_gender === "both"
-        ? "هر دو"
-        : "ثبت نشده";
+        ? profileValues.both
+        : fields.notSet;
 
-    let message = `📋 <b>پروفایل شما</b>\n\n`;
-    message += `👤 نام: ${profile.display_name || "ثبت نشده"}\n`;
-    message += `🎂 سن: ${ageText}\n`;
-    message += `⚧️ جنسیت: ${genderText}\n`;
-    message += `💝 پیشنهاد: ${lookingForText}\n`;
-    message += `📝 بیوگرافی: ${profile.biography || "ثبت نشده"}\n`;
+    let message = `${fields.profileTitle}\n\n`;
+    message += `${fields.name}: ${profile.display_name || fields.notSet}\n`;
+    message += `${fields.age}: ${ageText}\n`;
+    message += `${fields.genderLabel}: ${genderText}\n`;
+    message += `${fields.lookingFor}: ${lookingForText}\n`;
+    message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
     
     // Show quiz results with instructions if missing
     if (profile.archetype_result) {
-      message += `🔮 کهن الگو: ${profile.archetype_result}\n`;
+      message += `${fields.archetype}: ${profile.archetype_result}\n`;
     } else {
-      message += `🔮 کهن الگو: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}\n`;
     }
     
     if (profile.mbti_result) {
-      message += `🧠 تست MBTI: ${profile.mbti_result.toUpperCase()}\n`;
+      message += `${fields.mbti}: ${profile.mbti_result.toUpperCase()}\n`;
     } else {
-      message += `🧠 تست MBTI: ثبت نشده (در @${INMANKIST_BOT_USERNAME} انجام دهید)\n`;
+      message += `${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}\n`;
     }
     
     if (profile.mood) {
-      message += `😊 مود: ${MOODS[profile.mood] || profile.mood}\n`;
+      message += `${fields.mood}: ${MOODS[profile.mood] || profile.mood}\n`;
     } else {
-      message += `😊 مود: ثبت نشده\n`;
+      message += `${fields.mood}: ${fields.notSet}\n`;
     }
     
     if (profile.interests && profile.interests.length > 0) {
       const interestNames = profile.interests
         .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
         .join(", ");
-      message += `🎯 علایق: ${interestNames}\n`;
+      message += `${fields.interests}: ${interestNames}\n`;
     } else {
-      message += `🎯 علایق: ثبت نشده\n`;
+      message += `${fields.interests}: ${fields.notSet}\n`;
     }
     
     if (profile.location) {
-      message += `📍 استان: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+      message += `${fields.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
     } else {
-      message += `📍 استان: ثبت نشده\n`;
+      message += `${fields.location}: ${fields.notSet}\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/12`;
+    message += `${fields.completion}: ${profile.completion_score}/12`;
 
     const keyboard = new InlineKeyboard()
-      .text("✏️ ویرایش نام", "profile:edit:name")
-      .text("📝 ویرایش بیوگرافی", "profile:edit:bio")
+      .text(buttons.editName, "profile:edit:name")
+      .text(buttons.editBio, "profile:edit:bio")
       .row()
-      .text("🎂 تاریخ تولد", "profile:edit:birthdate")
-      .text("⚧️ جنسیت", "profile:edit:gender")
+      .text(buttons.editBirthdate, "profile:edit:birthdate")
+      .text(buttons.editGender, "profile:edit:gender")
       .row()
-      .text("💝 پیشنهاد", "profile:edit:looking_for")
-      .text("📷 تصاویر", "profile:edit:images")
+      .text(buttons.editLookingFor, "profile:edit:looking_for")
+      .text(buttons.editImages, "profile:edit:images")
       .row()
-      .text("🔗 نام کاربری", "profile:edit:username")
-      .text("😊 مود", "profile:edit:mood")
+      .text(buttons.editUsername, "profile:edit:username")
+      .text(buttons.editMood, "profile:edit:mood")
       .row()
-      .text("🎯 علایق", "profile:edit:interests")
-      .text("📍 استان", "profile:edit:location");
+      .text(buttons.editInterests, "profile:edit:interests")
+      .text(buttons.editLocation, "profile:edit:location");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
-      keyboard.row().url("🧪 انجام تست‌ها", `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+      keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
     // Send photos if available - attach text to first image
@@ -650,59 +657,51 @@ export function setupCallbacks(
     switch (action) {
       case "name":
         session.editingField = "name";
-        await ctx.reply(
-          "لطفا نام نمایشی خود را ارسال کنید (حداکثر 100 کاراکتر):\n\nبرای لغو: /cancel"
-        );
+        await ctx.reply(editPrompts.name);
         break;
 
       case "bio":
         session.editingField = "bio";
-        await ctx.reply(
-          "لطفا بیوگرافی خود را ارسال کنید (حداکثر 2000 کاراکتر):\n\nبرای لغو: /cancel"
-        );
+        await ctx.reply(editPrompts.bio);
         break;
 
       case "birthdate":
         session.editingField = "birthdate";
-        await ctx.reply(
-          "لطفا تاریخ تولد خود را به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15):\n\nبرای لغو: /cancel"
-        );
+        await ctx.reply(editPrompts.birthdate);
         break;
 
       case "gender":
         session.editingField = "gender";
         const genderKeyboard = new InlineKeyboard()
-          .text("مرد", "profile:set:gender:male")
-          .text("زن", "profile:set:gender:female");
-        await ctx.reply("جنسیت خود را انتخاب کنید:", { reply_markup: genderKeyboard });
+          .text(profileValues.male, "profile:set:gender:male")
+          .text(profileValues.female, "profile:set:gender:female");
+        await ctx.reply(editPrompts.gender, { reply_markup: genderKeyboard });
         break;
 
       case "looking_for":
         session.editingField = "looking_for";
         const lookingForKeyboard = new InlineKeyboard()
-          .text("مرد", "profile:set:looking_for:male")
-          .text("خانم", "profile:set:looking_for:female")
+          .text(profileValues.male, "profile:set:looking_for:male")
+          .text(profileValues.female, "profile:set:looking_for:female")
           .row()
-          .text("هر دو", "profile:set:looking_for:both");
-        await ctx.reply("می‌خواهید چه کسی به شما پیشنهاد شود؟", { reply_markup: lookingForKeyboard });
+          .text(profileValues.both, "profile:set:looking_for:both");
+        await ctx.reply(editPrompts.lookingFor, { reply_markup: lookingForKeyboard });
         break;
 
       case "images":
         session.editingField = "images";
         const profile = await getUserProfile(userId);
         if (profile?.profile_images && profile.profile_images.length > 0) {
-          const imagesKeyboard = new InlineKeyboard().text("➕ افزودن تصویر", "profile:images:add");
+          const imagesKeyboard = new InlineKeyboard().text(buttons.addImage, "profile:images:add");
           if (profile.profile_images.length > 0) {
-            imagesKeyboard.row().text("🗑️ حذف تصاویر", "profile:images:clear");
+            imagesKeyboard.row().text(buttons.clearImages, "profile:images:clear");
           }
           await ctx.reply(
-            `شما ${profile.profile_images.length} تصویر دارید.\n\nبرای افزودن تصویر جدید، یک عکس ارسال کنید.\nبرای حذف همه تصاویر، از دکمه زیر استفاده کنید.`,
+            editPrompts.images.hasImages(profile.profile_images.length),
             { reply_markup: imagesKeyboard }
           );
         } else {
-          await ctx.reply(
-            "شما هنوز تصویری ندارید.\n\nبرای افزودن تصویر، یک عکس ارسال کنید:\n\nبرای لغو: /cancel"
-          );
+          await ctx.reply(editPrompts.images.noImages);
         }
         break;
 
@@ -712,13 +711,9 @@ export function setupCallbacks(
         const currentUsername = ctx.from?.username;
         if (currentUsername) {
           await updateUserField(userId, "username", currentUsername);
-          await ctx.reply(
-            `✅ نام کاربری به‌روزرسانی شد: @${currentUsername}\n\nنام کاربری شما از پروفایل تلگرام شما خوانده می‌شود و به صورت خودکار به‌روزرسانی می‌شود.`
-          );
+          await ctx.reply(success.usernameUpdated(currentUsername));
         } else {
-          await ctx.reply(
-            "❌ شما در حال حاضر نام کاربری تلگرام ندارید.\n\nلطفا در تنظیمات تلگرام یک نام کاربری تنظیم کنید و سپس دوباره این دکمه را بزنید."
-          );
+          await ctx.reply(errors.noUsername);
         }
         delete session.editingField;
         break;
@@ -740,7 +735,7 @@ export function setupCallbacks(
           .row()
           .text(`${MOODS.neutral} خنثی`, "profile:set:mood:neutral")
           .text(`${MOODS.playful} بازیگوش`, "profile:set:mood:playful");
-        await ctx.reply("مود خود را انتخاب کنید:", { reply_markup: moodKeyboard });
+        await ctx.reply(editPrompts.mood, { reply_markup: moodKeyboard });
         break;
 
       case "interests":
@@ -753,7 +748,7 @@ export function setupCallbacks(
         const selectedCount = currentInterests.size;
         const totalPages = Math.ceil(INTERESTS.length / 20);
         await ctx.reply(
-          `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه 1/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
+          editPrompts.interests(selectedCount, 1, totalPages),
           { reply_markup: interestsKeyboard }
         );
         break;
@@ -767,13 +762,13 @@ export function setupCallbacks(
         const locationKeyboard = buildLocationKeyboard(currentLocation, session.locationPage);
         const totalLocationPages = Math.ceil(IRAN_PROVINCES.length / 20);
         await ctx.reply(
-          `📍 استان خود را انتخاب کنید\nصفحه 1/${totalLocationPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
+          editPrompts.location(1, totalLocationPages),
           { reply_markup: locationKeyboard }
         );
         break;
 
       default:
-        await ctx.reply("عملیات نامعتبر است.");
+        await ctx.reply(errors.invalidOperation);
     }
   });
 
@@ -787,14 +782,14 @@ export function setupCallbacks(
     const session = getSession(userId);
 
     if (!Object.keys(MOODS).includes(mood)) {
-      await ctx.reply("❌ مود نامعتبر است.");
+      await ctx.reply(errors.invalidMood);
       delete session.editingField;
       return;
     }
 
     await updateUserField(userId, "mood", mood);
     delete session.editingField;
-    await ctx.reply(`✅ مود به ${MOODS[mood]} تغییر یافت.`);
+    await ctx.reply(success.moodUpdated(MOODS[mood]));
   });
 
   // Handle setting gender
@@ -806,7 +801,7 @@ export function setupCallbacks(
     await ctx.answerCallbackQuery();
     await updateUserField(userId, "gender", gender);
     delete getSession(userId).editingField;
-    await ctx.reply(`✅ جنسیت به "${gender === "male" ? "مرد" : "زن"}" تغییر یافت.`);
+    await ctx.reply(success.genderUpdated(gender === "male" ? profileValues.male : profileValues.female));
   });
 
   // Handle setting looking_for
@@ -817,16 +812,16 @@ export function setupCallbacks(
     const lookingFor = ctx.match[1];
     await ctx.answerCallbackQuery();
     const text =
-      lookingFor === "male" ? "مرد" : lookingFor === "female" ? "خانم" : "هر دو";
+      lookingFor === "male" ? profileValues.male : lookingFor === "female" ? profileValues.female : profileValues.both;
     await updateUserField(userId, "looking_for_gender", lookingFor);
     delete getSession(userId).editingField;
-    await ctx.reply(`✅ تنظیمات به "${text}" تغییر یافت.`);
+    await ctx.reply(success.lookingForUpdated(text));
   });
 
   // Handle image management
   bot.callbackQuery("profile:images:add", async (ctx) => {
     await ctx.answerCallbackQuery();
-    await ctx.reply("لطفا یک عکس ارسال کنید:\n\nبرای لغو: /cancel");
+    await ctx.reply(editPrompts.photo);
   });
 
   bot.callbackQuery("profile:images:clear", async (ctx) => {
@@ -836,7 +831,7 @@ export function setupCallbacks(
     await ctx.answerCallbackQuery();
     await updateUserField(userId, "profile_images", []);
     delete getSession(userId).editingField;
-    await ctx.reply("✅ تمام تصاویر حذف شدند.");
+    await ctx.reply(success.imagesCleared);
   });
 
 
@@ -876,13 +871,13 @@ export function setupCallbacks(
     
     try {
       await ctx.editMessageText(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${currentPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
+        editPrompts.interests(selectedCount, currentPage + 1, totalPages),
         { reply_markup: interestsKeyboard }
       );
     } catch (err) {
       // If edit fails, send a new message
       await ctx.reply(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${currentPage + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
+        editPrompts.interests(selectedCount, currentPage + 1, totalPages),
         { reply_markup: interestsKeyboard }
       );
     }
@@ -911,12 +906,12 @@ export function setupCallbacks(
     
     try {
       await ctx.editMessageText(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
+        editPrompts.interests(selectedCount, page + 1, totalPages),
         { reply_markup: interestsKeyboard }
       );
     } catch (err) {
       await ctx.reply(
-        `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
+        editPrompts.interests(selectedCount, page + 1, totalPages),
         { reply_markup: interestsKeyboard }
       );
     }
@@ -938,7 +933,7 @@ export function setupCallbacks(
     const session = getSession(userId);
 
     if (!IRAN_PROVINCES.includes(location as any)) {
-      await ctx.reply("❌ استان نامعتبر است.");
+      await ctx.reply(errors.invalidProvince);
       delete session.editingField;
       return;
     }
@@ -955,13 +950,13 @@ export function setupCallbacks(
     
     try {
       await ctx.editMessageText(
-        `📍 استان خود را انتخاب کنید\n✅ انتخاب شده: ${provinceName}\nصفحه ${currentPage + 1}/${totalPages}\n\nبرای تغییر استان، روی استان دیگری کلیک کنید.`,
+        editPrompts.locationSelected(provinceName, currentPage + 1, totalPages),
         { reply_markup: locationKeyboard }
       );
     } catch (err) {
       // If edit fails, send a new message
       await ctx.reply(
-        `✅ استان به "${provinceName}" تغییر یافت.`,
+        `✅ استان به "${provinceName}" تغییر یافت.`, // TODO: Add to strings
         { reply_markup: locationKeyboard }
       );
     }
@@ -989,12 +984,12 @@ export function setupCallbacks(
     
     try {
       await ctx.editMessageText(
-        `📍 استان خود را انتخاب کنید\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
+        editPrompts.location(page + 1, totalPages),
         { reply_markup: locationKeyboard }
       );
     } catch (err) {
       await ctx.reply(
-        `📍 استان خود را انتخاب کنید\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
+        editPrompts.location(page + 1, totalPages),
         { reply_markup: locationKeyboard }
       );
     }
@@ -1023,10 +1018,10 @@ export function setupCallbacks(
           await addProfileImage(userId, fileId);
           const profile = await getUserProfile(userId);
           const imageCount = profile?.profile_images?.length || 0;
-          await ctx.reply(`✅ تصویر اضافه شد. شما اکنون ${imageCount} تصویر دارید.`);
+          await ctx.reply(success.imageAdded(imageCount));
         } catch (err) {
           log.error(BOT_NAME + " > Add image failed", err);
-          await ctx.reply("❌ خطا در افزودن تصویر.");
+          await ctx.reply(errors.addImageFailed);
         }
       }
     } else {
