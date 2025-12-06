@@ -390,7 +390,11 @@ export function setupCallbacks(
               await ctx.reply(errors.invalidDate);
               return;
             }
-            const birthDate = new Date(text);
+            // Parse date string to Date object
+            // Note: Date constructor with YYYY-MM-DD string interprets it as UTC midnight
+            // We need to create a proper Date object for the local timezone
+            const [year, month, day] = text.split("-").map(Number);
+            const birthDate = new Date(year, month - 1, day); // month is 0-indexed
             if (isNaN(birthDate.getTime())) {
               await ctx.reply(errors.invalidDateValue);
               return;
@@ -406,7 +410,8 @@ export function setupCallbacks(
               await ctx.reply(errors.invalidAge);
               return;
             }
-            await updateUserField(userId, "birth_date", text);
+            // Pass Date object to Prisma, not the string
+            await updateUserField(userId, "birth_date", birthDate);
             delete session.editingField;
             await ctx.reply(success.birthdateUpdated(age));
             break;
