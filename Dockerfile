@@ -1,26 +1,30 @@
-FROM node:20-slim
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install necessary packages (including fonts and build dependencies)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install necessary packages (including fonts)
+RUN apk add --no-cache \
   python3 \
+  py3-pip \
   make \
   g++ \
-  libcairo2-dev \
-  libpango1.0-dev \
-  libjpeg-dev \
-  libgif-dev \
-  librsvg2-dev \
+  cairo \
+  cairo-dev \
+  pango \
+  pango-dev \
+  musl-dev \
+  jpeg-dev \
+  giflib-dev \
   libpng-dev \
   fontconfig \
-  fonts-dejavu \
-  fonts-freefont-ttf \
-  fonts-liberation \
-  fonts-droid-fallback \
-  fonts-noto-emoji \
-  && rm -rf /var/lib/apt/lists/*
+  freetype \
+  ttf-dejavu \
+  ttf-freefont \
+  ttf-liberation \
+  ttf-droid \
+  ttf-opensans \
+  font-noto-emoji
 
 # Ensure python3 is set as the default Python
 RUN ln -sf /usr/bin/python3 /usr/bin/python
