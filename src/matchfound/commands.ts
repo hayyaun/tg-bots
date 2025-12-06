@@ -83,6 +83,12 @@ export function setupCommands(
       if (!profile.gender) missingRequiredFields.push(fields.gender);
       if (!profile.looking_for_gender) missingRequiredFields.push(fields.lookingForGender);
       if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
+      
+      // Check interests separately to show specific count
+      if (!profile.interests || profile.interests.length < 3) {
+        await ctx.reply(errors.minInterestsNotMet(profile.interests?.length || 0));
+        return;
+      }
 
       if (missingRequiredFields.length > 0) {
         await ctx.reply(errors.missingRequiredFields(missingRequiredFields));

@@ -870,8 +870,18 @@ export function setupCallbacks(
     
     // Toggle interest
     if (currentInterests.has(interest)) {
+      // Check if removing would go below minimum of 3
+      if (currentInterests.size <= 3) {
+        await ctx.answerCallbackQuery(errors.minInterestsRequired);
+        return;
+      }
       currentInterests.delete(interest);
     } else {
+      // Check if user already has 7 interests (maximum allowed)
+      if (currentInterests.size >= 7) {
+        await ctx.answerCallbackQuery(errors.maxInterestsReached);
+        return;
+      }
       currentInterests.add(interest);
     }
     

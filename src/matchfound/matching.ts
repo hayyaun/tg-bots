@@ -42,6 +42,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     username: { not: null },
     gender: { not: null },
     birth_date: { not: null },
+    interests: { not: null },
   };
 
   // Build gender filter
@@ -63,6 +64,11 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
   for (const candidate of candidates) {
     const candidateAge = calculateAge(candidate.birth_date);
     if (!candidateAge || candidateAge < minAge || candidateAge > maxAge) {
+      continue;
+    }
+
+    // Skip candidates without at least 3 interests
+    if (!candidate.interests || candidate.interests.length < 3) {
       continue;
     }
 
