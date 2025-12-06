@@ -44,19 +44,29 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
   keyboard.text(buttons.report, `report:${match.telegram_id}`);
 
   try {
-    // Send photos if available
+    // Send photos if available - attach text to first image
     if (match.profile_images && Array.isArray(match.profile_images) && match.profile_images.length > 0) {
-      const mediaGroup = match.profile_images.slice(0, 10).map((fileId) => ({
-        type: "photo" as const,
-        media: fileId,
-      }));
-      await ctx.replyWithMediaGroup(mediaGroup);
+      const images = match.profile_images.slice(0, 10);
+      // Send first image with text as caption
+      await ctx.replyWithPhoto(images[0], {
+        caption: message,
+        reply_markup: keyboard,
+      });
+      // Send remaining images if any
+      if (images.length > 1) {
+        const remainingImages = images.slice(1).map((fileId) => ({
+          type: "photo" as const,
+          media: fileId,
+        }));
+        await ctx.replyWithMediaGroup(remainingImages);
+      }
+    } else {
+      // No images - send text message only
+      await ctx.reply(message, { reply_markup: keyboard });
     }
-
-    await ctx.reply(message, { reply_markup: keyboard });
   } catch (err) {
     log.error(BOT_NAME + " > Display match failed", err);
-    // Try to send just the message without images if media group fails
+    // Try to send just the message without images if photo send fails
     try {
       await ctx.reply(message, { reply_markup: keyboard });
     } catch (replyErr) {
@@ -98,26 +108,39 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
 
   const keyboard = new InlineKeyboard();
   if (!showUsername) {
-    keyboard.text(buttons.show, `show_liked:${user.telegram_id}`);
+    // Add chat button if username exists
+    if (user.username) {
+      keyboard.url(buttons.chat, `https://t.me/${user.username}`);
+    }
     keyboard.text(buttons.delete, `delete_liked:${user.telegram_id}`);
     keyboard.row();
   }
   keyboard.text(buttons.report, `report:${user.telegram_id}`);
 
   try {
-    // Send photos if available
+    // Send photos if available - attach text to first image
     if (user.profile_images && Array.isArray(user.profile_images) && user.profile_images.length > 0) {
-      const mediaGroup = user.profile_images.slice(0, 10).map((fileId) => ({
-        type: "photo" as const,
-        media: fileId,
-      }));
-      await ctx.replyWithMediaGroup(mediaGroup);
+      const images = user.profile_images.slice(0, 10);
+      // Send first image with text as caption
+      await ctx.replyWithPhoto(images[0], {
+        caption: message,
+        reply_markup: keyboard,
+      });
+      // Send remaining images if any
+      if (images.length > 1) {
+        const remainingImages = images.slice(1).map((fileId) => ({
+          type: "photo" as const,
+          media: fileId,
+        }));
+        await ctx.replyWithMediaGroup(remainingImages);
+      }
+    } else {
+      // No images - send text message only
+      await ctx.reply(message, { reply_markup: keyboard });
     }
-
-    await ctx.reply(message, { reply_markup: keyboard });
   } catch (err) {
     log.error(BOT_NAME + " > Display liked user failed", err);
-    // Try to send just the message without images if media group fails
+    // Try to send just the message without images if photo send fails
     try {
       await ctx.reply(message, { reply_markup: keyboard });
     } catch (replyErr) {

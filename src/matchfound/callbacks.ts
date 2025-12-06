@@ -202,35 +202,6 @@ export function setupCallbacks(
     }
   });
 
-  // Show liked user username
-  bot.callbackQuery(/show_liked:(\d+)/, async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const likedUserId = parseInt(ctx.match[1]);
-    const userData = await prisma.user.findUnique({
-      where: { telegram_id: BigInt(likedUserId) },
-    });
-
-    if (!userData) {
-      await ctx.answerCallbackQuery(errors.userNotFound);
-      return;
-    }
-
-    const user: UserProfile = {
-      ...userData,
-      telegram_id: Number(userData.telegram_id),
-      birth_date: userData.birth_date || null,
-      created_at: userData.created_at,
-      updated_at: userData.updated_at,
-    } as UserProfile;
-    const age = calculateAge(user.birth_date);
-    const matchUser: MatchUser = { ...user, age, match_priority: 0 };
-
-    await ctx.answerCallbackQuery(callbacks.showUsername);
-    await displayLikedUser(ctx, matchUser, true);
-  });
-
   // Delete liked user (add to ignored)
   bot.callbackQuery(/delete_liked:(\d+)/, async (ctx) => {
     const userId = ctx.from?.id;
