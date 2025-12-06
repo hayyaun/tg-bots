@@ -70,17 +70,27 @@ export function setupCommands(
       return;
     }
 
-    // Check minimum completion (7/9) and username requirement
-    if (profile.completion_score < 7) {
+    // Check required fields first (these are mandatory for matching to work)
+    const missingRequiredFields: string[] = [];
+    if (!profile.username) missingRequiredFields.push("نام کاربری");
+    if (!profile.display_name) missingRequiredFields.push("نام نمایشی");
+    if (!profile.gender) missingRequiredFields.push("جنسیت");
+    if (!profile.looking_for_gender) missingRequiredFields.push("پیشنهاد (جنسیت مورد نظر)");
+    if (!profile.birth_date) missingRequiredFields.push("تاریخ تولد");
+
+    if (missingRequiredFields.length > 0) {
       await ctx.reply(
-        `برای استفاده از این دستور، باید حداقل 7 مورد از 12 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/12\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
+        `برای استفاده از این دستور، باید فیلدهای اجباری زیر را تکمیل کنید:\n\n` +
+        `❌ ${missingRequiredFields.join("\n❌ ")}\n\n` +
+        `از دستور /profile برای ویرایش پروفایل استفاده کنید.`
       );
       return;
     }
 
-    if (!profile.username) {
+    // Check minimum completion (7/12) for other optional fields
+    if (profile.completion_score < 7) {
       await ctx.reply(
-        "برای استفاده از این دستور، باید نام کاربری تلگرام خود را تنظیم کنید.\nاز دستور /profile برای ویرایش پروفایل استفاده کنید."
+        `برای استفاده از این دستور، باید حداقل 7 مورد از 12 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/12\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
       );
       return;
     }
