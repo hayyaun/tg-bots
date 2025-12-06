@@ -12,7 +12,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES, IRAN_PROVINCES, PROVINCE_NAMES } from "./constants";
 
 // Helper function to build interests keyboard with pagination
 function buildInterestsKeyboard(
@@ -53,6 +53,51 @@ function buildInterestsKeyboard(
       keyboard.text("بعدی ▶️", `profile:interests:page:${currentPage + 1}`);
     } else {
       keyboard.text(" ", "profile:interests:noop"); // Placeholder for spacing
+    }
+  }
+
+  return keyboard;
+}
+
+// Helper function to build location keyboard with pagination
+function buildLocationKeyboard(
+  selectedLocation: string | null,
+  currentPage: number,
+  itemsPerPage: number = 20
+): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  const totalItems = IRAN_PROVINCES.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const pageItems = IRAN_PROVINCES.slice(startIndex, endIndex);
+
+  // Add province buttons (2 per row)
+  let rowCount = 0;
+  for (const province of pageItems) {
+    const isSelected = selectedLocation === province;
+    const displayName = PROVINCE_NAMES[province];
+    const prefix = isSelected ? "✅ " : "";
+    keyboard.text(`${prefix}${displayName}`, `profile:set:location:${province}`);
+    rowCount++;
+    if (rowCount % 2 === 0) {
+      keyboard.row();
+    }
+  }
+
+  // Add pagination buttons
+  if (totalPages > 1) {
+    keyboard.row();
+    if (currentPage > 0) {
+      keyboard.text("◀️ قبلی", `profile:location:page:${currentPage - 1}`);
+    } else {
+      keyboard.text(" ", "profile:location:noop"); // Placeholder for spacing
+    }
+    keyboard.text(`صفحه ${currentPage + 1}/${totalPages}`, "profile:location:noop");
+    if (currentPage < totalPages - 1) {
+      keyboard.text("بعدی ▶️", `profile:location:page:${currentPage + 1}`);
+    } else {
+      keyboard.text(" ", "profile:location:noop"); // Placeholder for spacing
     }
   }
 
@@ -164,7 +209,7 @@ export function setupCallbacks(
       birth_date: userData.birth_date || null,
       created_at: userData.created_at,
       updated_at: userData.updated_at,
-    };
+    } as UserProfile;
     const age = calculateAge(user.birth_date);
     const matchUser: MatchUser = { ...user, age, match_priority: 0 };
 
@@ -426,7 +471,13 @@ export function setupCallbacks(
       message += `🎯 علایق: ثبت نشده\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/11`;
+    if (profile.location) {
+      message += `📍 استان: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+    } else {
+      message += `📍 استان: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/12`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -441,7 +492,8 @@ export function setupCallbacks(
       .text("🔗 نام کاربری", "profile:edit:username")
       .text("😊 مود", "profile:edit:mood")
       .row()
-      .text("🎯 علایق", "profile:edit:interests");
+      .text("🎯 علایق", "profile:edit:interests")
+      .text("📍 استان", "profile:edit:location");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
@@ -534,7 +586,13 @@ export function setupCallbacks(
       message += `🎯 علایق: ثبت نشده\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/11`;
+    if (profile.location) {
+      message += `📍 استان: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+    } else {
+      message += `📍 استان: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/12`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -549,7 +607,8 @@ export function setupCallbacks(
       .text("🔗 نام کاربری", "profile:edit:username")
       .text("😊 مود", "profile:edit:mood")
       .row()
-      .text("🎯 علایق", "profile:edit:interests");
+      .text("🎯 علایق", "profile:edit:interests")
+      .text("📍 استان", "profile:edit:location");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {
@@ -696,6 +755,20 @@ export function setupCallbacks(
         await ctx.reply(
           `🎯 علایق خود را انتخاب کنید (${selectedCount} مورد انتخاب شده)\nصفحه 1/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.`,
           { reply_markup: interestsKeyboard }
+        );
+        break;
+
+      case "location":
+        session.editingField = "location";
+        const profileForLocation = await getUserProfile(userId);
+        const currentLocation = profileForLocation?.location || null;
+        session.locationPage = 0; // Start at first page
+        
+        const locationKeyboard = buildLocationKeyboard(currentLocation, session.locationPage);
+        const totalLocationPages = Math.ceil(IRAN_PROVINCES.length / 20);
+        await ctx.reply(
+          `📍 استان خود را انتخاب کنید\nصفحه 1/${totalLocationPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
+          { reply_markup: locationKeyboard }
         );
         break;
 
@@ -851,6 +924,84 @@ export function setupCallbacks(
 
   // Handle no-op callback (for disabled pagination buttons)
   bot.callbackQuery("profile:interests:noop", async (ctx) => {
+    ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
+  });
+
+  // Handle setting location
+  bot.callbackQuery(/profile:set:location:(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const location = ctx.match[1];
+    // Answer callback query immediately to prevent timeout
+    ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
+    const session = getSession(userId);
+
+    if (!IRAN_PROVINCES.includes(location as any)) {
+      await ctx.reply("❌ استان نامعتبر است.");
+      delete session.editingField;
+      return;
+    }
+
+    await updateUserField(userId, "location", location);
+    
+    // Get current page from session or default to 0
+    const currentPage = session.locationPage ?? 0;
+    
+    // Update the keyboard to reflect the new selection (stay on same page)
+    const locationKeyboard = buildLocationKeyboard(location, currentPage);
+    const totalPages = Math.ceil(IRAN_PROVINCES.length / 20);
+    const provinceName = PROVINCE_NAMES[location as keyof typeof PROVINCE_NAMES] || location;
+    
+    try {
+      await ctx.editMessageText(
+        `📍 استان خود را انتخاب کنید\n✅ انتخاب شده: ${provinceName}\nصفحه ${currentPage + 1}/${totalPages}\n\nبرای تغییر استان، روی استان دیگری کلیک کنید.`,
+        { reply_markup: locationKeyboard }
+      );
+    } catch (err) {
+      // If edit fails, send a new message
+      await ctx.reply(
+        `✅ استان به "${provinceName}" تغییر یافت.`,
+        { reply_markup: locationKeyboard }
+      );
+    }
+  });
+
+  // Handle pagination for location
+  bot.callbackQuery(/profile:location:page:(\d+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    // Answer callback query immediately to prevent timeout
+    ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
+
+    const page = parseInt(ctx.match[1]);
+    const session = getSession(userId);
+    
+    // Get current location from database
+    const profile = await getUserProfile(userId);
+    const currentLocation = profile?.location || null;
+    
+    session.locationPage = page;
+    
+    const locationKeyboard = buildLocationKeyboard(currentLocation, page);
+    const totalPages = Math.ceil(IRAN_PROVINCES.length / 20);
+    
+    try {
+      await ctx.editMessageText(
+        `📍 استان خود را انتخاب کنید\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
+        { reply_markup: locationKeyboard }
+      );
+    } catch (err) {
+      await ctx.reply(
+        `📍 استان خود را انتخاب کنید\nصفحه ${page + 1}/${totalPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
+        { reply_markup: locationKeyboard }
+      );
+    }
+  });
+
+  // Handle no-op callback for location (for disabled pagination buttons)
+  bot.callbackQuery("profile:location:noop", async (ctx) => {
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
   });
 

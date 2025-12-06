@@ -37,6 +37,7 @@ export async function calculateCompletionScore(
   if (profile.mbti_result) score++;
   if (profile.mood) score++;
   if (profile.interests && profile.interests.length > 0) score++;
+  if (profile.location) score++;
 
   return score;
 }

@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTEREST_NAMES } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTEREST_NAMES, PROVINCE_NAMES } from "./constants";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -46,7 +46,7 @@ export function setupCommands(
 • تست کهن الگو (Archetype)
 • تست MBTI
 
-📊 وضعیت تکمیل پروفایل: ${completionScore}/11`;
+📊 وضعیت تکمیل پروفایل: ${completionScore}/12`;
 
     const keyboard = new InlineKeyboard()
       .text("📝 ویرایش پروفایل", "profile:edit")
@@ -73,7 +73,7 @@ export function setupCommands(
     // Check minimum completion (7/9) and username requirement
     if (profile.completion_score < 7) {
       await ctx.reply(
-        `برای استفاده از این دستور، باید حداقل 7 مورد از 11 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/11\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
+        `برای استفاده از این دستور، باید حداقل 7 مورد از 12 مورد پروفایل خود را تکمیل کنید.\nوضعیت فعلی: ${profile.completion_score}/12\nاز دستور /profile برای مشاهده و تکمیل پروفایل استفاده کنید.`
       );
       return;
     }
@@ -239,7 +239,13 @@ export function setupCommands(
       message += `🎯 علایق: ثبت نشده\n`;
     }
     
-    message += `📊 تکمیل: ${profile.completion_score}/11`;
+    if (profile.location) {
+      message += `📍 استان: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+    } else {
+      message += `📍 استان: ثبت نشده\n`;
+    }
+    
+    message += `📊 تکمیل: ${profile.completion_score}/12`;
 
     const keyboard = new InlineKeyboard()
       .text("✏️ ویرایش نام", "profile:edit:name")
@@ -254,7 +260,8 @@ export function setupCommands(
       .text("🔗 نام کاربری", "profile:edit:username")
       .text("😊 مود", "profile:edit:mood")
       .row()
-      .text("🎯 علایق", "profile:edit:interests");
+      .text("🎯 علایق", "profile:edit:interests")
+      .text("📍 استان", "profile:edit:location");
     
     // Add quiz button if quizzes are missing
     if (!profile.archetype_result || !profile.mbti_result) {

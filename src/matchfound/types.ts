@@ -11,6 +11,7 @@ export interface UserProfile {
   profile_images: string[] | null;
   mood: string | null;
   interests: string[] | null;
+  location: string | null;
   completion_score: number;
   created_at: Date;
   updated_at: Date;
@@ -27,7 +28,8 @@ export interface SessionData {
   likedUsers?: MatchUser[];
   currentLikedIndex?: number;
   reportingUserId?: number;
-  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood" | "interests";
+  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood" | "interests" | "location";
   interestsPage?: number; // Current page for interests pagination (0-indexed)
+  locationPage?: number; // Current page for location pagination (0-indexed)
 }
 
