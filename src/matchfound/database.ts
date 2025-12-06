@@ -49,14 +49,24 @@ export async function updateCompletionScore(userId: number): Promise<void> {
   });
 }
 
+// Helper function to get display name from Telegram user
+function getDisplayName(firstName?: string, lastName?: string): string | null {
+  const name = `${firstName || ""} ${lastName || ""}`.trim();
+  return name || null;
+}
+
 export async function ensureUserExists(
   userId: number,
   username?: string,
-  onNewUser?: (userId: number, username?: string) => Promise<void>
+  onNewUser?: (userId: number, username?: string) => Promise<void>,
+  firstName?: string,
+  lastName?: string
 ): Promise<void> {
   const existing = await prisma.user.findUnique({
     where: { telegram_id: BigInt(userId) },
   });
+
+  const displayName = getDisplayName(firstName, lastName);
 
   if (!existing) {
     await prisma.user.upsert({
@@ -64,6 +74,7 @@ export async function ensureUserExists(
       create: {
         telegram_id: BigInt(userId),
         username: username || null,
+        display_name: displayName,
       },
       update: {},
     });
@@ -72,13 +83,27 @@ export async function ensureUserExists(
     if (onNewUser) {
       await onNewUser(userId, username);
     }
-  } else if (username && existing.username !== username) {
+  } else {
     // Update username if provided and different
-    await prisma.user.update({
-      where: { telegram_id: BigInt(userId) },
-      data: { username },
-    });
-    await updateCompletionScore(userId);
+    // Only update display_name if user doesn't already have one (don't overwrite manual changes)
+    const updates: { username?: string; display_name?: string | null } = {};
+    
+    if (username && existing.username !== username) {
+      updates.username = username;
+    }
+    
+    // Only set display_name if it doesn't exist (preserve manual changes)
+    if (displayName !== null && !existing.display_name) {
+      updates.display_name = displayName;
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      await prisma.user.update({
+        where: { telegram_id: BigInt(userId) },
+        data: updates,
+      });
+      await updateCompletionScore(userId);
+    }
   }
 }
 

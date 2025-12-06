@@ -41,6 +41,7 @@ const BOT_NAME = "Inmankist";
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID
   ? parseInt(process.env.ADMIN_USER_ID)
   : undefined;
+const MATCHFOUND_BOT_USERNAME = process.env.MATCHFOUND_BOT_USERNAME || "match_found_bot";
 
 const startBot = async (botKey: string, agent: unknown) => {
   // Bot
@@ -68,13 +69,33 @@ const startBot = async (botKey: string, agent: unknown) => {
     await ctx.reply("❌ جلسه شما منقضی شده است. لطفا دوباره با دستور /start شروع کنید.").catch(() => {});
   }
 
+  // Helper function to get display name from Telegram user
+  function getDisplayName(from: { first_name?: string; last_name?: string } | undefined): string | null {
+    if (!from) return null;
+    const name = `${from.first_name || ""} ${from.last_name || ""}`.trim();
+    return name || null;
+  }
+
   // Save quiz result to PostgreSQL
   async function saveQuizResultToDB(
     userId: number,
     quizType: QuizType,
-    result: unknown
+    result: unknown,
+    from?: { first_name?: string; last_name?: string }
   ): Promise<void> {
     try {
+      const displayName = getDisplayName(from);
+      
+      // Get existing user to check if display_name already exists
+      const existing = await prisma.user.findUnique({
+        where: { telegram_id: BigInt(userId) },
+        select: { display_name: true },
+      });
+      
+      // Only set display_name if user doesn't already have one (don't overwrite manual changes)
+      const shouldSetDisplayName = !existing || !existing.display_name;
+      const finalDisplayName = shouldSetDisplayName ? displayName : undefined;
+      
       if (quizType === QuizType.Archetype && Array.isArray(result) && result.length > 0) {
         // result is array of [Deity, number] tuples, get primary archetype
         const primaryArchetype = result[0][0];
@@ -82,10 +103,13 @@ const startBot = async (botKey: string, agent: unknown) => {
           where: { telegram_id: BigInt(userId) },
           create: {
             telegram_id: BigInt(userId),
+            display_name: displayName,
             archetype_result: primaryArchetype,
           },
           update: {
             archetype_result: primaryArchetype,
+            // Only update display_name if it doesn't exist
+            ...(finalDisplayName !== undefined && { display_name: finalDisplayName }),
           },
         });
         log.info(BOT_NAME + " > Saved archetype result", { userId, archetype: primaryArchetype });
@@ -95,10 +119,13 @@ const startBot = async (botKey: string, agent: unknown) => {
           where: { telegram_id: BigInt(userId) },
           create: {
             telegram_id: BigInt(userId),
+            display_name: displayName,
             mbti_result: result.toUpperCase(),
           },
           update: {
             mbti_result: result.toUpperCase(),
+            // Only update display_name if it doesn't exist
+            ...(finalDisplayName !== undefined && { display_name: finalDisplayName }),
           },
         });
         log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
@@ -293,13 +320,36 @@ const startBot = async (botKey: string, agent: unknown) => {
       const result = await replyResult(ctx, user);
       log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
 
-      // Save quiz result to PostgreSQL
-      await saveQuizResultToDB(userId, user.quiz, result);
+      // Save quiz result to PostgreSQL (with user profile info)
+      await saveQuizResultToDB(userId, user.quiz, result, ctx.from);
 
       // Notify admin about quiz completion
       notifyAdmin(
         `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
       );
+
+      // Ask user if they want to connect with people of their chemistry
+      const language = user.language || DEFAULT_LANGUAGE;
+      const matchMessages: Record<Language, string> = {
+        [Language.Persian]: "🎯 آیا می‌خواهید با افرادی که با شما هم‌شیمی هستند ارتباط برقرار کنید؟",
+        [Language.English]: "🎯 Would you like to connect with people who share your chemistry?",
+        [Language.Russian]: "🎯 Хотите ли вы связаться с людьми, которые разделяют вашу химию?",
+        [Language.Arabic]: "🎯 هل تريد التواصل مع الأشخاص الذين يتشاركون كيمياءك؟",
+      };
+      const matchButtons: Record<Language, string> = {
+        [Language.Persian]: "✅ بله، برو به ربات دوستیابی",
+        [Language.English]: "✅ Yes, go to dating bot",
+        [Language.Russian]: "✅ Да, перейти к боту знакомств",
+        [Language.Arabic]: "✅ نعم، اذهب إلى بوت التعارف",
+      };
+
+      const matchMessage = matchMessages[language] || matchMessages[Language.Persian];
+      const matchButton = matchButtons[language] || matchButtons[Language.Persian];
+
+      const matchKeyboard = new InlineKeyboard()
+        .url(matchButton, `https://t.me/${MATCHFOUND_BOT_USERNAME}?start=quiz_complete`);
+
+      await ctx.reply(matchMessage, { reply_markup: matchKeyboard });
 
       await deleteUserData(userId);
       return; // end

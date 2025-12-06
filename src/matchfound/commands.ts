@@ -23,11 +23,13 @@ export function setupCommands(
     if (!userId) return;
 
     const username = ctx.from?.username;
+    const firstName = ctx.from?.first_name;
+    const lastName = ctx.from?.last_name;
     await ensureUserExists(userId, username, async (uid, uname) => {
       await notifyAdmin(
         `👤 <b>New User Registration</b>\nUser: ${uname ? `@${uname}` : `ID: ${uid}`}\nID: <code>${uid}</code>`
       );
-    });
+    }, firstName, lastName);
 
     const profile = await getUserProfile(userId);
     const completionScore = profile?.completion_score || 0;
