@@ -108,8 +108,8 @@ const startBot = async (botKey: string, agent: unknown) => {
           },
           update: {
             archetype_result: primaryArchetype,
-            // Only update display_name if it doesn't exist
-            ...(finalDisplayName !== undefined && { display_name: finalDisplayName }),
+            // Only update display_name if it doesn't exist and we have a non-null value
+            ...(finalDisplayName != null && { display_name: finalDisplayName }),
           },
         });
         log.info(BOT_NAME + " > Saved archetype result", { userId, archetype: primaryArchetype });
@@ -124,8 +124,8 @@ const startBot = async (botKey: string, agent: unknown) => {
           },
           update: {
             mbti_result: result.toUpperCase(),
-            // Only update display_name if it doesn't exist
-            ...(finalDisplayName !== undefined && { display_name: finalDisplayName }),
+            // Only update display_name if it doesn't exist and we have a non-null value
+            ...(finalDisplayName != null && { display_name: finalDisplayName }),
           },
         });
         log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
