@@ -3,7 +3,7 @@ FROM node:22.12-alpine
 # Set working directory
 WORKDIR /app
 
-# Install necessary packages (including fonts)
+# Install necessary packages (including fonts and postgresql client)
 RUN apk add --no-cache \
   python3 \
   py3-pip \
@@ -24,7 +24,8 @@ RUN apk add --no-cache \
   ttf-liberation \
   ttf-droid \
   ttf-opensans \
-  font-noto-emoji
+  font-noto-emoji \
+  postgresql-client
 
 # Ensure python3 is set as the default Python
 RUN ln -sf /usr/bin/python3 /usr/bin/python

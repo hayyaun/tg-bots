@@ -69,7 +69,7 @@ ALTER TABLE "users" DROP COLUMN IF EXISTS "profile_images";
     fs.writeFileSync(tempFile, migrationSql);
     console.log('Applying profile_images → profile_image migration (preserving data)...');
     
-    execSync(`npx prisma db execute --file "${tempFile}" --schema prisma/schema.prisma`, {
+    execSync(`npx prisma db execute --file "${tempFile}"`, {
       stdio: 'inherit',
       env: process.env
     });
