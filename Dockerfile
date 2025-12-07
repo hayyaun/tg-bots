@@ -3,7 +3,7 @@ FROM node:22.12-alpine
 # Set working directory
 WORKDIR /app
 
-# Install necessary packages (including fonts and postgresql client)
+# Install necessary packages (including fonts)
 RUN apk add --no-cache \
   python3 \
   py3-pip \
@@ -24,8 +24,7 @@ RUN apk add --no-cache \
   ttf-liberation \
   ttf-droid \
   ttf-opensans \
-  font-noto-emoji \
-  postgresql-client
+  font-noto-emoji
 
 # Ensure python3 is set as the default Python
 RUN ln -sf /usr/bin/python3 /usr/bin/python
@@ -63,8 +62,5 @@ ENV NODE_ENV=production
 # Expose port if necessary
 # EXPOSE 3000
 
-# Copy migration script
-COPY scripts/apply-migration.js ./scripts/apply-migration.js
-
-# Command to apply migrations (preserving data) and start the bot
-CMD ["sh", "-c", "node scripts/apply-migration.js && npm start"]
+# Command to apply migrations and start the bot
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
