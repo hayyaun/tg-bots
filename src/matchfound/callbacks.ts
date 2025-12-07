@@ -28,6 +28,7 @@ import {
   deleteData,
 } from "./strings";
 import { continueProfileCompletion } from "./commands";
+import { findMatches } from "./matching";
 
 // Helper function to build interests keyboard with pagination
 function buildInterestsKeyboard(
@@ -477,26 +478,10 @@ export function setupCallbacks(
     await next();
   });
 
-  // Callback: profile:edit (from /start command)
+
+  // Callback: profile:edit (from /start command) - shows profile with completion status
   bot.callbackQuery("profile:edit", async (ctx) => {
     await ctx.answerCallbackQuery();
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    // Trigger /profile command handler
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      await ctx.reply(errors.startFirst);
-      return;
-    }
-
-    await displayProfile(ctx, profile);
-  });
-
-  // Callback: completion:check (from /start command) - redirects to profile
-  bot.callbackQuery("completion:check", async (ctx) => {
-    await ctx.answerCallbackQuery();
-    // Trigger /profile command by simulating it
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -509,6 +494,73 @@ export function setupCallbacks(
     }
 
     await displayProfile(ctx, profile);
+  });
+
+  // Callback: find:start - triggers find functionality (same as /find command)
+  bot.callbackQuery("find:start", async (ctx) => {
+    ctx.react("🤔").catch(() => {});
+    await ctx.answerCallbackQuery();
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    try {
+      const profile = await getUserProfile(userId);
+      if (!profile) {
+        await ctx.reply(errors.startFirst);
+        return;
+      }
+
+      // Check required fields first (these are mandatory for matching to work)
+      const missingRequiredFields: string[] = [];
+      if (!profile.username) missingRequiredFields.push(fields.username);
+      if (!profile.display_name) missingRequiredFields.push(fields.displayName);
+      if (!profile.gender) missingRequiredFields.push(fields.gender);
+      if (!profile.looking_for_gender) missingRequiredFields.push(fields.lookingForGender);
+      if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
+      
+      // Check interests separately to show specific count
+      if (!profile.interests || profile.interests.length < 3) {
+        await ctx.reply(errors.minInterestsNotMet(profile.interests?.length || 0));
+        return;
+      }
+
+      if (missingRequiredFields.length > 0) {
+        await ctx.reply(errors.missingRequiredFields(missingRequiredFields));
+        return;
+      }
+
+      // Check minimum completion (7/12) for other optional fields
+      if (profile.completion_score < 7) {
+        await ctx.reply(errors.incompleteProfile(profile.completion_score));
+        return;
+      }
+
+      // Note: Rate limiting is skipped for button clicks to improve UX
+      // Users can still use /find command which has rate limiting
+      
+      const matches = await findMatches(userId);
+      if (matches.length === 0) {
+        await ctx.reply(errors.noMatches);
+        return;
+      }
+
+      // Store matches in session for pagination
+      const session = getSession(userId);
+      session.matches = matches;
+      session.currentMatchIndex = 0;
+
+      // Show match count
+      await ctx.reply(success.matchesFound(matches.length));
+
+      // Show first match
+      await displayUser(ctx, matches[0], "match", false, session, profile.interests || [], profile);
+    } catch (err) {
+      log.error(BOT_NAME + " > Find callback failed", err);
+      await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Find Callback Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
   });
 
   // Profile editing callbacks

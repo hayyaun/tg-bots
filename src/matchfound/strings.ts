@@ -110,7 +110,8 @@ export const profileValues = {
 // Button labels
 export const buttons = {
   editProfile: "📝 ویرایش پروفایل",
-  completionStatus: "📊 وضعیت تکمیل",
+  completionStatus: "📊 وضعیت تکمیل پروفایل",
+  findPeople: "🔍 پیدا کردن افراد",
   takeQuizzes: "🧪 انجام تست‌ها",
   editName: "✏️ ویرایش نام",
   editBio: "📝 ویرایش بیوگرافی",

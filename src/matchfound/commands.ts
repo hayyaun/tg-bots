@@ -78,9 +78,8 @@ export async function continueProfileCompletion(
     session.profileCompletionFieldIndex = undefined;
     
     const keyboard = new InlineKeyboard()
-      .text(buttons.editProfile, "profile:edit")
-      .row()
-      .text(buttons.completionStatus, "completion:check")
+      .text(buttons.completionStatus, "profile:edit")
+      .text(buttons.findPeople, "find:start")
       .row()
       .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     
@@ -133,9 +132,8 @@ async function promptNextRequiredField(
     session.profileCompletionFieldIndex = undefined;
     
     const keyboard = new InlineKeyboard()
-      .text(buttons.editProfile, "profile:edit")
-      .row()
-      .text(buttons.completionStatus, "completion:check")
+      .text(buttons.completionStatus, "profile:edit")
+      .text(buttons.findPeople, "find:start")
       .row()
       .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     
@@ -293,9 +291,8 @@ export function setupCommands(
       } else {
         // All required fields completed, show action buttons
         const keyboard = new InlineKeyboard()
-          .text(buttons.editProfile, "profile:edit")
-          .row()
-          .text(buttons.completionStatus, "completion:check")
+          .text(buttons.completionStatus, "profile:edit")
+          .text(buttons.findPeople, "find:start")
           .row()
           .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
