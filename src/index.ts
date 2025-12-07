@@ -11,7 +11,7 @@ import { connectDB } from "./db";
 
 configDotenv();
 
-// Global error handlers to prevent app crashes from unhandled promise rejections
+// Global error handlers
 process.on("unhandledRejection", (reason, promise) => {
   log.error("Unhandled Rejection", { reason, promise });
 });
@@ -34,46 +34,81 @@ const BOT_CONFIGS: BotConfig[] = [
   { name: "matchfound", module: matchfound, envKey: "MATCHFOUND_BOT_KEY" },
 ];
 
-async function startBots(socksAgent?: SocksProxyAgent): Promise<void> {
-  const botPromises = BOT_CONFIGS.map((config) => {
-    const botKey = process.env[config.envKey];
-    if (!botKey) {
-      log.warn(`Bot ${config.name} skipped: missing ${config.envKey}`);
-      return Promise.reject(new Error(`Missing ${config.envKey}`));
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 2000; // 2 seconds
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function startBotWithRetry(
+  config: BotConfig,
+  socksAgent?: SocksProxyAgent,
+  retries = MAX_RETRIES
+): Promise<{ bot: unknown; username: string } | null> {
+  const botKey = process.env[config.envKey];
+  if (!botKey) {
+    log.warn(`Bot ${config.name} skipped: missing ${config.envKey}`);
+    return null;
+  }
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const bot = await config.module.startBot(botKey, socksAgent);
+      const botInfo = (bot as { botInfo?: { username?: string } })?.botInfo;
+      const username = botInfo?.username || config.name;
+      
+      if (attempt > 1) {
+        log.info(`Bot ${config.name} started successfully on attempt ${attempt}`);
+      }
+      
+      return { bot, username };
+    } catch (error) {
+      const isLastAttempt = attempt === retries;
+      const delayMs = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1); // Exponential backoff
+      
+      if (isLastAttempt) {
+        log.error(`Bot ${config.name} failed after ${retries} attempts`, error);
+        return null;
+      }
+      
+      log.warn(
+        `Bot ${config.name} failed on attempt ${attempt}/${retries}, retrying in ${delayMs}ms...`,
+        error
+      );
+      await delay(delayMs);
     }
-    return config.module.startBot(botKey, socksAgent);
-  });
+  }
+  
+  return null;
+}
 
-  const results = await Promise.allSettled(botPromises);
+async function startAllBots(socksAgent?: SocksProxyAgent): Promise<void> {
+  log.info(`Starting ${BOT_CONFIGS.length} bot(s)...`);
+  
+  const results = await Promise.all(
+    BOT_CONFIGS.map((config) => startBotWithRetry(config, socksAgent))
+  );
 
-  const successful: string[] = [];
-  const failed: Array<{ name: string; error: unknown }> = [];
-
-  results.forEach((result, index) => {
-    const config = BOT_CONFIGS[index];
-    
-    if (result.status === "fulfilled" && result.value) {
-      const bot = result.value as { botInfo?: { username?: string } };
-      const username = bot.botInfo?.username || config.name;
-      successful.push(username);
-    } else {
-      const error = result.status === "rejected" ? result.reason : new Error("Unknown error");
-      failed.push({ name: config.name, error });
-      log.error(`Bot ${config.name} failed to start`, error);
-    }
-  });
+  const successful = results
+    .filter((result): result is { bot: unknown; username: string } => result !== null)
+    .map((result) => result.username);
+  
+  const failed = BOT_CONFIGS
+    .filter((_, index) => results[index] === null)
+    .map((config) => config.name);
 
   if (successful.length > 0) {
-    log.info(`Successfully started ${successful.length} bot(s): ${successful.join(", ")}`);
+    log.info(`✓ Successfully started ${successful.length}/${BOT_CONFIGS.length} bot(s): ${successful.join(", ")}`);
   }
   
   if (failed.length > 0) {
-    log.error(`Failed to start ${failed.length} bot(s): ${failed.map((f) => f.name).join(", ")}`);
+    log.error(`✗ Failed to start ${failed.length}/${BOT_CONFIGS.length} bot(s): ${failed.join(", ")}`);
   }
 }
 
 async function main(): Promise<void> {
-  log.info("App Running", { dev: process.env.DEV });
+  log.info("Initializing application...", { dev: process.env.DEV });
 
   try {
     await connectRedis();
@@ -83,7 +118,8 @@ async function main(): Promise<void> {
       ? new SocksProxyAgent(process.env.PROXY)
       : undefined;
 
-    await startBots(socksAgent);
+    await startAllBots(socksAgent);
+    log.info("Application initialized successfully");
   } catch (error) {
     log.error("Failed to initialize application", error);
     process.exit(1);
