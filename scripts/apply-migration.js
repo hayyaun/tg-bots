@@ -58,31 +58,43 @@ async function handleProfileImageMigration() {
       const database = url.pathname.slice(1);
       
       // Check if profile_image exists and profile_images doesn't (migration already done)
-      const checkSql = `
-        SELECT 
-          EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='users' AND column_name='profile_image') as has_profile_image,
-          EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='users' AND column_name='profile_images') as has_profile_images;
-      `;
-      const tempCheckFile = path.join('/tmp', 'check_migration.sql');
+      const checkSql = `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='users' AND column_name='profile_image') as exists;`;
+      const tempCheckFile = path.join('/tmp', 'check_profile_image.sql');
       fs.writeFileSync(tempCheckFile, checkSql);
       
-      const result = execSync(`PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${user}" -d "${database}" -t -A -f "${tempCheckFile}"`, {
+      const profileImageResult = execSync(`PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${user}" -d "${database}" -t -A -f "${tempCheckFile}"`, {
         encoding: 'utf-8',
         env: { ...process.env, PGPASSWORD: password }
       }).trim();
       
       fs.unlinkSync(tempCheckFile);
       
-      const [hasProfileImage, hasProfileImages] = result.split('\n').map(r => r.trim() === 't');
+      const hasProfileImage = profileImageResult === 't';
       
-      if (hasProfileImage && !hasProfileImages) {
-        console.log('Migration already applied - profile_image exists, profile_images removed');
-        // Mark migration as applied in Prisma history
-        await markMigrationAsApplied();
-        return;
+      if (hasProfileImage) {
+        // Check if profile_images still exists
+        const checkImagesSql = `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='users' AND column_name='profile_images') as exists;`;
+        const tempCheckImagesFile = path.join('/tmp', 'check_profile_images.sql');
+        fs.writeFileSync(tempCheckImagesFile, checkImagesSql);
+        
+        const profileImagesResult = execSync(`PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${user}" -d "${database}" -t -A -f "${tempCheckImagesFile}"`, {
+          encoding: 'utf-8',
+          env: { ...process.env, PGPASSWORD: password }
+        }).trim();
+        
+        fs.unlinkSync(tempCheckImagesFile);
+        const hasProfileImages = profileImagesResult === 't';
+        
+        if (!hasProfileImages) {
+          console.log('Migration already applied - profile_image exists, profile_images removed');
+          // Mark migration as applied in Prisma history
+          await markMigrationAsApplied();
+          return;
+        }
       }
     } catch (checkError) {
-      console.log('Could not check migration status, proceeding with migration...');
+      console.log('Could not check migration status:', checkError.message);
+      console.log('Proceeding with migration attempt...');
     }
   }
   
