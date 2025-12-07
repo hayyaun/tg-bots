@@ -5,6 +5,7 @@ import log from "../log";
 import { BOT_NAME } from "./constants";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";
+import { setupDailyReports } from "./reports";
 
 configDotenv();
 
@@ -43,6 +44,9 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Setup commands and callbacks
   setupCommands(bot, notifyAdmin);
   setupCallbacks(bot, notifyAdmin);
+
+  // Setup daily reports
+  setupDailyReports(bot, notifyAdmin);
 
   bot.catch = (err) => {
     log.error(BOT_NAME + " > BOT", err);
