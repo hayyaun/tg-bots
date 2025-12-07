@@ -169,7 +169,8 @@ export function setupCallbacks(
       if (session.matches && session.currentMatchIndex !== undefined) {
         session.currentMatchIndex++;
         if (session.currentMatchIndex < session.matches.length) {
-          await displayMatch(ctx, session.matches[session.currentMatchIndex]);
+          const profile = await getUserProfile(userId);
+          await displayMatch(ctx, session.matches[session.currentMatchIndex], false, session, profile?.interests || []);
         } else {
           await ctx.reply(errors.noMatches);
         }
@@ -195,7 +196,28 @@ export function setupCallbacks(
     if (session.matches && session.currentMatchIndex !== undefined) {
       session.currentMatchIndex++;
       if (session.currentMatchIndex < session.matches.length) {
-        await displayMatch(ctx, session.matches[session.currentMatchIndex]);
+        const profile = await getUserProfile(userId);
+        await displayMatch(ctx, session.matches[session.currentMatchIndex], false, session, profile?.interests || []);
+      } else {
+        await ctx.reply(errors.noMatches);
+      }
+    }
+  });
+
+  // Next match action (skip without like/dislike)
+  bot.callbackQuery(/next_match:(\d+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+    
+    // Show next match
+    const session = getSession(userId);
+    if (session.matches && session.currentMatchIndex !== undefined) {
+      session.currentMatchIndex++;
+      if (session.currentMatchIndex < session.matches.length) {
+        const profile = await getUserProfile(userId);
+        await displayMatch(ctx, session.matches[session.currentMatchIndex], false, session, profile?.interests || []);
       } else {
         await ctx.reply(errors.noMatches);
       }
@@ -346,12 +368,12 @@ export function setupCallbacks(
 
           case "bio":
             if (text.length > 500) {
-              await ctx.reply(errors.bioTooLong);
+              await ctx.reply(errors.bioTooLong + `\n\n📝 تعداد کاراکتر فعلی: ${text.length}/500`);
               return;
             }
             await updateUserField(userId, "biography", text);
             delete session.editingField;
-            await ctx.reply(success.bioUpdated);
+            await ctx.reply(success.bioUpdated + `\n\n📝 تعداد کاراکتر: ${text.length}/500`);
             break;
 
           case "birthdate":

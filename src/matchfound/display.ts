@@ -1,11 +1,18 @@
 import { Context, InlineKeyboard } from "grammy";
-import { MatchUser } from "./types";
+import { MatchUser, SessionData } from "./types";
 import { MOODS, INTEREST_NAMES } from "./constants";
 import { buttons, display } from "./strings";
+import { getSession } from "./session";
 import log from "../log";
 import { BOT_NAME } from "./constants";
 
-export async function displayMatch(ctx: Context, match: MatchUser, showUsername = false) {
+export async function displayMatch(
+  ctx: Context,
+  match: MatchUser,
+  showUsername = false,
+  session?: SessionData,
+  userInterests?: string[]
+) {
   const ageText = match.age ? `${match.age} سال` : display.unknownAge;
   const nameText = match.display_name || display.noName;
   const bioText = match.biography || display.noBio;
@@ -28,7 +35,21 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
     const interestNames = match.interests
       .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
       .join(", ");
-    message += `\n🎯 علایق: ${interestNames}`;
+    
+    // Calculate mutual interests count if user interests provided
+    let mutualInterestsText = "";
+    if (userInterests && userInterests.length > 0) {
+      const userInterestsSet = new Set(userInterests);
+      const matchInterestsSet = new Set(match.interests);
+      const mutualCount = Array.from(userInterestsSet).filter((interest) =>
+        matchInterestsSet.has(interest)
+      ).length;
+      if (mutualCount > 0) {
+        mutualInterestsText = ` (${mutualCount} مورد مشترک)`;
+      }
+    }
+    
+    message += `\n🎯 علایق: ${interestNames}${mutualInterestsText}`;
   }
 
   if (showUsername) {
@@ -40,6 +61,16 @@ export async function displayMatch(ctx: Context, match: MatchUser, showUsername 
     keyboard.text(buttons.like, `like:${match.telegram_id}`);
     keyboard.text(buttons.dislike, `dislike:${match.telegram_id}`);
     keyboard.row();
+    
+    // Add "Next" button if there are more matches
+    if (session && session.matches && session.currentMatchIndex !== undefined) {
+      const currentIndex = session.currentMatchIndex;
+      const totalMatches = session.matches.length;
+      if (currentIndex < totalMatches - 1) {
+        keyboard.text(buttons.next, `next_match:${match.telegram_id}`);
+        keyboard.row();
+      }
+    }
   }
   keyboard.text(buttons.report, `report:${match.telegram_id}`);
 

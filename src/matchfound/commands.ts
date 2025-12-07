@@ -123,8 +123,14 @@ export function setupCommands(
       session.matches = matches;
       session.currentMatchIndex = 0;
 
+      // Show match count
+      await ctx.reply(success.matchesFound(matches.length));
+
+      // Get user profile for mutual interests calculation
+      const profile = await getUserProfile(userId);
+
       // Show first match
-      await displayMatch(ctx, matches[0]);
+      await displayMatch(ctx, matches[0], false, session, profile?.interests || []);
     } catch (err) {
       log.error(BOT_NAME + " > Find command failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
