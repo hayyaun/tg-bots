@@ -23,8 +23,13 @@ export async function displayMatch(
     ? `تست MBTI: ${match.mbti_result.toUpperCase()}`
     : display.mbtiNotSet;
 
+  // Show compatibility score if available
+  const compatibilityText = match.compatibility_score !== undefined
+    ? `\n💯 سازگاری: ${match.compatibility_score}%`
+    : "";
+
   let message = `👤 ${nameText}\n`;
-  message += `🎂 ${ageText}\n\n`;
+  message += `🎂 ${ageText}${compatibilityText}\n\n`;
   message += `📝 ${bioText}\n\n`;
   message += `🔮 ${archetypeText}\n`;
   message += `🧠 ${mbtiText}`;

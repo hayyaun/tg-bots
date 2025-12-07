@@ -152,21 +152,63 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     }
 
     // Adjust priority based on mutual interests (reduce priority number for more interests)
-    // Each mutual interest reduces priority by 0.1 (max reduction of 0.5 for 5+ interests)
-    const interestBonus = Math.min(mutualInterestsCount * 0.1, 0.5);
+    // Increased weight: Each mutual interest reduces priority by 0.15 (max reduction of 1.05 for 7 interests)
+    const interestBonus = Math.min(mutualInterestsCount * 0.15, 1.05);
     matchPriority = matchPriority - interestBonus;
+
+    // Calculate compatibility percentage (0-100%)
+    let compatibilityScore = 0;
+    
+    // Archetype match: 40%
+    if (archetypeMatch) {
+      compatibilityScore += 40;
+    }
+    
+    // MBTI match: 40%
+    if (mbtiMatch) {
+      compatibilityScore += 40;
+    }
+    
+    // Mutual interests: up to 20% (scaled by number of mutual interests, max 7)
+    // Formula: (mutualInterestsCount / 7) * 20
+    if (mutualInterestsCount > 0) {
+      const interestsScore = Math.min((mutualInterestsCount / 7) * 20, 20);
+      compatibilityScore += interestsScore;
+    }
+    
+    // Age difference bonus: up to 10% (smaller difference = higher bonus)
+    // Max age difference is 8 years, so 0 years = 10%, 8 years = 0%
+    const ageDiff = Math.abs((matchUser.age || 0) - userAge);
+    const ageBonus = Math.max(0, 10 - (ageDiff / 8) * 10);
+    compatibilityScore += ageBonus;
+    
+    // Completion score bonus: up to 10% (higher score = higher bonus)
+    // Max completion is 12, so 12 = 10%, 7 = ~4.2%
+    const completionBonus = Math.min((matchUser.completion_score / 12) * 10, 10);
+    compatibilityScore += completionBonus;
+    
+    // Cap at 100%
+    compatibilityScore = Math.min(compatibilityScore, 100);
+    matchUser.compatibility_score = Math.round(compatibilityScore);
 
     matchUser.match_priority = matchPriority;
     matches.push(matchUser);
   }
 
-  // Sort by priority (lower is better), then by mutual interests count, then by completion score, then by age difference
+  // Sort by priority (lower is better), then by compatibility score (higher is better), then by mutual interests count, then by completion score, then by age difference
   matches.sort((a, b) => {
     if (Math.abs(a.match_priority - b.match_priority) > 0.01) {
       return a.match_priority - b.match_priority;
     }
 
-    // If priorities are very close, prioritize by mutual interests
+    // If priorities are very close, prioritize by compatibility score
+    const aScore = a.compatibility_score || 0;
+    const bScore = b.compatibility_score || 0;
+    if (aScore !== bScore) {
+      return bScore - aScore; // Higher compatibility = better
+    }
+
+    // If compatibility scores are equal, prioritize by mutual interests
     const aInterests = a.interests || [];
     const bInterests = b.interests || [];
     const userInterestsSet = new Set(user.interests || []);
