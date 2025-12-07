@@ -345,7 +345,7 @@ export function setupCallbacks(
             break;
 
           case "bio":
-            if (text.length > 2000) {
+            if (text.length > 500) {
               await ctx.reply(errors.bioTooLong);
               return;
             }
