@@ -25,6 +25,7 @@ import {
   display,
   notifications,
 } from "./strings";
+import { continueProfileCompletion } from "./commands";
 
 // Helper function to build interests keyboard with pagination
 function buildInterestsKeyboard(
@@ -381,7 +382,14 @@ export function setupCallbacks(
       // Handle cancel
       if (text === "/cancel") {
         delete session.editingField;
-        await ctx.reply(errors.editCancelled);
+        // If in profile completion flow, exit it
+        if (session.completingProfile) {
+          session.completingProfile = false;
+          session.profileCompletionFieldIndex = undefined;
+          await ctx.reply(errors.editCancelled + "\n\nبرای تکمیل پروفایل، دوباره از دستور /start استفاده کنید.");
+        } else {
+          await ctx.reply(errors.editCancelled);
+        }
         return;
       }
 
@@ -395,6 +403,10 @@ export function setupCallbacks(
             await updateUserField(userId, "display_name", text);
             delete session.editingField;
             await ctx.reply(success.nameUpdated(text));
+            // Continue profile completion if in progress
+            if (session.completingProfile) {
+              await continueProfileCompletion(ctx, bot, userId);
+            }
             break;
 
           case "bio":
@@ -438,6 +450,10 @@ export function setupCallbacks(
             await updateUserField(userId, "birth_date", birthDate);
             delete session.editingField;
             await ctx.reply(success.birthdateUpdated(age));
+            // Continue profile completion if in progress
+            if (session.completingProfile) {
+              await continueProfileCompletion(ctx, bot, userId);
+            }
             break;
 
           default:
@@ -561,10 +577,15 @@ export function setupCallbacks(
         if (currentUsername) {
           await updateUserField(userId, "username", currentUsername);
           await ctx.reply(success.usernameUpdated(currentUsername));
+          delete session.editingField;
+          // Continue profile completion if in progress
+          if (session.completingProfile) {
+            await continueProfileCompletion(ctx, bot, userId);
+          }
         } else {
           await ctx.reply(errors.noUsername);
+          // Don't delete editingField or continue if username is missing
         }
-        delete session.editingField;
         break;
 
       case "mood":
@@ -648,9 +669,14 @@ export function setupCallbacks(
 
     const gender = ctx.match[1];
     await ctx.answerCallbackQuery();
+    const session = getSession(userId);
     await updateUserField(userId, "gender", gender);
-    delete getSession(userId).editingField;
+    delete session.editingField;
     await ctx.reply(success.genderUpdated(gender === "male" ? profileValues.male : profileValues.female));
+    // Continue profile completion if in progress
+    if (session.completingProfile) {
+      await continueProfileCompletion(ctx, bot, userId);
+    }
   });
 
   // Handle setting looking_for
@@ -660,11 +686,16 @@ export function setupCallbacks(
 
     const lookingFor = ctx.match[1];
     await ctx.answerCallbackQuery();
+    const session = getSession(userId);
     const text =
       lookingFor === "male" ? profileValues.male : lookingFor === "female" ? profileValues.female : profileValues.both;
     await updateUserField(userId, "looking_for_gender", lookingFor);
-    delete getSession(userId).editingField;
+    delete session.editingField;
     await ctx.reply(success.lookingForUpdated(text));
+    // Continue profile completion if in progress
+    if (session.completingProfile) {
+      await continueProfileCompletion(ctx, bot, userId);
+    }
   });
 
   // Handle image management
@@ -727,6 +758,12 @@ export function setupCallbacks(
     const interestsKeyboard = buildInterestsKeyboard(currentInterests, currentPage);
     const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / 20);
+    
+    // If in profile completion mode and minimum interests met, add continue button
+    if (session.completingProfile && selectedCount >= 3) {
+      interestsKeyboard.row();
+      interestsKeyboard.text(`✅ ادامه (${selectedCount} علاقه انتخاب شده)`, "profile:completion:continue");
+    }
     
     try {
       await ctx.editMessageText(
@@ -857,6 +894,26 @@ export function setupCallbacks(
   // Handle no-op callback for location (for disabled pagination buttons)
   bot.callbackQuery("profile:location:noop", async (ctx) => {
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
+  });
+
+  // Handle profile completion continue button (for interests)
+  bot.callbackQuery("profile:completion:continue", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    
+    await ctx.answerCallbackQuery();
+    const session = getSession(userId);
+    
+    // Verify minimum interests are met
+    const profile = await getUserProfile(userId);
+    if (!profile || !profile.interests || profile.interests.length < 3) {
+      await ctx.reply(errors.minInterestsNotMet(profile?.interests?.length || 0));
+      return;
+    }
+    
+    // Continue profile completion flow
+    delete session.editingField;
+    await continueProfileCompletion(ctx, bot, userId);
   });
 
 

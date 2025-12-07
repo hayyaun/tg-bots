@@ -5,7 +5,7 @@ import { findMatches } from "./matching";
 import { displayUser, displayProfile } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
-import { MatchUser } from "./types";
+import { MatchUser, UserProfile } from "./types";
 import log from "../log";
 import { BOT_NAME, INMANKIST_BOT_USERNAME } from "./constants";
 import {
@@ -15,10 +15,248 @@ import {
   fields,
   buttons,
   settings,
+  profileCompletion,
+  editPrompts,
+  profileValues,
 } from "./strings";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
+
+// Helper function to get missing required fields
+interface RequiredField {
+  key: keyof UserProfile;
+  name: string;
+  type: "text" | "select" | "date" | "interests" | "username";
+}
+
+const REQUIRED_FIELDS: RequiredField[] = [
+  { key: "username", name: fields.username, type: "username" },
+  { key: "display_name", name: fields.displayName, type: "text" },
+  { key: "gender", name: fields.gender, type: "select" },
+  { key: "looking_for_gender", name: fields.lookingForGender, type: "select" },
+  { key: "birth_date", name: fields.birthDate, type: "date" },
+  { key: "interests", name: fields.interests, type: "interests" },
+];
+
+function getMissingRequiredFields(profile: UserProfile | null): RequiredField[] {
+  if (!profile) return REQUIRED_FIELDS;
+  
+  const missing: RequiredField[] = [];
+  
+  for (const field of REQUIRED_FIELDS) {
+    if (field.key === "interests") {
+      if (!profile.interests || profile.interests.length < 3) {
+        missing.push(field);
+      }
+    } else if (!profile[field.key]) {
+      missing.push(field);
+    }
+  }
+  
+  return missing;
+}
+
+// Helper function to continue profile completion flow (exported for use in callbacks)
+export async function continueProfileCompletion(
+  ctx: Context,
+  bot: Bot,
+  userId: number
+): Promise<void> {
+  const session = getSession(userId);
+  if (!session.completingProfile) return;
+  
+  const profile = await getUserProfile(userId);
+  if (!profile) return;
+  
+  const missingFields = getMissingRequiredFields(profile);
+  
+  if (missingFields.length === 0) {
+    // All required fields completed
+    session.completingProfile = false;
+    session.profileCompletionFieldIndex = undefined;
+    
+    const completionScore = profile.completion_score || 0;
+    const welcomeMessage = getWelcomeMessage(completionScore);
+    
+    const keyboard = new InlineKeyboard()
+      .text(buttons.editProfile, "profile:edit")
+      .row()
+      .text(buttons.completionStatus, "completion:check")
+      .row()
+      .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    
+    await ctx.reply(profileCompletion.allRequiredComplete + "\n\n" + welcomeMessage, { reply_markup: keyboard });
+    return;
+  }
+  
+  // Find the next missing field by checking REQUIRED_FIELDS in order
+  // Start from the current position (or 0) and find the first missing field
+  const currentFieldIndex = session.profileCompletionFieldIndex ?? -1;
+  
+  // Find the first missing field in REQUIRED_FIELDS order, starting after the current field
+  for (let i = currentFieldIndex + 1; i < REQUIRED_FIELDS.length; i++) {
+    const field = REQUIRED_FIELDS[i];
+    const isMissing = field.key === "interests" 
+      ? !profile.interests || profile.interests.length < 3
+      : !profile[field.key];
+    
+    if (isMissing) {
+      // Find this field in the missingFields array
+      const missingIndex = missingFields.findIndex(f => f.key === field.key);
+      if (missingIndex >= 0) {
+        session.profileCompletionFieldIndex = i;
+        await promptNextRequiredField(ctx, bot, userId, missingFields, missingIndex);
+        return;
+      }
+    }
+  }
+  
+  // If we get here, all fields after current are complete, but there are still missing fields
+  // This shouldn't happen, but if it does, just prompt for the first missing field
+  if (missingFields.length > 0) {
+    session.profileCompletionFieldIndex = REQUIRED_FIELDS.findIndex(f => f.key === missingFields[0].key);
+    await promptNextRequiredField(ctx, bot, userId, missingFields, 0);
+  }
+}
+
+// Helper function to prompt for next required field
+async function promptNextRequiredField(
+  ctx: Context,
+  bot: Bot,
+  userId: number,
+  missingFields: RequiredField[],
+  fieldIndex: number
+): Promise<void> {
+  if (fieldIndex >= missingFields.length) {
+    // All required fields completed
+    const session = getSession(userId);
+    session.completingProfile = false;
+    session.profileCompletionFieldIndex = undefined;
+    
+    const profile = await getUserProfile(userId);
+    const completionScore = profile?.completion_score || 0;
+    const welcomeMessage = getWelcomeMessage(completionScore);
+    
+    const keyboard = new InlineKeyboard()
+      .text(buttons.editProfile, "profile:edit")
+      .row()
+      .text(buttons.completionStatus, "completion:check")
+      .row()
+      .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    
+    await ctx.reply(profileCompletion.allRequiredComplete + "\n\n" + welcomeMessage, { reply_markup: keyboard });
+    return;
+  }
+  
+  const field = missingFields[fieldIndex];
+  const session = getSession(userId);
+  session.completingProfile = true;
+  session.profileCompletionFieldIndex = fieldIndex;
+  session.editingField = field.key === "display_name" ? "name" 
+    : field.key === "birth_date" ? "birthdate"
+    : field.key === "gender" ? "gender"
+    : field.key === "looking_for_gender" ? "looking_for"
+    : field.key === "interests" ? "interests"
+    : field.key === "username" ? "username"
+    : undefined;
+  
+  const remaining = missingFields.length - fieldIndex - 1;
+  
+  switch (field.type) {
+    case "username": {
+      const currentUsername = ctx.from?.username;
+      if (currentUsername) {
+        // Auto-update username and continue
+        const { updateUserField } = await import("./database");
+        await updateUserField(userId, "username", currentUsername);
+        await ctx.reply(success.usernameUpdated(currentUsername));
+        if (remaining > 0) {
+          await ctx.reply(profileCompletion.nextField(missingFields[fieldIndex + 1].name, remaining));
+        }
+        await promptNextRequiredField(ctx, bot, userId, missingFields, fieldIndex + 1);
+      } else {
+        const keyboard = new InlineKeyboard()
+          .text("✅ نام کاربری را تنظیم کردم", "profile:edit:username");
+        await ctx.reply(profileCompletion.fieldPrompt.username, { reply_markup: keyboard });
+      }
+      break;
+    }
+    case "text": {
+      if (fieldIndex > 0) {
+        await ctx.reply(profileCompletion.nextField(field.name, remaining));
+      }
+      await ctx.reply(profileCompletion.fieldPrompt.displayName);
+      break;
+    }
+    case "select": {
+      if (fieldIndex > 0) {
+        await ctx.reply(profileCompletion.nextField(field.name, remaining));
+      }
+      if (field.key === "gender") {
+        const genderKeyboard = new InlineKeyboard()
+          .text(profileValues.male, "profile:set:gender:male")
+          .text(profileValues.female, "profile:set:gender:female");
+        await ctx.reply(profileCompletion.fieldPrompt.gender, { reply_markup: genderKeyboard });
+      } else if (field.key === "looking_for_gender") {
+        const lookingForKeyboard = new InlineKeyboard()
+          .text(profileValues.male, "profile:set:looking_for:male")
+          .text(profileValues.female, "profile:set:looking_for:female")
+          .row()
+          .text(profileValues.both, "profile:set:looking_for:both");
+        await ctx.reply(profileCompletion.fieldPrompt.lookingFor, { reply_markup: lookingForKeyboard });
+      }
+      break;
+    }
+    case "date": {
+      if (fieldIndex > 0) {
+        await ctx.reply(profileCompletion.nextField(field.name, remaining));
+      }
+      await ctx.reply(profileCompletion.fieldPrompt.birthDate);
+      break;
+    }
+    case "interests": {
+      if (fieldIndex > 0) {
+        await ctx.reply(profileCompletion.nextField(field.name, remaining));
+      }
+      const profile = await getUserProfile(userId);
+      const currentInterests = new Set(profile?.interests || []);
+      session.interestsPage = 0;
+      
+      // Build interests keyboard inline
+      const { INTERESTS, INTEREST_NAMES } = await import("./constants");
+      const interestsKeyboard = new InlineKeyboard();
+      const itemsPerPage = 20;
+      const totalPages = Math.ceil(INTERESTS.length / itemsPerPage);
+      const startIndex = 0;
+      const endIndex = Math.min(itemsPerPage, INTERESTS.length);
+      const pageItems = INTERESTS.slice(startIndex, endIndex);
+      
+      let rowCount = 0;
+      for (const interest of pageItems) {
+        const isSelected = currentInterests.has(interest);
+        const displayName = INTEREST_NAMES[interest];
+        const prefix = isSelected ? "✅ " : "";
+        interestsKeyboard.text(`${prefix}${displayName}`, `profile:toggle:interest:${interest}`);
+        rowCount++;
+        if (rowCount % 2 === 0) {
+          interestsKeyboard.row();
+        }
+      }
+      
+      if (totalPages > 1) {
+        interestsKeyboard.row();
+        interestsKeyboard.text(" ", "profile:interests:noop");
+        interestsKeyboard.text(`صفحه 1/${totalPages}`, "profile:interests:noop");
+        interestsKeyboard.text(buttons.next, `profile:interests:page:1`);
+      }
+      
+      const selectedCount = currentInterests.size;
+      await ctx.reply(editPrompts.interests(selectedCount, 1, totalPages), { reply_markup: interestsKeyboard });
+      break;
+    }
+  }
+}
 
 export function setupCommands(
   bot: Bot,
@@ -41,18 +279,32 @@ export function setupCommands(
       }, firstName, lastName);
 
       const profile = await getUserProfile(userId);
-      const completionScore = profile?.completion_score || 0;
+      if (!profile) {
+        await ctx.reply("❌ خطا در دریافت پروفایل. لطفا دوباره تلاش کنید.");
+        return;
+      }
 
-      const welcomeMessage = getWelcomeMessage(completionScore);
+      // Check for missing required fields
+      const missingFields = getMissingRequiredFields(profile);
+      
+      if (missingFields.length > 0) {
+        // Start profile completion flow
+        await ctx.reply(profileCompletion.welcome);
+        await promptNextRequiredField(ctx, bot, userId, missingFields, 0);
+      } else {
+        // All required fields completed, show welcome message
+        const completionScore = profile.completion_score || 0;
+        const welcomeMessage = getWelcomeMessage(completionScore);
 
-      const keyboard = new InlineKeyboard()
-        .text(buttons.editProfile, "profile:edit")
-        .row()
-        .text(buttons.completionStatus, "completion:check")
-        .row()
-        .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+        const keyboard = new InlineKeyboard()
+          .text(buttons.editProfile, "profile:edit")
+          .row()
+          .text(buttons.completionStatus, "completion:check")
+          .row()
+          .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
-      await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+        await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+      }
     } catch (err) {
       log.error(BOT_NAME + " > Start command failed", err);
       await ctx.reply("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");

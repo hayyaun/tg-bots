@@ -32,5 +32,7 @@ export interface SessionData {
   editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood" | "interests" | "location";
   interestsPage?: number; // Current page for interests pagination (0-indexed)
   locationPage?: number; // Current page for location pagination (0-indexed)
+  completingProfile?: boolean; // Whether user is in profile completion flow
+  profileCompletionFieldIndex?: number; // Index of current field being completed
 }
 
