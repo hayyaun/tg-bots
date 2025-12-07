@@ -23,6 +23,7 @@ import {
   report,
   callbacks,
   display,
+  notifications,
 } from "./strings";
 
 // Helper function to build interests keyboard with pagination
@@ -162,6 +163,26 @@ export function setupCallbacks(
         await ctx.reply(success.mutualLike);
       } else {
         await ctx.answerCallbackQuery(callbacks.likeRegistered);
+        
+        // Send notification to the liked user
+        try {
+          const likerProfile = await getUserProfile(userId);
+          const likerName = likerProfile?.display_name 
+            || (likerProfile?.username ? `@${likerProfile.username}` : "یک نفر");
+          
+          await bot.api.sendMessage(
+            likedUserId,
+            notifications.newLike(likerName),
+            { parse_mode: "HTML" }
+          );
+        } catch (notifErr) {
+          // Silently fail if user blocked the bot or other errors
+          // Don't log as error since this is expected in some cases
+          log.info(BOT_NAME + " > Like notification failed (user may have blocked bot)", { 
+            likedUserId, 
+            error: notifErr 
+          });
+        }
       }
 
       // Show next match

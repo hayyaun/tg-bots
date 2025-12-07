@@ -126,11 +126,8 @@ export function setupCommands(
       // Show match count
       await ctx.reply(success.matchesFound(matches.length));
 
-      // Get user profile for mutual interests calculation
-      const profile = await getUserProfile(userId);
-
-      // Show first match
-      await displayMatch(ctx, matches[0], false, session, profile?.interests || []);
+      // Show first match (profile already fetched above for validation)
+      await displayMatch(ctx, matches[0], false, session, profile.interests || []);
     } catch (err) {
       log.error(BOT_NAME + " > Find command failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
