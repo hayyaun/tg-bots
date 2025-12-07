@@ -77,9 +77,6 @@ export async function continueProfileCompletion(
     session.completingProfile = false;
     session.profileCompletionFieldIndex = undefined;
     
-    const completionScore = profile.completion_score || 0;
-    const welcomeMessage = getWelcomeMessage(completionScore);
-    
     const keyboard = new InlineKeyboard()
       .text(buttons.editProfile, "profile:edit")
       .row()
@@ -87,7 +84,7 @@ export async function continueProfileCompletion(
       .row()
       .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     
-    await ctx.reply(profileCompletion.allRequiredComplete + "\n\n" + welcomeMessage, { reply_markup: keyboard });
+    await ctx.reply(profileCompletion.allRequiredComplete, { reply_markup: keyboard });
     return;
   }
   
@@ -135,10 +132,6 @@ async function promptNextRequiredField(
     session.completingProfile = false;
     session.profileCompletionFieldIndex = undefined;
     
-    const profile = await getUserProfile(userId);
-    const completionScore = profile?.completion_score || 0;
-    const welcomeMessage = getWelcomeMessage(completionScore);
-    
     const keyboard = new InlineKeyboard()
       .text(buttons.editProfile, "profile:edit")
       .row()
@@ -146,7 +139,7 @@ async function promptNextRequiredField(
       .row()
       .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     
-    await ctx.reply(profileCompletion.allRequiredComplete + "\n\n" + welcomeMessage, { reply_markup: keyboard });
+    await ctx.reply(profileCompletion.allRequiredComplete, { reply_markup: keyboard });
     return;
   }
   
@@ -285,6 +278,11 @@ export function setupCommands(
         return;
       }
 
+      // Always show welcome message first
+      const completionScore = profile.completion_score || 0;
+      const welcomeMessage = getWelcomeMessage(completionScore);
+      await ctx.reply(welcomeMessage);
+
       // Check for missing required fields
       const missingFields = getMissingRequiredFields(profile);
       
@@ -293,10 +291,7 @@ export function setupCommands(
         await ctx.reply(profileCompletion.welcome);
         await promptNextRequiredField(ctx, bot, userId, missingFields, 0);
       } else {
-        // All required fields completed, show welcome message
-        const completionScore = profile.completion_score || 0;
-        const welcomeMessage = getWelcomeMessage(completionScore);
-
+        // All required fields completed, show action buttons
         const keyboard = new InlineKeyboard()
           .text(buttons.editProfile, "profile:edit")
           .row()
@@ -304,7 +299,7 @@ export function setupCommands(
           .row()
           .url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
-        await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+        await ctx.reply("✨ می‌تونی از دکمه‌های زیر استفاده کنی:", { reply_markup: keyboard });
       }
     } catch (err) {
       log.error(BOT_NAME + " > Start command failed", err);
