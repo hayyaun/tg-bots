@@ -2,7 +2,7 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import { getUserProfile, ensureUserExists, updateCompletionScore } from "./database";
 import { findMatches } from "./matching";
-import { displayMatch, displayLikedUser } from "./display";
+import { displayUser } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser } from "./types";
@@ -127,7 +127,7 @@ export function setupCommands(
       await ctx.reply(success.matchesFound(matches.length));
 
       // Show first match (profile already fetched above for validation)
-      await displayMatch(ctx, matches[0], false, session, profile.interests || []);
+      await displayUser(ctx, matches[0], "match", false, session, profile.interests || [], profile);
     } catch (err) {
       log.error(BOT_NAME + " > Find command failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
@@ -197,7 +197,8 @@ export function setupCommands(
       // Show first person
       const firstUser = session.likedUsers![0];
       firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
-      await displayLikedUser(ctx, firstUser);
+      const profile = await getUserProfile(userId);
+      await displayUser(ctx, firstUser, "liked", false, undefined, profile?.interests || [], profile || undefined);
     } catch (err) {
       log.error(BOT_NAME + " > Liked command failed", err);
       await ctx.reply("❌ خطا در دریافت لیست لایک‌ها. لطفا دوباره تلاش کنید.");

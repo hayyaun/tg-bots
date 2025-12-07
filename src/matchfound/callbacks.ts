@@ -7,7 +7,7 @@ import {
   addProfileImage,
   removeProfileImage,
 } from "./database";
-import { displayMatch, displayLikedUser } from "./display";
+import { displayUser } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
@@ -185,15 +185,24 @@ export function setupCallbacks(
         }
       }
 
-      // Show next match
+      // Show next match or next liked user
       const session = getSession(userId);
       if (session.matches && session.currentMatchIndex !== undefined) {
         session.currentMatchIndex++;
         if (session.currentMatchIndex < session.matches.length) {
           const profile = await getUserProfile(userId);
-          await displayMatch(ctx, session.matches[session.currentMatchIndex], false, session, profile?.interests || []);
+          await displayUser(ctx, session.matches[session.currentMatchIndex], "match", false, session, profile?.interests || [], profile || undefined);
         } else {
           await ctx.reply(errors.noMatches);
+        }
+      } else if (session.likedUsers && session.currentLikedIndex !== undefined) {
+        // Handle navigation for liked users list
+        session.currentLikedIndex++;
+        if (session.currentLikedIndex < session.likedUsers.length) {
+          const profile = await getUserProfile(userId);
+          await displayUser(ctx, session.likedUsers[session.currentLikedIndex], "liked", false, undefined, profile?.interests || [], profile || undefined);
+        } else {
+          await ctx.reply(display.allLikedSeen);
         }
       }
     } catch (err) {
@@ -218,7 +227,7 @@ export function setupCallbacks(
       session.currentMatchIndex++;
       if (session.currentMatchIndex < session.matches.length) {
         const profile = await getUserProfile(userId);
-        await displayMatch(ctx, session.matches[session.currentMatchIndex], false, session, profile?.interests || []);
+        await displayUser(ctx, session.matches[session.currentMatchIndex], "match", false, session, profile?.interests || [], profile || undefined);
       } else {
         await ctx.reply(errors.noMatches);
       }
@@ -238,7 +247,7 @@ export function setupCallbacks(
       session.currentMatchIndex++;
       if (session.currentMatchIndex < session.matches.length) {
         const profile = await getUserProfile(userId);
-        await displayMatch(ctx, session.matches[session.currentMatchIndex], false, session, profile?.interests || []);
+        await displayUser(ctx, session.matches[session.currentMatchIndex], "match", false, session, profile?.interests || [], profile || undefined);
       } else {
         await ctx.reply(errors.noMatches);
       }
@@ -273,7 +282,8 @@ export function setupCallbacks(
       if (session.likedUsers && session.currentLikedIndex !== undefined) {
         session.currentLikedIndex++;
         if (session.currentLikedIndex < session.likedUsers.length) {
-          await displayLikedUser(ctx, session.likedUsers[session.currentLikedIndex]);
+          const profile = await getUserProfile(userId);
+          await displayUser(ctx, session.likedUsers[session.currentLikedIndex], "liked", false, undefined, profile?.interests || [], profile || undefined);
         } else {
           await ctx.reply(display.allLikedSeen);
         }
