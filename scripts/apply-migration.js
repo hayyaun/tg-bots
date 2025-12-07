@@ -46,6 +46,46 @@ async function applyMigration() {
 }
 
 async function handleProfileImageMigration() {
+  // First check if migration is already applied
+  const dbUrl = process.env.DATABASE_URL;
+  if (dbUrl) {
+    try {
+      const url = new URL(dbUrl.replace('postgresql://', 'http://'));
+      const user = url.username;
+      const password = url.password;
+      const host = url.hostname;
+      const port = url.port || '5432';
+      const database = url.pathname.slice(1);
+      
+      // Check if profile_image exists and profile_images doesn't (migration already done)
+      const checkSql = `
+        SELECT 
+          EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='users' AND column_name='profile_image') as has_profile_image,
+          EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name='users' AND column_name='profile_images') as has_profile_images;
+      `;
+      const tempCheckFile = path.join('/tmp', 'check_migration.sql');
+      fs.writeFileSync(tempCheckFile, checkSql);
+      
+      const result = execSync(`PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${user}" -d "${database}" -t -A -f "${tempCheckFile}"`, {
+        encoding: 'utf-8',
+        env: { ...process.env, PGPASSWORD: password }
+      }).trim();
+      
+      fs.unlinkSync(tempCheckFile);
+      
+      const [hasProfileImage, hasProfileImages] = result.split('\n').map(r => r.trim() === 't');
+      
+      if (hasProfileImage && !hasProfileImages) {
+        console.log('Migration already applied - profile_image exists, profile_images removed');
+        // Mark migration as applied in Prisma history
+        await markMigrationAsApplied();
+        return;
+      }
+    } catch (checkError) {
+      console.log('Could not check migration status, proceeding with migration...');
+    }
+  }
+  
   // Use prisma db execute to run SQL directly - this avoids PrismaClient schema mismatch issues
   const migrationSql = `-- AlterTable: Change profile_images array to profile_image single string
 -- Keep the latest (last) image for each user
@@ -75,6 +115,9 @@ ALTER TABLE "users" DROP COLUMN IF EXISTS "profile_images";
     });
     
     console.log('profile_images migration applied successfully - data preserved');
+    
+    // Mark migration as applied in Prisma history
+    await markMigrationAsApplied();
   } catch (error) {
     console.error('Error applying migration via prisma db execute:', error.message);
     // Try alternative: use psql directly if available
@@ -108,6 +151,64 @@ ALTER TABLE "users" DROP COLUMN IF EXISTS "profile_images";
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
     }
+  }
+}
+
+async function markMigrationAsApplied() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) return;
+  
+  try {
+    const url = new URL(dbUrl.replace('postgresql://', 'http://'));
+    const user = url.username;
+    const password = url.password;
+    const host = url.hostname;
+    const port = url.port || '5432';
+    const database = url.pathname.slice(1);
+    
+    // Check if already marked
+    const checkSql = `SELECT migration_name FROM "_prisma_migrations" WHERE migration_name = '20250115000000_limit_profile_image_to_one';`;
+    const tempCheckFile = path.join('/tmp', 'check_migration_history.sql');
+    fs.writeFileSync(tempCheckFile, checkSql);
+    
+    const existing = execSync(`PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${user}" -d "${database}" -t -A -f "${tempCheckFile}"`, {
+      encoding: 'utf-8',
+      env: { ...process.env, PGPASSWORD: password }
+    }).trim();
+    
+    fs.unlinkSync(tempCheckFile);
+    
+    if (existing) {
+      console.log('Migration already marked in Prisma history');
+      return;
+    }
+    
+    // Mark migration as applied
+    const markSql = `
+      INSERT INTO "_prisma_migrations" (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count)
+      VALUES (
+        gen_random_uuid(),
+        '',
+        NOW(),
+        '20250115000000_limit_profile_image_to_one',
+        NULL,
+        NULL,
+        NOW(),
+        1
+      );
+    `;
+    const tempMarkFile = path.join('/tmp', 'mark_migration.sql');
+    fs.writeFileSync(tempMarkFile, markSql);
+    
+    execSync(`PGPASSWORD="${password}" psql -h "${host}" -p "${port}" -U "${user}" -d "${database}" -f "${tempMarkFile}"`, {
+      stdio: 'inherit',
+      env: { ...process.env, PGPASSWORD: password }
+    });
+    
+    fs.unlinkSync(tempMarkFile);
+    console.log('✓ Migration marked as applied in Prisma history');
+  } catch (error) {
+    console.log('Note: Could not mark migration in Prisma history (non-critical):', error.message);
   }
 }
 
