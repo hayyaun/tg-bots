@@ -1,6 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import { UserProfile, MatchUser } from "./types";
 import { archetypeCompatibility, mbtiCompatibility } from "./constants";
+import { MatchUser } from "./types";
 import { calculateAge } from "./utils";
 
 export async function findMatches(userId: number): Promise<MatchUser[]> {
@@ -19,24 +20,30 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     where: { user_id: BigInt(userId) },
     select: { liked_user_id: true },
   });
-  likes.forEach((like: { liked_user_id: bigint }) => excludedIds.push(like.liked_user_id));
+  likes.forEach((like: { liked_user_id: bigint }) =>
+    excludedIds.push(like.liked_user_id)
+  );
 
   // Get users who ignored this user
   const ignoredBy = await prisma.ignored.findMany({
     where: { ignored_user_id: BigInt(userId) },
     select: { user_id: true },
   });
-  ignoredBy.forEach((ignored: { user_id: bigint }) => excludedIds.push(ignored.user_id));
+  ignoredBy.forEach((ignored: { user_id: bigint }) =>
+    excludedIds.push(ignored.user_id)
+  );
 
   // Get users this user has ignored
   const ignoredByUser = await prisma.ignored.findMany({
     where: { user_id: BigInt(userId) },
     select: { ignored_user_id: true },
   });
-  ignoredByUser.forEach((ignored: { ignored_user_id: bigint }) => excludedIds.push(ignored.ignored_user_id));
+  ignoredByUser.forEach((ignored: { ignored_user_id: bigint }) =>
+    excludedIds.push(ignored.ignored_user_id)
+  );
 
   // Get all candidates matching criteria
-  const whereClause: any = {
+  const whereClause: Prisma.UserWhereInput = {
     telegram_id: { not: BigInt(userId), notIn: excludedIds },
     completion_score: { gte: 7 },
     username: { not: null },
@@ -111,10 +118,17 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
 
     // Calculate mutual interests
     let mutualInterestsCount = 0;
-    if (user.interests && matchUser.interests && user.interests.length > 0 && matchUser.interests.length > 0) {
+    if (
+      user.interests &&
+      matchUser.interests &&
+      user.interests.length > 0 &&
+      matchUser.interests.length > 0
+    ) {
       const userInterestsSet = new Set(user.interests);
       const candidateInterestsSet = new Set(matchUser.interests);
-      mutualInterestsCount = Array.from(userInterestsSet).filter(interest => candidateInterestsSet.has(interest)).length;
+      mutualInterestsCount = Array.from(userInterestsSet).filter((interest) =>
+        candidateInterestsSet.has(interest)
+      ).length;
     }
 
     // Set priority based on archetype, MBTI, and mutual interests
@@ -151,17 +165,21 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     if (Math.abs(a.match_priority - b.match_priority) > 0.01) {
       return a.match_priority - b.match_priority;
     }
-    
+
     // If priorities are very close, prioritize by mutual interests
     const aInterests = a.interests || [];
     const bInterests = b.interests || [];
     const userInterestsSet = new Set(user.interests || []);
-    const aMutualCount = aInterests.filter(i => userInterestsSet.has(i)).length;
-    const bMutualCount = bInterests.filter(i => userInterestsSet.has(i)).length;
+    const aMutualCount = aInterests.filter((i) =>
+      userInterestsSet.has(i)
+    ).length;
+    const bMutualCount = bInterests.filter((i) =>
+      userInterestsSet.has(i)
+    ).length;
     if (aMutualCount !== bMutualCount) {
       return bMutualCount - aMutualCount; // More mutual interests = better
     }
-    
+
     if (a.completion_score !== b.completion_score) {
       return b.completion_score - a.completion_score;
     }
