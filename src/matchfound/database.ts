@@ -154,3 +154,10 @@ export async function removeProfileImage(
     await updateCompletionScore(userId);
   }
 }
+
+export async function deleteUserData(userId: number): Promise<void> {
+  // Delete user and all related data (cascade deletes will handle related records)
+  await prisma.user.delete({
+    where: { telegram_id: BigInt(userId) },
+  });
+}

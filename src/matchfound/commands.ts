@@ -18,6 +18,7 @@ import {
   profileCompletion,
   editPrompts,
   profileValues,
+  deleteData,
 } from "./strings";
 
 // Rate limiting for /find command (once per hour)
@@ -494,13 +495,44 @@ export function setupCommands(
         settings.title +
         settings.profile +
         settings.find +
-        settings.liked
+        settings.liked +
+        settings.deleteData
       );
     } catch (err) {
       log.error(BOT_NAME + " > Settings command failed", err);
       await ctx.reply("❌ خطا در نمایش تنظیمات. لطفا دوباره تلاش کنید.");
       notifyAdmin(
         `❌ <b>Settings Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
+  });
+
+  // /wipe_data command
+  bot.command("wipe_data", async (ctx) => {
+    ctx.react("😱").catch(() => {});
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    try {
+      const profile = await getUserProfile(userId);
+      if (!profile) {
+        await ctx.reply(errors.startFirst);
+        return;
+      }
+
+      const keyboard = new InlineKeyboard()
+        .text("✅ بله، حذف کن", "wipe_data:confirm")
+        .row()
+        .text("❌ لغو", "wipe_data:cancel");
+
+      await ctx.reply(deleteData.confirmPrompt, {
+        reply_markup: keyboard,
+        parse_mode: "HTML",
+      });
+    } catch (err) {
+      log.error(BOT_NAME + " > Delete data command failed", err);
+      await ctx.reply("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");
+      notifyAdmin(
+        `❌ <b>Delete Data Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
     }
   });

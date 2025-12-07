@@ -6,6 +6,7 @@ import {
   updateUserField,
   addProfileImage,
   removeProfileImage,
+  deleteUserData,
 } from "./database";
 import { displayUser, displayProfile } from "./display";
 import { getSession } from "./session";
@@ -24,6 +25,7 @@ import {
   callbacks,
   display,
   notifications,
+  deleteData,
 } from "./strings";
 import { continueProfileCompletion } from "./commands";
 
@@ -916,6 +918,43 @@ export function setupCallbacks(
     await continueProfileCompletion(ctx, bot, userId);
   });
 
+  // Wipe data confirmation
+  bot.callbackQuery("wipe_data:confirm", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+    
+    try {
+      await deleteUserData(userId);
+      
+      // Clear session data
+      const session = getSession(userId);
+      Object.keys(session).forEach(key => delete (session as Record<string, unknown>)[key]);
+      
+      await ctx.editMessageText(success.dataDeleted);
+      
+      // Notify admin
+      await notifyAdmin(
+        `🗑️ <b>User Data Deleted</b>\nUser: <code>${userId}</code>\nAll data has been permanently deleted.`
+      );
+    } catch (err) {
+      log.error(BOT_NAME + " > Delete user data failed", err);
+      await ctx.editMessageText(errors.deleteFailed);
+      await notifyAdmin(
+        `❌ <b>Delete User Data Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
+  });
+
+  bot.callbackQuery("wipe_data:cancel", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+    
+    await ctx.editMessageText(deleteData.cancelled);
+  });
 
   // Handle photo uploads for profile images
   bot.on("message:photo", async (ctx, next) => {

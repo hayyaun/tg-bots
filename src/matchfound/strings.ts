@@ -53,6 +53,7 @@ export const errors = {
     `❌ برای استفاده از این دستور، باید حداقل 3 علاقه انتخاب کنید.\n\n` +
     `وضعیت فعلی: ${currentCount} علاقه\n\n` +
     `از دستور /profile برای ویرایش علایق استفاده کنید.`,
+  deleteFailed: "❌ خطا در حذف اطلاعات. لطفا دوباره تلاش کنید.",
 };
 
 // Success messages
@@ -71,6 +72,7 @@ export const success = {
   usernameUpdated: (username: string) =>
     `✅ نام کاربری به‌روزرسانی شد: @${username}\n\nنام کاربری شما از پروفایل تلگرام شما خوانده می‌شود و به صورت خودکار به‌روزرسانی می‌شود.`,
   matchesFound: (count: number) => `✅ ${count} نفر پیدا شد!`,
+  dataDeleted: "✅ تمام اطلاعات شما با موفقیت حذف شد.",
 };
 
 // Field labels
@@ -159,12 +161,27 @@ export const report = {
   cancelled: "گزارش لغو شد.",
 };
 
+// Delete data messages
+export const deleteData = {
+  confirmPrompt: "⚠️ <b>هشدار: حذف کامل اطلاعات</b>\n\n" +
+    "آیا مطمئن هستید که می‌خواهید تمام اطلاعات خود را حذف کنید؟\n\n" +
+    "این عمل شامل موارد زیر است:\n" +
+    "• پروفایل شما\n" +
+    "• تمام لایک‌های شما\n" +
+    "• تمام لایک‌های دریافتی\n" +
+    "• تمام گزارش‌ها\n" +
+    "• تمام اطلاعات دیگر\n\n" +
+    "⚠️ این عمل غیرقابل بازگشت است!",
+  cancelled: "❌ حذف اطلاعات لغو شد.",
+};
+
 // Settings
 export const settings = {
   title: "تنظیمات:\n\n",
   profile: "/profile - مشاهده و ویرایش پروفایل\n",
   find: "/find - پیدا کردن افراد\n",
-  liked: "/liked - افرادی که من را لایک کردند",
+  liked: "/liked - افرادی که من را لایک کردند\n",
+  deleteData: "/wipe_data - حذف کامل اطلاعات",
 };
 
 // Display messages
