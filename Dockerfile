@@ -62,5 +62,8 @@ ENV NODE_ENV=production
 # Expose port if necessary
 # EXPOSE 3000
 
-# Command to apply migrations (or sync schema if no migrations exist) and start the bot
-CMD ["sh", "-c", "(npx prisma migrate deploy || npx prisma db push) && npm start"]
+# Copy migration script
+COPY scripts/apply-migration.js ./scripts/apply-migration.js
+
+# Command to apply migrations (preserving data) and start the bot
+CMD ["sh", "-c", "node scripts/apply-migration.js && npm start"]
