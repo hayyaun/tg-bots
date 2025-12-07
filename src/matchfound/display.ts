@@ -1,10 +1,16 @@
 import { Context, InlineKeyboard } from "grammy";
-import { MatchUser, SessionData, UserProfile } from "./types";
-import { MOODS, INTEREST_NAMES, archetypeCompatibility, mbtiCompatibility } from "./constants";
-import { buttons, display } from "./strings";
-import { getSession } from "./session";
 import log from "../log";
-import { BOT_NAME } from "./constants";
+import {
+  BOT_NAME,
+  INMANKIST_BOT_USERNAME,
+  INTEREST_NAMES,
+  MOODS,
+  PROVINCE_NAMES,
+  archetypeCompatibility,
+  mbtiCompatibility,
+} from "./constants";
+import { buttons, display, fields, profileValues } from "./strings";
+import { MatchUser, SessionData, UserProfile } from "./types";
 import { calculateAge } from "./utils";
 
 type DisplayMode = "match" | "liked";
@@ -115,9 +121,10 @@ export async function displayUser(
   }
 
   // Show compatibility score if available
-  const compatibilityText = compatibilityScore !== undefined
-    ? `\n💯 سازگاری: ${compatibilityScore}%`
-    : "";
+  const compatibilityText =
+    compatibilityScore !== undefined
+      ? `\n💯 سازگاری: ${compatibilityScore}%`
+      : "";
 
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}${compatibilityText}\n\n`;
@@ -129,9 +136,12 @@ export async function displayUser(
   }
   if (user.interests && user.interests.length > 0) {
     const interestNames = user.interests
-      .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+      .map(
+        (interest) =>
+          INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest
+      )
       .join(", ");
-    
+
     // Calculate mutual interests count if user interests provided
     let mutualInterestsText = "";
     if (userInterests && userInterests.length > 0) {
@@ -144,7 +154,7 @@ export async function displayUser(
         mutualInterestsText = ` (${mutualCount} مورد مشترک)`;
       }
     }
-    
+
     message += `\n🎯 علایق: ${interestNames}${mutualInterestsText}`;
   }
 
@@ -158,9 +168,13 @@ export async function displayUser(
       keyboard.text(buttons.like, `like:${user.telegram_id}`);
       keyboard.text(buttons.dislike, `dislike:${user.telegram_id}`);
       keyboard.row();
-      
+
       // Add "Next" button if there are more matches
-      if (session && session.matches && session.currentMatchIndex !== undefined) {
+      if (
+        session &&
+        session.matches &&
+        session.currentMatchIndex !== undefined
+      ) {
         const currentIndex = session.currentMatchIndex;
         const totalMatches = session.matches.length;
         if (currentIndex < totalMatches - 1) {
@@ -204,4 +218,94 @@ export async function displayUser(
   }
 }
 
+// Reusable function to format and display user profile
+export async function displayProfile(ctx: Context, profile: UserProfile) {
+  const ageText = profile.birth_date
+    ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
+    : fields.notSet;
+  const genderText = profile.gender === "male" ? profileValues.male : profile.gender === "female" ? profileValues.female : fields.notSet;
+  const lookingForText =
+    profile.looking_for_gender === "male"
+      ? profileValues.male
+      : profile.looking_for_gender === "female"
+      ? profileValues.female
+      : profile.looking_for_gender === "both"
+      ? profileValues.both
+      : fields.notSet;
 
+  let message = `${fields.profileTitle}\n\n`;
+  message += `${fields.name}: ${profile.display_name || fields.notSet}\n`;
+  message += `${fields.age}: ${ageText}\n`;
+  message += `${fields.genderLabel}: ${genderText}\n`;
+  message += `${fields.lookingFor}: ${lookingForText}\n`;
+  message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
+  
+  // Show quiz results with instructions if missing
+  if (profile.archetype_result) {
+    message += `${fields.archetype}: ${profile.archetype_result}\n`;
+  } else {
+    message += `${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}\n`;
+  }
+  
+  if (profile.mbti_result) {
+    message += `${fields.mbti}: ${profile.mbti_result.toUpperCase()}\n`;
+  } else {
+    message += `${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}\n`;
+  }
+  
+  if (profile.mood) {
+    message += `${fields.mood}: ${MOODS[profile.mood] || profile.mood}\n`;
+  } else {
+    message += `${fields.mood}: ${fields.notSet}\n`;
+  }
+  
+  if (profile.interests && profile.interests.length > 0) {
+    const interestNames = profile.interests
+      .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+      .join(", ");
+    message += `${fields.interests}: ${interestNames}\n`;
+  } else {
+    message += `${fields.interests}: ${fields.notSet}\n`;
+  }
+  
+  if (profile.location) {
+    message += `${fields.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+  } else {
+    message += `${fields.location}: ${fields.notSet}\n`;
+  }
+  
+  message += `${fields.completion}: ${profile.completion_score}/12`;
+
+  const keyboard = new InlineKeyboard()
+    .text(buttons.editName, "profile:edit:name")
+    .text(buttons.editBio, "profile:edit:bio")
+    .row()
+    .text(buttons.editBirthdate, "profile:edit:birthdate")
+    .text(buttons.editGender, "profile:edit:gender")
+    .row()
+    .text(buttons.editLookingFor, "profile:edit:looking_for")
+    .text(buttons.editImages, "profile:edit:images")
+    .row()
+    .text(buttons.editUsername, "profile:edit:username")
+    .text(buttons.editMood, "profile:edit:mood")
+    .row()
+    .text(buttons.editInterests, "profile:edit:interests")
+    .text(buttons.editLocation, "profile:edit:location");
+  
+  // Add quiz button if quizzes are missing
+  if (!profile.archetype_result || !profile.mbti_result) {
+    keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+  }
+
+  // Send photo if available - attach text as caption
+  if (profile.profile_image) {
+    await ctx.replyWithPhoto(profile.profile_image, {
+      caption: message,
+      parse_mode: "HTML",
+      reply_markup: keyboard,
+    });
+  } else {
+    // No images - send text message only
+    await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
+  }
+}
