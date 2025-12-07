@@ -299,23 +299,13 @@ export function setupCommands(
       keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
     }
 
-    // Send photos if available - attach text to first image
-    if (profile.profile_images && Array.isArray(profile.profile_images) && profile.profile_images.length > 0) {
-      const images = profile.profile_images.slice(0, 10);
-      // Send first image with text as caption
-      await ctx.replyWithPhoto(images[0], {
+    // Send photo if available - attach text as caption
+    if (profile.profile_image) {
+      await ctx.replyWithPhoto(profile.profile_image, {
         caption: message,
         parse_mode: "HTML",
         reply_markup: keyboard,
       });
-      // Send remaining images if any
-      if (images.length > 1) {
-        const remainingImages = images.slice(1).map((fileId) => ({
-          type: "photo" as const,
-          media: fileId,
-        }));
-        await ctx.replyWithMediaGroup(remainingImages);
-      }
     } else {
       // No images - send text message only
       await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });

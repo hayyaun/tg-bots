@@ -8,7 +8,7 @@ export interface UserProfile {
   looking_for_gender: string | null;
   archetype_result: string | null;
   mbti_result: string | null;
-  profile_images: string[] | null;
+  profile_image: string | null;
   mood: string | null;
   interests: string[] | null;
   location: string | null;

@@ -80,22 +80,12 @@ export async function displayMatch(
   keyboard.text(buttons.report, `report:${match.telegram_id}`);
 
   try {
-    // Send photos if available - attach text to first image
-    if (match.profile_images && Array.isArray(match.profile_images) && match.profile_images.length > 0) {
-      const images = match.profile_images.slice(0, 10);
-      // Send first image with text as caption
-      await ctx.replyWithPhoto(images[0], {
+    // Send photo if available - attach text as caption
+    if (match.profile_image) {
+      await ctx.replyWithPhoto(match.profile_image, {
         caption: message,
         reply_markup: keyboard,
       });
-      // Send remaining images if any
-      if (images.length > 1) {
-        const remainingImages = images.slice(1).map((fileId) => ({
-          type: "photo" as const,
-          media: fileId,
-        }));
-        await ctx.replyWithMediaGroup(remainingImages);
-      }
     } else {
       // No images - send text message only
       await ctx.reply(message, { reply_markup: keyboard });
@@ -154,22 +144,12 @@ export async function displayLikedUser(ctx: Context, user: MatchUser, showUserna
   keyboard.text(buttons.report, `report:${user.telegram_id}`);
 
   try {
-    // Send photos if available - attach text to first image
-    if (user.profile_images && Array.isArray(user.profile_images) && user.profile_images.length > 0) {
-      const images = user.profile_images.slice(0, 10);
-      // Send first image with text as caption
-      await ctx.replyWithPhoto(images[0], {
+    // Send photo if available - attach text as caption
+    if (user.profile_image) {
+      await ctx.replyWithPhoto(user.profile_image, {
         caption: message,
         reply_markup: keyboard,
       });
-      // Send remaining images if any
-      if (images.length > 1) {
-        const remainingImages = images.slice(1).map((fileId) => ({
-          type: "photo" as const,
-          media: fileId,
-        }));
-        await ctx.replyWithMediaGroup(remainingImages);
-      }
     } else {
       // No images - send text message only
       await ctx.reply(message, { reply_markup: keyboard });

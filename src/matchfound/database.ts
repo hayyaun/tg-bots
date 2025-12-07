@@ -27,7 +27,7 @@ export async function calculateCompletionScore(
 
   let score = 0;
   if (profile.username) score++;
-  if (profile.profile_images && profile.profile_images.length > 0) score++;
+  if (profile.profile_image) score++;
   if (profile.display_name) score++;
   if (profile.biography) score++;
   if (profile.birth_date) score++;
@@ -130,15 +130,12 @@ export async function addProfileImage(
   const profile = await getUserProfile(userId);
   if (!profile) return;
 
-  const currentImages = profile.profile_images || [];
-  if (!currentImages.includes(fileId)) {
-    const newImages = [...currentImages, fileId];
-    await prisma.user.update({
-      where: { telegram_id: BigInt(userId) },
-      data: { profile_images: newImages },
-    });
-    await updateCompletionScore(userId);
-  }
+  // Only allow 1 picture per profile - replace existing image
+  await prisma.user.update({
+    where: { telegram_id: BigInt(userId) },
+    data: { profile_image: fileId },
+  });
+  await updateCompletionScore(userId);
 }
 
 export async function removeProfileImage(
@@ -148,11 +145,12 @@ export async function removeProfileImage(
   const profile = await getUserProfile(userId);
   if (!profile) return;
 
-  const currentImages = profile.profile_images || [];
-  const newImages = currentImages.filter((id) => id !== fileId);
-  await prisma.user.update({
-    where: { telegram_id: BigInt(userId) },
-    data: { profile_images: newImages },
-  });
-  await updateCompletionScore(userId);
+  // Remove image if it matches (though with single image, this just clears it)
+  if (profile.profile_image === fileId) {
+    await prisma.user.update({
+      where: { telegram_id: BigInt(userId) },
+      data: { profile_image: null },
+    });
+    await updateCompletionScore(userId);
+  }
 }

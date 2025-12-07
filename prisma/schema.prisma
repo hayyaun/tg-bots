@@ -19,7 +19,7 @@ model User {
   looking_for_gender String?   @db.VarChar(20)
   archetype_result   String?   @db.VarChar(50)
   mbti_result        String?   @db.VarChar(10)
-  profile_images     String[]  @default([])
+  profile_image      String?
   mood               String?   @db.VarChar(10)
   interests          String[]  @default([])
   location           String?   @db.VarChar(50)
