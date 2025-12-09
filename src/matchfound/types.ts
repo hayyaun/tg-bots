@@ -8,6 +8,10 @@ export interface UserProfile {
   looking_for_gender: string | null;
   archetype_result: string | null;
   mbti_result: string | null;
+  leftright_result: string | null;
+  politicalcompass_result: string | null;
+  enneagram_result: string | null;
+  bigfive_result: string | null;
   profile_image: string | null;
   mood: string | null;
   interests: string[] | null;

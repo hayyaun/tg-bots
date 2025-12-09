@@ -129,12 +129,69 @@ const startBot = async (botKey: string, agent: unknown) => {
           },
         });
         log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
+      } else if (quizType === QuizType.LeftRight && typeof result === "string") {
+        // result is ResultType string
+        await prisma.user.upsert({
+          where: { telegram_id: BigInt(userId) },
+          create: {
+            telegram_id: BigInt(userId),
+            display_name: displayName,
+            leftright_result: result,
+          },
+          update: {
+            leftright_result: result,
+            ...(finalDisplayName != null && { display_name: finalDisplayName }),
+          },
+        });
+        log.info(BOT_NAME + " > Saved LeftRight result", { userId, result });
+      } else if (quizType === QuizType.PoliticalCompass && typeof result === "object" && result !== null && "quadrant" in result) {
+        // result is object with quadrant, economicScore, socialScore - store just quadrant
+        const quadrant = result.quadrant as string;
+        await prisma.user.upsert({
+          where: { telegram_id: BigInt(userId) },
+          create: {
+            telegram_id: BigInt(userId),
+            display_name: displayName,
+            politicalcompass_result: quadrant,
+          },
+          update: {
+            politicalcompass_result: quadrant,
+            ...(finalDisplayName != null && { display_name: finalDisplayName }),
+          },
+        });
+        log.info(BOT_NAME + " > Saved PoliticalCompass result", { userId, quadrant });
+      } else if (quizType === QuizType.Enneagram && Array.isArray(result) && result.length > 0) {
+        // result is array of [EnneagramType, number] tuples, get primary type
+        const primaryType = result[0][0];
+        await prisma.user.upsert({
+          where: { telegram_id: BigInt(userId) },
+          create: {
+            telegram_id: BigInt(userId),
+            display_name: displayName,
+            enneagram_result: primaryType,
+          },
+          update: {
+            enneagram_result: primaryType,
+            ...(finalDisplayName != null && { display_name: finalDisplayName }),
+          },
+        });
+        log.info(BOT_NAME + " > Saved Enneagram result", { userId, type: primaryType });
       } else if (quizType === QuizType.BigFive && typeof result === "object" && result !== null) {
-        // result is object with traits and aspects
-        // For now, just log the result since there's no dedicated field in schema
-        // Could add bigfive_result JSON field to schema in the future
-        log.info(BOT_NAME + " > BigFive result", { userId, result: JSON.stringify(result) });
-        // TODO: Add bigfive_result field to schema if needed for storage
+        // result is object with traits and aspects - store as JSON string
+        const resultJson = JSON.stringify(result);
+        await prisma.user.upsert({
+          where: { telegram_id: BigInt(userId) },
+          create: {
+            telegram_id: BigInt(userId),
+            display_name: displayName,
+            bigfive_result: resultJson,
+          },
+          update: {
+            bigfive_result: resultJson,
+            ...(finalDisplayName != null && { display_name: finalDisplayName }),
+          },
+        });
+        log.info(BOT_NAME + " > Saved BigFive result", { userId, result: resultJson });
       }
     } catch (err) {
       log.error(BOT_NAME + " > Failed to save quiz result to PostgreSQL", err);

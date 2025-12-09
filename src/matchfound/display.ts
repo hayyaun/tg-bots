@@ -113,6 +113,27 @@ export async function displayUser(
   const mbtiText = user.mbti_result
     ? `تست MBTI: ${user.mbti_result.toUpperCase()}`
     : display.mbtiNotSet;
+  const leftrightText = user.leftright_result
+    ? `سبک شناختی: ${user.leftright_result}`
+    : display.leftrightNotSet;
+  const politicalcompassText = user.politicalcompass_result
+    ? `قطب‌نمای سیاسی: ${user.politicalcompass_result}`
+    : display.politicalcompassNotSet;
+  const enneagramText = user.enneagram_result
+    ? `انیاگرام: ${user.enneagram_result.replace("type", "تیپ ")}`
+    : display.enneagramNotSet;
+  const bigfiveText = user.bigfive_result
+    ? (() => {
+        try {
+          const data = JSON.parse(user.bigfive_result);
+          const topTrait = Object.entries(data.traits || {})
+            .sort(([, a]: [string, any], [, b]: [string, any]) => (b as number) - (a as number))[0];
+          return topTrait ? `پنج عامل بزرگ: ${topTrait[0]}: ${topTrait[1]}%` : "پنج عامل بزرگ: ثبت شده";
+        } catch {
+          return "پنج عامل بزرگ: ثبت شده";
+        }
+      })()
+    : display.bigfiveNotSet;
 
   // Calculate or use compatibility score
   let compatibilityScore = user.compatibility_score;
@@ -130,7 +151,11 @@ export async function displayUser(
   message += `🎂 ${ageText}${compatibilityText}\n\n`;
   message += `📝 ${bioText}\n\n`;
   message += `🔮 ${archetypeText}\n`;
-  message += `🧠 ${mbtiText}`;
+  message += `🧠 ${mbtiText}\n`;
+  message += `⚖️ ${leftrightText}\n`;
+  message += `🧭 ${politicalcompassText}\n`;
+  message += `🎯 ${enneagramText}\n`;
+  message += `📊 ${bigfiveText}`;
   if (user.mood) {
     message += `\n😊 مود: ${MOODS[user.mood] || user.mood}`;
   }
@@ -251,6 +276,38 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
     message += `${fields.mbti}: ${profile.mbti_result.toUpperCase()}\n`;
   } else {
     message += `${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}\n`;
+  }
+  
+  if (profile.leftright_result) {
+    message += `${fields.leftright}: ${profile.leftright_result}\n`;
+  } else {
+    message += `${fields.leftright}: ${fields.notSet}\n`;
+  }
+  
+  if (profile.politicalcompass_result) {
+    message += `${fields.politicalcompass}: ${profile.politicalcompass_result}\n`;
+  } else {
+    message += `${fields.politicalcompass}: ${fields.notSet}\n`;
+  }
+  
+  if (profile.enneagram_result) {
+    message += `${fields.enneagram}: ${profile.enneagram_result.replace("type", "تیپ ")}\n`;
+  } else {
+    message += `${fields.enneagram}: ${fields.notSet}\n`;
+  }
+  
+  if (profile.bigfive_result) {
+    try {
+      const data = JSON.parse(profile.bigfive_result);
+      const topTrait = Object.entries(data.traits || {})
+        .sort(([, a]: [string, any], [, b]: [string, any]) => (b as number) - (a as number))[0];
+      const displayValue = topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : "ثبت شده";
+      message += `${fields.bigfive}: ${displayValue}\n`;
+    } catch {
+      message += `${fields.bigfive}: ثبت شده\n`;
+    }
+  } else {
+    message += `${fields.bigfive}: ${fields.notSet}\n`;
   }
   
   if (profile.mood) {

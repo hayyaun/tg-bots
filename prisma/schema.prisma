@@ -1,5 +1,11 @@
 // Prisma schema file
 // Documentation: https://pris.ly/d/prisma-schema
+//
+// ⚠️ IMPORTANT: When making schema changes:
+// 1. Update this schema file
+// 2. Create migration file manually: prisma/migrations/YYYYMMDDHHMMSS_description/migration.sql
+// 3. Follow existing migration patterns (see AI_CONTEXT.md for details)
+// 4. DO NOT run migrations locally - user handles database operations on production server
 
 generator client {
   provider = "prisma-client-js"
@@ -19,6 +25,10 @@ model User {
   looking_for_gender String?   @db.VarChar(20)
   archetype_result   String?   @db.VarChar(50)
   mbti_result        String?   @db.VarChar(10)
+  leftright_result   String?   @db.VarChar(20)
+  politicalcompass_result String? @db.VarChar(20)
+  enneagram_result   String?   @db.VarChar(10)
+  bigfive_result     String?   @db.Text
   profile_image      String?
   mood               String?   @db.VarChar(10)
   interests          String[]  @default([])
