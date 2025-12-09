@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser, UserProfile } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE } from "./constants";
 import {
   getWelcomeMessage,
   errors,
@@ -218,7 +218,7 @@ async function promptNextRequiredField(
       // Build interests keyboard inline
       const { INTERESTS, INTEREST_NAMES } = await import("./constants");
       const interestsKeyboard = new InlineKeyboard();
-      const itemsPerPage = 20;
+      const itemsPerPage = ITEMS_PER_PAGE;
       const totalPages = Math.ceil(INTERESTS.length / itemsPerPage);
       const startIndex = 0;
       const endIndex = Math.min(itemsPerPage, INTERESTS.length);
@@ -339,8 +339,8 @@ export function setupCommands(
         return;
       }
 
-      // Check minimum completion (7/12) for other optional fields
-      if (profile.completion_score < 7) {
+      // Check minimum completion for other optional fields
+      if (profile.completion_score < MIN_COMPLETION_THRESHOLD) {
         await ctx.reply(errors.incompleteProfile(profile.completion_score));
         return;
       }
@@ -348,8 +348,8 @@ export function setupCommands(
       // Rate limiting (once per hour)
       const now = Date.now();
       const lastFind = findRateLimit.get(userId);
-      if (lastFind && now - lastFind < 3600000) {
-        const remainingMinutes = Math.ceil((3600000 - (now - lastFind)) / 60000);
+      if (lastFind && now - lastFind < FIND_RATE_LIMIT_MS) {
+        const remainingMinutes = Math.ceil((FIND_RATE_LIMIT_MS - (now - lastFind)) / 60000);
         await ctx.reply(errors.rateLimit(remainingMinutes));
         return;
       }

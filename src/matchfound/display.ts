@@ -7,6 +7,14 @@ import {
   MOODS,
   PROVINCE_NAMES,
   MAX_INTERESTS,
+  MAX_COMPLETION_SCORE,
+  ARCHETYPE_MATCH_SCORE,
+  MBTI_MATCH_SCORE,
+  MAX_INTERESTS_SCORE,
+  MAX_AGE_BONUS,
+  MAX_COMPLETION_BONUS,
+  MAX_COMPATIBILITY_SCORE,
+  MAX_AGE_DIFFERENCE,
   archetypeCompatibility,
   mbtiCompatibility,
 } from "./constants";
@@ -155,35 +163,35 @@ function calculateCompatibilityScore(
     ).length;
   }
 
-  // Archetype match: 40%
+  // Archetype match
   if (archetypeMatch) {
-    compatibilityScore += 40;
+    compatibilityScore += ARCHETYPE_MATCH_SCORE;
   }
 
-  // MBTI match: 40%
+  // MBTI match
   if (mbtiMatch) {
-    compatibilityScore += 40;
+    compatibilityScore += MBTI_MATCH_SCORE;
   }
 
-  // Mutual interests: up to 20% (scaled by number of mutual interests, max MAX_INTERESTS)
+  // Mutual interests: up to MAX_INTERESTS_SCORE (scaled by number of mutual interests, max MAX_INTERESTS)
   if (mutualInterestsCount > 0) {
-    const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * 20, 20);
+    const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE, MAX_INTERESTS_SCORE);
     compatibilityScore += interestsScore;
   }
 
-  // Age difference bonus: up to 10% (smaller difference = higher bonus)
+  // Age difference bonus: up to MAX_AGE_BONUS (smaller difference = higher bonus)
   if (currentUserAge && otherUserAge) {
     const ageDiff = Math.abs(otherUserAge - currentUserAge);
-    const ageBonus = Math.max(0, 10 - (ageDiff / 8) * 10);
+    const ageBonus = Math.max(0, MAX_AGE_BONUS - (ageDiff / MAX_AGE_DIFFERENCE) * MAX_AGE_BONUS);
     compatibilityScore += ageBonus;
   }
 
-  // Completion score bonus: up to 10% (higher score = higher bonus)
-  const completionBonus = Math.min((otherUser.completion_score / 12) * 10, 10);
+  // Completion score bonus: up to MAX_COMPLETION_BONUS (higher score = higher bonus)
+  const completionBonus = Math.min((otherUser.completion_score / MAX_COMPLETION_SCORE) * MAX_COMPLETION_BONUS, MAX_COMPLETION_BONUS);
   compatibilityScore += completionBonus;
 
-  // Cap at 100%
-  return Math.min(Math.round(compatibilityScore), 100);
+  // Cap at MAX_COMPATIBILITY_SCORE
+  return Math.min(Math.round(compatibilityScore), MAX_COMPATIBILITY_SCORE);
 }
 
 export async function displayUser(
@@ -355,7 +363,7 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
     message += `${fields.location}: ${fields.notSet}\n`;
   }
   
-  message += `${fields.completion}: ${profile.completion_score}/12`;
+  message += `${fields.completion}: ${profile.completion_score}/${MAX_COMPLETION_SCORE}`;
 
   const keyboard = new InlineKeyboard()
     .text(buttons.editName, "profile:edit:name")

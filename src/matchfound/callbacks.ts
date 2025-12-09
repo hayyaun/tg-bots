@@ -13,7 +13,23 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES, IRAN_PROVINCES, PROVINCE_NAMES, MIN_INTERESTS, MAX_INTERESTS } from "./constants";
+import {
+  BOT_NAME,
+  INMANKIST_BOT_USERNAME,
+  MOODS,
+  INTERESTS,
+  INTEREST_NAMES,
+  IRAN_PROVINCES,
+  PROVINCE_NAMES,
+  MIN_INTERESTS,
+  MAX_INTERESTS,
+  MIN_COMPLETION_THRESHOLD,
+  MAX_COMPLETION_SCORE,
+  MIN_AGE,
+  MAX_AGE,
+  MAX_DISPLAY_NAME_LENGTH,
+  ITEMS_PER_PAGE,
+} from "./constants";
 import {
   errors,
   success,
@@ -34,7 +50,7 @@ import { findMatches } from "./matching";
 function buildInterestsKeyboard(
   selectedInterests: Set<string>,
   currentPage: number,
-  itemsPerPage: number = 20
+  itemsPerPage: number = ITEMS_PER_PAGE
 ): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   const totalItems = INTERESTS.length;
@@ -79,7 +95,7 @@ function buildInterestsKeyboard(
 function buildLocationKeyboard(
   selectedLocation: string | null,
   currentPage: number,
-  itemsPerPage: number = 20
+  itemsPerPage: number = ITEMS_PER_PAGE
 ): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   const totalItems = IRAN_PROVINCES.length;
@@ -399,7 +415,7 @@ export function setupCallbacks(
       try {
         switch (session.editingField) {
           case "name":
-            if (text.length > 100) {
+            if (text.length > MAX_DISPLAY_NAME_LENGTH) {
               await ctx.reply(errors.nameTooLong);
               return;
             }
@@ -443,9 +459,9 @@ export function setupCallbacks(
               await ctx.reply(errors.futureDate);
               return;
             }
-            // Check if age is reasonable (between 18 and 120)
+            // Check if age is reasonable
             const age = calculateAge(birthDate);
-            if (!age || age < 18 || age > 120) {
+            if (!age || age < MIN_AGE || age > MAX_AGE) {
               await ctx.reply(errors.invalidAge);
               return;
             }
@@ -529,8 +545,8 @@ export function setupCallbacks(
         return;
       }
 
-      // Check minimum completion (7/12) for other optional fields
-      if (profile.completion_score < 7) {
+      // Check minimum completion for other optional fields
+      if (profile.completion_score < MIN_COMPLETION_THRESHOLD) {
         await ctx.reply(errors.incompleteProfile(profile.completion_score));
         return;
       }
@@ -670,7 +686,7 @@ export function setupCallbacks(
         
         const interestsKeyboard = buildInterestsKeyboard(currentInterests, session.interestsPage);
         const selectedCount = currentInterests.size;
-        const totalPages = Math.ceil(INTERESTS.length / 20);
+        const totalPages = Math.ceil(INTERESTS.length / ITEMS_PER_PAGE);
         await ctx.reply(
           editPrompts.interests(selectedCount, 1, totalPages),
           { reply_markup: interestsKeyboard }
@@ -895,7 +911,7 @@ export function setupCallbacks(
     
     // Update the keyboard to reflect the new selection (stay on same page)
     const locationKeyboard = buildLocationKeyboard(location, currentPage);
-    const totalPages = Math.ceil(IRAN_PROVINCES.length / 20);
+    const totalPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
     const provinceName = PROVINCE_NAMES[location as keyof typeof PROVINCE_NAMES] || location;
     
     try {
@@ -930,7 +946,7 @@ export function setupCallbacks(
     session.locationPage = page;
     
     const locationKeyboard = buildLocationKeyboard(currentLocation, page);
-    const totalPages = Math.ceil(IRAN_PROVINCES.length / 20);
+    const totalPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
     
     try {
       await ctx.editMessageText(

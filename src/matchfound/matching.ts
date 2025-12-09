@@ -1,6 +1,20 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import { archetypeCompatibility, mbtiCompatibility, MIN_INTERESTS, MAX_INTERESTS } from "./constants";
+import {
+  archetypeCompatibility,
+  mbtiCompatibility,
+  MIN_INTERESTS,
+  MAX_INTERESTS,
+  MAX_COMPLETION_SCORE,
+  MIN_COMPLETION_THRESHOLD,
+  MAX_AGE_DIFFERENCE,
+  ARCHETYPE_MATCH_SCORE,
+  MBTI_MATCH_SCORE,
+  MAX_INTERESTS_SCORE,
+  MAX_AGE_BONUS,
+  MAX_COMPLETION_BONUS,
+  MAX_COMPATIBILITY_SCORE,
+} from "./constants";
 import { MatchUser } from "./types";
 import { calculateAge } from "./utils";
 
@@ -45,7 +59,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
   // Get all candidates matching criteria
   const whereClause: Prisma.UserWhereInput = {
     telegram_id: { not: BigInt(userId), notIn: excludedIds },
-    completion_score: { gte: 7 },
+    completion_score: { gte: MIN_COMPLETION_THRESHOLD },
     username: { not: null },
     gender: { not: null },
     birth_date: { not: null },
@@ -63,10 +77,10 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     where: whereClause,
   });
 
-  // Filter by age (max 8 years difference) and calculate compatibility
+  // Filter by age (max MAX_AGE_DIFFERENCE years difference) and calculate compatibility
   const matches: MatchUser[] = [];
-  const minAge = userAge - 8;
-  const maxAge = userAge + 8;
+  const minAge = userAge - MAX_AGE_DIFFERENCE;
+  const maxAge = userAge + MAX_AGE_DIFFERENCE;
 
   for (const candidate of candidates) {
     const candidateAge = calculateAge(candidate.birth_date);
@@ -156,39 +170,38 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     const interestBonus = Math.min(mutualInterestsCount * 0.1, MAX_INTERESTS * 0.1);
     matchPriority = matchPriority - interestBonus;
 
-    // Calculate compatibility percentage (0-100%)
+    // Calculate compatibility percentage (0-MAX_COMPATIBILITY_SCORE%)
     let compatibilityScore = 0;
     
-    // Archetype match: 40%
+    // Archetype match
     if (archetypeMatch) {
-      compatibilityScore += 40;
+      compatibilityScore += ARCHETYPE_MATCH_SCORE;
     }
     
-    // MBTI match: 40%
+    // MBTI match
     if (mbtiMatch) {
-      compatibilityScore += 40;
+      compatibilityScore += MBTI_MATCH_SCORE;
     }
     
-    // Mutual interests: up to 20% (scaled by number of mutual interests, max MAX_INTERESTS)
-    // Formula: (mutualInterestsCount / MAX_INTERESTS) * 20
+    // Mutual interests: up to MAX_INTERESTS_SCORE (scaled by number of mutual interests, max MAX_INTERESTS)
+    // Formula: (mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE
     if (mutualInterestsCount > 0) {
-      const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * 20, 20);
+      const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE, MAX_INTERESTS_SCORE);
       compatibilityScore += interestsScore;
     }
     
-    // Age difference bonus: up to 10% (smaller difference = higher bonus)
-    // Max age difference is 8 years, so 0 years = 10%, 8 years = 0%
+    // Age difference bonus: up to MAX_AGE_BONUS (smaller difference = higher bonus)
+    // Max age difference is MAX_AGE_DIFFERENCE years
     const ageDiff = Math.abs((matchUser.age || 0) - userAge);
-    const ageBonus = Math.max(0, 10 - (ageDiff / 8) * 10);
+    const ageBonus = Math.max(0, MAX_AGE_BONUS - (ageDiff / MAX_AGE_DIFFERENCE) * MAX_AGE_BONUS);
     compatibilityScore += ageBonus;
     
-    // Completion score bonus: up to 10% (higher score = higher bonus)
-    // Max completion is 12, so 12 = 10%, 7 = ~4.2%
-    const completionBonus = Math.min((matchUser.completion_score / 12) * 10, 10);
+    // Completion score bonus: up to MAX_COMPLETION_BONUS (higher score = higher bonus)
+    const completionBonus = Math.min((matchUser.completion_score / MAX_COMPLETION_SCORE) * MAX_COMPLETION_BONUS, MAX_COMPLETION_BONUS);
     compatibilityScore += completionBonus;
     
-    // Cap at 100%
-    compatibilityScore = Math.min(compatibilityScore, 100);
+    // Cap at MAX_COMPATIBILITY_SCORE
+    compatibilityScore = Math.min(compatibilityScore, MAX_COMPATIBILITY_SCORE);
     matchUser.compatibility_score = Math.round(compatibilityScore);
 
     matchUser.match_priority = matchPriority;

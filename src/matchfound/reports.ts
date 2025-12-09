@@ -1,7 +1,7 @@
 import { prisma } from "../db";
 import { Bot } from "grammy";
 import log from "../log";
-import { BOT_NAME } from "./constants";
+import { BOT_NAME, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE } from "./constants";
 import { notifications } from "./strings";
 
 export async function generateDailyReport(): Promise<string> {
@@ -91,11 +91,11 @@ export async function generateDailyReport(): Promise<string> {
     // Total ignored
     const totalIgnored = await prisma.ignored.count();
 
-    // Users with complete profiles (completion_score >= 7)
+    // Users with complete profiles (completion_score >= MIN_COMPLETION_THRESHOLD)
     const completeProfiles = await prisma.user.count({
       where: {
         completion_score: {
-          gte: 7,
+          gte: MIN_COMPLETION_THRESHOLD,
         },
       },
     });
@@ -175,7 +175,7 @@ export function setupDailyReports(
 
 export async function sendProfileReminders(bot: Bot): Promise<void> {
   try {
-    // Find users with incomplete profiles (completion_score < 12)
+    // Find users with incomplete profiles (completion_score < MAX_COMPLETION_SCORE)
     // who haven't updated their profile in the last 3 days
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
@@ -183,7 +183,7 @@ export async function sendProfileReminders(bot: Bot): Promise<void> {
     const usersToRemind = await prisma.user.findMany({
       where: {
         completion_score: {
-          lt: 12,
+          lt: MAX_COMPLETION_SCORE,
         },
         updated_at: {
           lt: threeDaysAgo,
