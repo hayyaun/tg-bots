@@ -31,12 +31,6 @@ export const quizTypes: { [k: string]: { [key in Language]: string } } = {
     [Language.Russian]: "Тест эннеаграммы",
     [Language.Arabic]: "اختبار الإنياجرام",
   },
-  [QuizType.Vision]: {
-    [Language.Persian]: "آزمون ویژن",
-    [Language.English]: "Vision Test",
-    [Language.Russian]: "Тест Видений",
-    [Language.Arabic]: "اختبار الرؤية",
-  },
   [QuizType.BigFive]: {
     [Language.Persian]: "آزمون پنج عامل بزرگ شخصیت",
     [Language.English]: "Big Five Aspects Scale",

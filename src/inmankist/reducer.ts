@@ -9,8 +9,6 @@ import * as mbti from "./mbti";
 import { MBTIType } from "./mbti/types";
 import * as politicalcompass from "./politicalcompass";
 import { Quadrant } from "./politicalcompass/types";
-import * as vision from "./vision";
-import { Vision } from "./vision/types";
 import * as bigfive from "./bigfive";
 import { BigFiveAspect } from "./bigfive/types";
 import { quizModes } from "./config";
@@ -24,7 +22,6 @@ export async function setCustomCommands(bot: Bot) {
   leftright.setCustomCommands(bot);
   politicalcompass.setCustomCommands(bot);
   enneagram.setCustomCommands(bot);
-  vision.setCustomCommands(bot);
   bigfive.setCustomCommands(bot);
 }
 
@@ -44,8 +41,6 @@ export function selectOrder(user: IUserData) {
       return politicalcompass.getSample(user.gender, size, language);
     case QuizType.Enneagram:
       return enneagram.getSample(user.gender, size, language);
-    case QuizType.Vision:
-      return vision.getSample(user.gender, size, language);
     case QuizType.BigFive:
       return bigfive.getSample(user.gender, size, language);
   }
@@ -66,8 +61,6 @@ export function selectQuizQuestion<T>(
       return politicalcompass.getQuestion(user, index) as IQuest<T>;
     case QuizType.Enneagram:
       return enneagram.getQuestion(user, index) as IQuest<T>;
-    case QuizType.Vision:
-      return vision.getQuestion(user, index) as IQuest<T>;
     case QuizType.BigFive:
       return bigfive.getQuestion(user, index) as IQuest<T>;
   }
@@ -92,9 +85,6 @@ export async function replyAbout(ctx: Context, type: QuizType) {
     case QuizType.Enneagram:
       ctx.react("🎉");
       return enneagram.replyAbout(ctx);
-    case QuizType.Vision:
-      ctx.react("⚡");
-      return vision.replyAbout(ctx);
     case QuizType.BigFive:
       ctx.react("🧠");
       return bigfive.replyAbout(ctx);
@@ -113,8 +103,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
       return politicalcompass.replyResult(ctx, user);
     case QuizType.Enneagram:
       return enneagram.replyResult(ctx, user);
-    case QuizType.Vision:
-      return vision.replyResult(ctx, user);
     case QuizType.BigFive:
       return bigfive.replyResult(ctx, user);
   }
@@ -132,8 +120,6 @@ export async function replyDetial(ctx: Context, type: QuizType, item: string) {
       return politicalcompass.replyDetail(ctx, item as Quadrant);
     case QuizType.Enneagram:
       return enneagram.replyDetail(ctx, item as EnneagramType);
-    case QuizType.Vision:
-      return vision.replyDetail(ctx, item as Vision);
     case QuizType.BigFive:
       return bigfive.replyDetail(ctx, item as BigFiveAspect);
   }
