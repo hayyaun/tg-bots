@@ -336,12 +336,7 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
   message += `${fields.lookingFor}: ${lookingForText}\n`;
   message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
   
-  // Show quiz results with instructions if missing
-  const quizResultsSection = buildProfileQuizResultsSection(profile);
-  if (quizResultsSection) {
-    message += `\n${quizResultsSection}\n`;
-  }
-  
+  // Show mood, interests, and location before quiz results
   if (profile.mood) {
     message += `${fields.mood}: ${MOODS[profile.mood] || profile.mood}\n`;
   } else {
@@ -363,7 +358,13 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
     message += `${fields.location}: ${fields.notSet}\n`;
   }
   
-  message += `${fields.completion}: ${profile.completion_score}/${MAX_COMPLETION_SCORE}`;
+  // Show quiz results with instructions if missing
+  const quizResultsSection = buildProfileQuizResultsSection(profile);
+  if (quizResultsSection) {
+    message += `\n${quizResultsSection}\n`;
+  }
+  
+  message += `\n${fields.completion}: ${profile.completion_score}/${MAX_COMPLETION_SCORE}`;
 
   const keyboard = new InlineKeyboard()
     .text(buttons.editName, "profile:edit:name")
