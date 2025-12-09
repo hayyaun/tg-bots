@@ -5,6 +5,7 @@ export enum QuizType {
   PoliticalCompass = "politicalcompass",
   Enneagram = "enneagram",
   Vision = "vision",
+  BigFive = "bigfive",
 }
 
 export enum QuizMode {

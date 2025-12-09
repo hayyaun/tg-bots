@@ -129,6 +129,12 @@ const startBot = async (botKey: string, agent: unknown) => {
           },
         });
         log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
+      } else if (quizType === QuizType.BigFive && typeof result === "object" && result !== null) {
+        // result is object with traits and aspects
+        // For now, just log the result since there's no dedicated field in schema
+        // Could add bigfive_result JSON field to schema in the future
+        log.info(BOT_NAME + " > BigFive result", { userId, result: JSON.stringify(result) });
+        // TODO: Add bigfive_result field to schema if needed for storage
       }
     } catch (err) {
       log.error(BOT_NAME + " > Failed to save quiz result to PostgreSQL", err);

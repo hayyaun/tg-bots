@@ -37,6 +37,12 @@ export const quizTypes: { [k: string]: { [key in Language]: string } } = {
     [Language.Russian]: "Тест Видений",
     [Language.Arabic]: "اختبار الرؤية",
   },
+  [QuizType.BigFive]: {
+    [Language.Persian]: "آزمون پنج عامل بزرگ شخصیت",
+    [Language.English]: "Big Five Aspects Scale",
+    [Language.Russian]: "Шкала Большой Пятерки",
+    [Language.Arabic]: "مقياس العوامل الخمسة الكبرى",
+  },
 };
 
 const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;
