@@ -330,9 +330,9 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
       : fields.notSet;
 
   let message = `${fields.profileTitle}\n\n`;
-  // Show mood emoji in front of display name if available
-  const moodEmoji = profile.mood ? (MOODS[profile.mood] || profile.mood) + " " : "";
-  message += `${fields.name}: ${moodEmoji}${profile.display_name || fields.notSet}\n`;
+  // Show mood emoji after display name if available
+  const moodEmoji = profile.mood ? " " + (MOODS[profile.mood] || profile.mood) : "";
+  message += `${fields.name}: ${profile.display_name || fields.notSet}${moodEmoji}\n`;
   message += `${fields.age}: ${ageText}\n`;
   message += `${fields.genderLabel}: ${genderText}\n`;
   message += `${fields.lookingFor}: ${lookingForText}\n`;
