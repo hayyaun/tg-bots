@@ -18,3 +18,11 @@
 3. User will apply migrations on the server
 
 **READ THIS BEFORE MAKING ANY DATABASE-RELATED SUGGESTIONS!**
+
+## Telegram Reaction Emojis
+
+When using `ctx.react()` in Grammy bots, only the following emojis are allowed:
+
+👍, 👎, ❤, 🔥, 🥰, 👏, 😁, 🤔, 🤯, 😱, 🤬, 😢, 🎉, 🤩, 🤮, 💩, 🙏, 👌, 🕊, 🤡, 🥱, 🥴, 😍, 🐳, ❤‍🔥, 🌚, 🌭, 💯, 🤣, ⚡, 🍌, 🏆, 💔, 🤨, 😐, 🍓, 🍾, 💋, 🖕, 😈, 😴, 😭, 🤓, 👻, 👨‍💻, 👀, 🎃, 🙈, 😇, 😨, 🤝, ✍, 🤗, 🫡, 🎅, 🎄, ☃, 💅, 🤪, 🗿, 🆒, 💘, 🙉, 🦄, 😘, 💊, 🙊, 😎, 👾, 🤷‍♂, 🤷, 🤷‍♀, 😡
+
+**Note:** Always use one of these emojis when calling `ctx.react()` to avoid TypeScript compilation errors.

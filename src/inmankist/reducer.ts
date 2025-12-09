@@ -86,7 +86,7 @@ export async function replyAbout(ctx: Context, type: QuizType) {
       ctx.react("🎉");
       return enneagram.replyAbout(ctx);
     case QuizType.BigFive:
-      ctx.react("🧠");
+      ctx.react("🔥");
       return bigfive.replyAbout(ctx);
   }
 }
