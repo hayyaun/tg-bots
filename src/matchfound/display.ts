@@ -330,18 +330,15 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
       : fields.notSet;
 
   let message = `${fields.profileTitle}\n\n`;
-  message += `${fields.name}: ${profile.display_name || fields.notSet}\n`;
+  // Show mood emoji in front of display name if available
+  const moodEmoji = profile.mood ? (MOODS[profile.mood] || profile.mood) + " " : "";
+  message += `${fields.name}: ${moodEmoji}${profile.display_name || fields.notSet}\n`;
   message += `${fields.age}: ${ageText}\n`;
   message += `${fields.genderLabel}: ${genderText}\n`;
   message += `${fields.lookingFor}: ${lookingForText}\n`;
   message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
   
-  // Show mood, interests, and location before quiz results
-  if (profile.mood) {
-    message += `${fields.mood}: ${MOODS[profile.mood] || profile.mood}\n`;
-  } else {
-    message += `${fields.mood}: ${fields.notSet}\n`;
-  }
+  // Show interests and location before quiz results
   
   if (profile.interests && profile.interests.length > 0) {
     const interestNames = profile.interests
