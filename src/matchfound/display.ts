@@ -15,6 +15,96 @@ import { calculateAge } from "./utils";
 
 type DisplayMode = "match" | "liked";
 
+// Helper function to format BigFive result
+function formatBigFiveResult(bigfiveResult: string | null): string | null {
+  if (!bigfiveResult) return null;
+  try {
+    const data = JSON.parse(bigfiveResult);
+    const topTrait = Object.entries(data.traits || {})
+      .sort(([, a], [, b]) => (b as number) - (a as number))[0];
+    return topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : "ثبت شده";
+  } catch {
+    return "ثبت شده";
+  }
+}
+
+// Helper function to format quiz result text for displayUser
+function formatQuizResultText(
+  result: string | null,
+  label: string,
+  formatter?: (value: string) => string
+): string | null {
+  if (!result) return null;
+  const formatted = formatter ? formatter(result) : result;
+  return `${label}: ${formatted}`;
+}
+
+// Helper function to build quiz results section for displayUser
+function buildQuizResultsSection(user: MatchUser): string {
+  const sections: string[] = [];
+  
+  if (user.archetype_result) {
+    sections.push(`🔮 ${formatQuizResultText(user.archetype_result, "کهن الگو")}`);
+  }
+  if (user.mbti_result) {
+    sections.push(`🧠 ${formatQuizResultText(user.mbti_result, "تست MBTI", (v) => v.toUpperCase())}`);
+  }
+  if (user.leftright_result) {
+    sections.push(`⚖️ ${formatQuizResultText(user.leftright_result, "سبک شناختی")}`);
+  }
+  if (user.politicalcompass_result) {
+    sections.push(`🧭 ${formatQuizResultText(user.politicalcompass_result, "قطب‌نمای سیاسی")}`);
+  }
+  if (user.enneagram_result) {
+    sections.push(`🎯 ${formatQuizResultText(user.enneagram_result, "انیاگرام", (v) => v.replace("type", "تیپ "))}`);
+  }
+  if (user.bigfive_result) {
+    const formatted = formatBigFiveResult(user.bigfive_result);
+    if (formatted) {
+      sections.push(`📊 پنج عامل بزرگ: ${formatted}`);
+    }
+  }
+  
+  return sections.length > 0 ? sections.join("\n") : "";
+}
+
+// Helper function to build quiz results section for displayProfile
+function buildProfileQuizResultsSection(profile: UserProfile): string {
+  const sections: string[] = [];
+  
+  // Required quizzes - always show with instructions if missing
+  if (profile.archetype_result) {
+    sections.push(`${fields.archetype}: ${profile.archetype_result}`);
+  } else {
+    sections.push(`${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}`);
+  }
+  
+  if (profile.mbti_result) {
+    sections.push(`${fields.mbti}: ${profile.mbti_result.toUpperCase()}`);
+  } else {
+    sections.push(`${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}`);
+  }
+  
+  // Optional quizzes - only show if present
+  if (profile.leftright_result) {
+    sections.push(`${fields.leftright}: ${profile.leftright_result}`);
+  }
+  if (profile.politicalcompass_result) {
+    sections.push(`${fields.politicalcompass}: ${profile.politicalcompass_result}`);
+  }
+  if (profile.enneagram_result) {
+    sections.push(`${fields.enneagram}: ${profile.enneagram_result.replace("type", "تیپ ")}`);
+  }
+  if (profile.bigfive_result) {
+    const formatted = formatBigFiveResult(profile.bigfive_result);
+    if (formatted) {
+      sections.push(`${fields.bigfive}: ${formatted}`);
+    }
+  }
+  
+  return sections.join("\n");
+}
+
 // Helper function to calculate compatibility score between two users
 function calculateCompatibilityScore(
   currentUser: UserProfile,
@@ -107,33 +197,6 @@ export async function displayUser(
   const ageText = user.age ? `${user.age} سال` : display.unknownAge;
   const nameText = user.display_name || display.noName;
   const bioText = user.biography || display.noBio;
-  const archetypeText = user.archetype_result
-    ? `کهن الگو: ${user.archetype_result}`
-    : display.archetypeNotSet;
-  const mbtiText = user.mbti_result
-    ? `تست MBTI: ${user.mbti_result.toUpperCase()}`
-    : display.mbtiNotSet;
-  const leftrightText = user.leftright_result
-    ? `سبک شناختی: ${user.leftright_result}`
-    : display.leftrightNotSet;
-  const politicalcompassText = user.politicalcompass_result
-    ? `قطب‌نمای سیاسی: ${user.politicalcompass_result}`
-    : display.politicalcompassNotSet;
-  const enneagramText = user.enneagram_result
-    ? `انیاگرام: ${user.enneagram_result.replace("type", "تیپ ")}`
-    : display.enneagramNotSet;
-  const bigfiveText = user.bigfive_result
-    ? (() => {
-        try {
-          const data = JSON.parse(user.bigfive_result);
-          const topTrait = Object.entries(data.traits || {})
-            .sort(([, a]: [string, any], [, b]: [string, any]) => (b as number) - (a as number))[0];
-          return topTrait ? `پنج عامل بزرگ: ${topTrait[0]}: ${topTrait[1]}%` : "پنج عامل بزرگ: ثبت شده";
-        } catch {
-          return "پنج عامل بزرگ: ثبت شده";
-        }
-      })()
-    : display.bigfiveNotSet;
 
   // Calculate or use compatibility score
   let compatibilityScore = user.compatibility_score;
@@ -147,15 +210,14 @@ export async function displayUser(
       ? `\n💯 سازگاری: ${compatibilityScore}%`
       : "";
 
+  const quizResultsSection = buildQuizResultsSection(user);
+  
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}${compatibilityText}\n\n`;
-  message += `📝 ${bioText}\n\n`;
-  message += `🔮 ${archetypeText}\n`;
-  message += `🧠 ${mbtiText}\n`;
-  message += `⚖️ ${leftrightText}\n`;
-  message += `🧭 ${politicalcompassText}\n`;
-  message += `🎯 ${enneagramText}\n`;
-  message += `📊 ${bigfiveText}`;
+  message += `📝 ${bioText}\n`;
+  if (quizResultsSection) {
+    message += `\n${quizResultsSection}`;
+  }
   if (user.mood) {
     message += `\n😊 مود: ${MOODS[user.mood] || user.mood}`;
   }
@@ -266,48 +328,9 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
   message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
   
   // Show quiz results with instructions if missing
-  if (profile.archetype_result) {
-    message += `${fields.archetype}: ${profile.archetype_result}\n`;
-  } else {
-    message += `${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}\n`;
-  }
-  
-  if (profile.mbti_result) {
-    message += `${fields.mbti}: ${profile.mbti_result.toUpperCase()}\n`;
-  } else {
-    message += `${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}\n`;
-  }
-  
-  if (profile.leftright_result) {
-    message += `${fields.leftright}: ${profile.leftright_result}\n`;
-  } else {
-    message += `${fields.leftright}: ${fields.notSet}\n`;
-  }
-  
-  if (profile.politicalcompass_result) {
-    message += `${fields.politicalcompass}: ${profile.politicalcompass_result}\n`;
-  } else {
-    message += `${fields.politicalcompass}: ${fields.notSet}\n`;
-  }
-  
-  if (profile.enneagram_result) {
-    message += `${fields.enneagram}: ${profile.enneagram_result.replace("type", "تیپ ")}\n`;
-  } else {
-    message += `${fields.enneagram}: ${fields.notSet}\n`;
-  }
-  
-  if (profile.bigfive_result) {
-    try {
-      const data = JSON.parse(profile.bigfive_result);
-      const topTrait = Object.entries(data.traits || {})
-        .sort(([, a]: [string, any], [, b]: [string, any]) => (b as number) - (a as number))[0];
-      const displayValue = topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : "ثبت شده";
-      message += `${fields.bigfive}: ${displayValue}\n`;
-    } catch {
-      message += `${fields.bigfive}: ثبت شده\n`;
-    }
-  } else {
-    message += `${fields.bigfive}: ${fields.notSet}\n`;
+  const quizResultsSection = buildProfileQuizResultsSection(profile);
+  if (quizResultsSection) {
+    message += `\n${quizResultsSection}\n`;
   }
   
   if (profile.mood) {
@@ -349,10 +372,8 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
     .text(buttons.editInterests, "profile:edit:interests")
     .text(buttons.editLocation, "profile:edit:location");
   
-  // Add quiz button if quizzes are missing
-  if (!profile.archetype_result || !profile.mbti_result) {
-    keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
-  }
+  // Always show quiz button to allow users to take/retake quizzes
+  keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
   // Send photo if available - attach text as caption
   if (profile.profile_image) {
