@@ -13,7 +13,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES, IRAN_PROVINCES, PROVINCE_NAMES } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MOODS, INTERESTS, INTEREST_NAMES, IRAN_PROVINCES, PROVINCE_NAMES, MIN_INTERESTS, MAX_INTERESTS } from "./constants";
 import {
   errors,
   success,
@@ -519,7 +519,7 @@ export function setupCallbacks(
       if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
       
       // Check interests separately to show specific count
-      if (!profile.interests || profile.interests.length < 3) {
+      if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
         await ctx.reply(errors.minInterestsNotMet(profile.interests?.length || 0));
         return;
       }
@@ -786,15 +786,15 @@ export function setupCallbacks(
     
     // Toggle interest
     if (currentInterests.has(interest)) {
-      // Check if removing would go below minimum of 3
-      if (currentInterests.size <= 3) {
+      // Check if removing would go below minimum
+      if (currentInterests.size <= MIN_INTERESTS) {
         await ctx.answerCallbackQuery(errors.minInterestsRequired);
         return;
       }
       currentInterests.delete(interest);
     } else {
-      // Check if user already has 7 interests (maximum allowed)
-      if (currentInterests.size >= 7) {
+      // Check if user already has maximum interests
+      if (currentInterests.size >= MAX_INTERESTS) {
         await ctx.answerCallbackQuery(errors.maxInterestsReached);
         return;
       }
@@ -814,7 +814,7 @@ export function setupCallbacks(
     const totalPages = Math.ceil(INTERESTS.length / 20);
     
     // If in profile completion mode and minimum interests met, add continue button
-    if (session.completingProfile && selectedCount >= 3) {
+    if (session.completingProfile && selectedCount >= MIN_INTERESTS) {
       interestsKeyboard.row();
       interestsKeyboard.text(`✅ ادامه (${selectedCount} علاقه انتخاب شده)`, "profile:completion:continue");
     }
@@ -960,7 +960,7 @@ export function setupCallbacks(
     
     // Verify minimum interests are met
     const profile = await getUserProfile(userId);
-    if (!profile || !profile.interests || profile.interests.length < 3) {
+    if (!profile || !profile.interests || profile.interests.length < MIN_INTERESTS) {
       await ctx.reply(errors.minInterestsNotMet(profile?.interests?.length || 0));
       return;
     }

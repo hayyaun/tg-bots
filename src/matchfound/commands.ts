@@ -7,7 +7,7 @@ import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser, UserProfile } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS } from "./constants";
 import {
   getWelcomeMessage,
   errors,
@@ -47,7 +47,7 @@ function getMissingRequiredFields(profile: UserProfile | null): RequiredField[] 
   
   for (const field of REQUIRED_FIELDS) {
     if (field.key === "interests") {
-      if (!profile.interests || profile.interests.length < 3) {
+      if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
         missing.push(field);
       }
     } else if (!profile[field.key]) {
@@ -95,7 +95,7 @@ export async function continueProfileCompletion(
   for (let i = currentFieldIndex + 1; i < REQUIRED_FIELDS.length; i++) {
     const field = REQUIRED_FIELDS[i];
     const isMissing = field.key === "interests" 
-      ? !profile.interests || profile.interests.length < 3
+      ? !profile.interests || profile.interests.length < MIN_INTERESTS
       : !profile[field.key];
     
     if (isMissing) {
@@ -329,7 +329,7 @@ export function setupCommands(
       if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
       
       // Check interests separately to show specific count
-      if (!profile.interests || profile.interests.length < 3) {
+      if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
         await ctx.reply(errors.minInterestsNotMet(profile.interests?.length || 0));
         return;
       }

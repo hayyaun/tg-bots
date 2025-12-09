@@ -6,6 +6,7 @@ import {
   INTEREST_NAMES,
   MOODS,
   PROVINCE_NAMES,
+  MAX_INTERESTS,
   archetypeCompatibility,
   mbtiCompatibility,
 } from "./constants";
@@ -164,9 +165,9 @@ function calculateCompatibilityScore(
     compatibilityScore += 40;
   }
 
-  // Mutual interests: up to 20% (scaled by number of mutual interests, max 7)
+  // Mutual interests: up to 20% (scaled by number of mutual interests, max MAX_INTERESTS)
   if (mutualInterestsCount > 0) {
-    const interestsScore = Math.min((mutualInterestsCount / 7) * 20, 20);
+    const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * 20, 20);
     compatibilityScore += interestsScore;
   }
 

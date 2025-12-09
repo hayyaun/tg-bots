@@ -45,6 +45,10 @@ export const BOT_NAME = "MatchFound";
 // Inmankist bot username (for quiz completion links)
 export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inmankist_bot";
 
+// Interests limits
+export const MIN_INTERESTS = 5;
+export const MAX_INTERESTS = 15;
+
 // Mood emojis for profile mood feature
 export const MOODS: Record<string, string> = {
   happy: "😊",

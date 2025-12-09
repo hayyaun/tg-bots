@@ -100,7 +100,7 @@ export async function generateDailyReport(): Promise<string> {
       },
     });
 
-    // Users with interests (3-7 interests)
+    // Users with interests (MIN_INTERESTS-MAX_INTERESTS interests)
     const usersWithInterests = await prisma.user.count({
       where: {
         interests: {

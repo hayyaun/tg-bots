@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import { archetypeCompatibility, mbtiCompatibility } from "./constants";
+import { archetypeCompatibility, mbtiCompatibility, MIN_INTERESTS, MAX_INTERESTS } from "./constants";
 import { MatchUser } from "./types";
 import { calculateAge } from "./utils";
 
@@ -74,8 +74,8 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
       continue;
     }
 
-    // Skip candidates without at least 3 interests
-    if (!candidate.interests || candidate.interests.length < 3) {
+    // Skip candidates without at least MIN_INTERESTS
+    if (!candidate.interests || candidate.interests.length < MIN_INTERESTS) {
       continue;
     }
 
@@ -152,8 +152,8 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
     }
 
     // Adjust priority based on mutual interests (reduce priority number for more interests)
-    // Increased weight: Each mutual interest reduces priority by 0.15 (max reduction of 1.05 for 7 interests)
-    const interestBonus = Math.min(mutualInterestsCount * 0.15, 1.05);
+    // Increased weight: Each mutual interest reduces priority by 0.1 (max reduction for MAX_INTERESTS)
+    const interestBonus = Math.min(mutualInterestsCount * 0.1, MAX_INTERESTS * 0.1);
     matchPriority = matchPriority - interestBonus;
 
     // Calculate compatibility percentage (0-100%)
@@ -169,10 +169,10 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
       compatibilityScore += 40;
     }
     
-    // Mutual interests: up to 20% (scaled by number of mutual interests, max 7)
-    // Formula: (mutualInterestsCount / 7) * 20
+    // Mutual interests: up to 20% (scaled by number of mutual interests, max MAX_INTERESTS)
+    // Formula: (mutualInterestsCount / MAX_INTERESTS) * 20
     if (mutualInterestsCount > 0) {
-      const interestsScore = Math.min((mutualInterestsCount / 7) * 20, 20);
+      const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * 20, 20);
       compatibilityScore += interestsScore;
     }
     
