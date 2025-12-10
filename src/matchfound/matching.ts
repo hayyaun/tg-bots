@@ -18,20 +18,42 @@ import {
 import { MatchUser } from "./types";
 import { calculateAge } from "./utils";
 
-export async function findMatches(userId: number): Promise<MatchUser[]> {
-  const { getUserProfile } = await import("./database");
-  const user = await getUserProfile(userId);
+export async function findMatches(userId: number | bigint): Promise<MatchUser[]> {
+  const { getUserProfile, getUserProfileById } = await import("./database");
+  
+  // userId can be either telegram_id (number) or id (bigint)
+  // First, find the user to get their id
+  let user;
+  let userIdBigInt: bigint;
+  
+  if (typeof userId === "bigint") {
+    // Already an id
+    userIdBigInt = userId;
+    user = await getUserProfileById(userId);
+  } else {
+    // telegram_id - find user first
+    user = await getUserProfile(userId);
+    if (!user) return [];
+    // Get the actual user record to get the id
+    const userRecord = await prisma.user.findUnique({
+      where: { telegram_id: BigInt(userId) },
+      select: { id: true },
+    });
+    if (!userRecord) return [];
+    userIdBigInt = userRecord.id;
+  }
+  
   if (!user || !user.gender || !user.looking_for_gender) return [];
 
   const userAge = calculateAge(user.birth_date);
   if (!userAge) return [];
 
   // Get all excluded user IDs
-  const excludedIds: bigint[] = [BigInt(userId)];
+  const excludedIds: bigint[] = [userIdBigInt];
 
   // Get users already liked
   const likes = await prisma.like.findMany({
-    where: { user_id: BigInt(userId) },
+    where: { user_id: userIdBigInt },
     select: { liked_user_id: true },
   });
   likes.forEach((like: { liked_user_id: bigint }) =>
@@ -40,7 +62,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
 
   // Get users who ignored this user
   const ignoredBy = await prisma.ignored.findMany({
-    where: { ignored_user_id: BigInt(userId) },
+    where: { ignored_user_id: userIdBigInt },
     select: { user_id: true },
   });
   ignoredBy.forEach((ignored: { user_id: bigint }) =>
@@ -49,7 +71,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
 
   // Get users this user has ignored
   const ignoredByUser = await prisma.ignored.findMany({
-    where: { user_id: BigInt(userId) },
+    where: { user_id: userIdBigInt },
     select: { ignored_user_id: true },
   });
   ignoredByUser.forEach((ignored: { ignored_user_id: bigint }) =>
@@ -58,7 +80,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
 
   // Get all candidates matching criteria
   const whereClause: Prisma.UserWhereInput = {
-    telegram_id: { not: BigInt(userId), notIn: excludedIds },
+    id: { not: userIdBigInt, notIn: excludedIds },
     completion_score: { gte: MIN_COMPLETION_THRESHOLD },
     username: { not: null },
     gender: { not: null },
@@ -95,7 +117,7 @@ export async function findMatches(userId: number): Promise<MatchUser[]> {
 
     const matchUser: MatchUser = {
       ...candidate,
-      telegram_id: Number(candidate.telegram_id),
+      telegram_id: candidate.telegram_id ? Number(candidate.telegram_id) : 0,
       birth_date: candidate.birth_date || null,
       created_at: candidate.created_at,
       updated_at: candidate.updated_at,

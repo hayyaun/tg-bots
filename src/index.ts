@@ -9,6 +9,7 @@ import matchfound from "./matchfound";
 import log from "./log";
 import { connectRedis } from "./redis";
 import { connectDB } from "./db";
+import { startAPIServer } from "./matchfound/api/server";
 
 configDotenv();
 
@@ -137,6 +138,17 @@ process.on("uncaughtException", (error) => log.error("Uncaught Exception", error
     await connectDB();
     socksAgent = process.env.PROXY ? new SocksProxyAgent(process.env.PROXY) : undefined;
     await startAllBots();
+    
+    // Start API server if MATCHFOUND_BOT_KEY is set (API is part of matchfound)
+    if (process.env.MATCHFOUND_BOT_KEY) {
+      try {
+        await startAPIServer();
+      } catch (apiError) {
+        log.error("Failed to start API server", apiError);
+        // Don't exit - bots can still run without API
+      }
+    }
+    
     log.info("Application initialized successfully");
   } catch (error) {
     log.error("Failed to initialize application", error);

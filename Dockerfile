@@ -59,8 +59,8 @@ RUN npm run build
 # Set environment variables (if needed)
 ENV NODE_ENV=production
 
-# Expose port if necessary
-# EXPOSE 3000
+# Expose API port
+EXPOSE 3000
 
 # Command to apply migrations and start the bot
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

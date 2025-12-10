@@ -1,5 +1,5 @@
 export interface UserProfile {
-  telegram_id: number;
+  telegram_id: number | null;
   username: string | null;
   display_name: string | null;
   biography: string | null;

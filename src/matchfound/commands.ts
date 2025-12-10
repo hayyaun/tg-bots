@@ -1,6 +1,6 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
-import { getUserProfile, ensureUserExists, updateCompletionScore } from "./database";
+import { getUserProfile, ensureUserExists, updateCompletionScore, getUserIdFromTelegramId } from "./database";
 import { findMatches } from "./matching";
 import { displayUser, displayProfile } from "./display";
 import { getSession } from "./session";
@@ -389,15 +389,22 @@ export function setupCommands(
     if (!userId) return;
 
     try {
+      // Get user id from telegram_id
+      const userIdBigInt = await getUserIdFromTelegramId(userId);
+      if (!userIdBigInt) {
+        await ctx.reply(errors.userNotFound);
+        return;
+      }
+
       // Get users who liked this user (and not ignored)
       // Get users who liked this user, excluding ignored ones
       const likes = await prisma.like.findMany({
         where: {
-          liked_user_id: BigInt(userId),
+          liked_user_id: userIdBigInt,
           user: {
             ignoredReceived: {
               none: {
-                user_id: BigInt(userId),
+                user_id: userIdBigInt,
               },
             },
           },
@@ -412,7 +419,7 @@ export function setupCommands(
 
       // Filter out users that this user has ignored
       const ignoredByUser = await prisma.ignored.findMany({
-        where: { user_id: BigInt(userId) },
+        where: { user_id: userIdBigInt },
         select: { ignored_user_id: true },
       });
       const ignoredIds = new Set(ignoredByUser.map((i: { ignored_user_id: bigint }) => i.ignored_user_id));

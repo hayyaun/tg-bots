@@ -1,18 +1,38 @@
 import { prisma } from "../db";
 import { UserProfile } from "./types";
 
-export async function getUserProfile(
-  userId: number
+// Get user profile by id (new primary key)
+export async function getUserProfileById(
+  userId: bigint
 ): Promise<UserProfile | null> {
   const user = await prisma.user.findUnique({
-    where: { telegram_id: BigInt(userId) },
+    where: { id: userId },
   });
   if (!user) return null;
   
   // Convert BigInt to number and Date to Date
   return {
     ...user,
-    telegram_id: Number(user.telegram_id),
+    telegram_id: user.telegram_id ? Number(user.telegram_id) : null,
+    birth_date: user.birth_date || null,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  } as UserProfile;
+}
+
+// Get user profile by telegram_id (for backward compatibility with bot)
+export async function getUserProfile(
+  telegramUserId: number
+): Promise<UserProfile | null> {
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+  });
+  if (!user) return null;
+  
+  // Convert BigInt to number and Date to Date
+  return {
+    ...user,
+    telegram_id: user.telegram_id ? Number(user.telegram_id) : null,
     birth_date: user.birth_date || null,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -20,9 +40,8 @@ export async function getUserProfile(
 }
 
 export async function calculateCompletionScore(
-  userId: number
+  profile: UserProfile | null
 ): Promise<number> {
-  const profile = await getUserProfile(userId);
   if (!profile) return 0;
 
   let score = 0;
@@ -42,12 +61,29 @@ export async function calculateCompletionScore(
   return score;
 }
 
-export async function updateCompletionScore(userId: number): Promise<void> {
-  const score = await calculateCompletionScore(userId);
+// Update completion score by id
+export async function updateCompletionScoreById(userId: bigint): Promise<void> {
+  const profile = await getUserProfileById(userId);
+  const score = await calculateCompletionScore(profile);
   await prisma.user.update({
-    where: { telegram_id: BigInt(userId) },
+    where: { id: userId },
     data: { completion_score: score },
   });
+}
+
+// Update completion score by telegram_id (for backward compatibility)
+export async function updateCompletionScore(telegramUserId: number): Promise<void> {
+  const profile = await getUserProfile(telegramUserId);
+  const score = await calculateCompletionScore(profile);
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+  });
+  if (user) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { completion_score: score },
+    });
+  }
 }
 
 // Helper function to get display name from Telegram user
@@ -56,33 +92,40 @@ function getDisplayName(firstName?: string, lastName?: string): string | null {
   return name || null;
 }
 
+// Helper function to get user id from telegram_id
+export async function getUserIdFromTelegramId(telegramUserId: number): Promise<bigint | null> {
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+    select: { id: true },
+  });
+  return user?.id || null;
+}
+
 export async function ensureUserExists(
-  userId: number,
+  telegramUserId: number,
   username?: string,
   onNewUser?: (userId: number, username?: string) => Promise<void>,
   firstName?: string,
   lastName?: string
 ): Promise<void> {
   const existing = await prisma.user.findUnique({
-    where: { telegram_id: BigInt(userId) },
+    where: { telegram_id: BigInt(telegramUserId) },
   });
 
   const displayName = getDisplayName(firstName, lastName);
 
   if (!existing) {
-    await prisma.user.upsert({
-      where: { telegram_id: BigInt(userId) },
-      create: {
-        telegram_id: BigInt(userId),
+    const newUser = await prisma.user.create({
+      data: {
+        telegram_id: BigInt(telegramUserId),
         username: username || null,
         display_name: displayName,
       },
-      update: {},
     });
-    await updateCompletionScore(userId);
+    await updateCompletionScoreById(newUser.id);
 
     if (onNewUser) {
-      await onNewUser(userId, username);
+      await onNewUser(telegramUserId, username);
     }
   } else {
     // Update username if provided and different
@@ -100,64 +143,80 @@ export async function ensureUserExists(
     
     if (Object.keys(updates).length > 0) {
       await prisma.user.update({
-        where: { telegram_id: BigInt(userId) },
+        where: { id: existing.id },
         data: updates,
       });
-      await updateCompletionScore(userId);
+      await updateCompletionScoreById(existing.id);
     }
   }
 }
 
+// Update user field by telegram_id (for backward compatibility with bot)
 export async function updateUserField(
-  userId: number,
+  telegramUserId: number,
   field: keyof UserProfile,
   value: unknown
 ): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+  });
+  if (!user) return;
+
   // Map TypeScript field names to Prisma field names (they should match, but handle any differences)
   const data: Record<string, unknown> = { [field]: value };
   
   await prisma.user.update({
-    where: { telegram_id: BigInt(userId) },
+    where: { id: user.id },
     data,
   });
-  await updateCompletionScore(userId);
+  await updateCompletionScoreById(user.id);
 }
 
 export async function addProfileImage(
-  userId: number,
+  telegramUserId: number,
   fileId: string
 ): Promise<void> {
-  const profile = await getUserProfile(userId);
-  if (!profile) return;
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+  });
+  if (!user) return;
 
   // Only allow 1 picture per profile - replace existing image
   await prisma.user.update({
-    where: { telegram_id: BigInt(userId) },
+    where: { id: user.id },
     data: { profile_image: fileId },
   });
-  await updateCompletionScore(userId);
+  await updateCompletionScoreById(user.id);
 }
 
 export async function removeProfileImage(
-  userId: number,
+  telegramUserId: number,
   fileId: string
 ): Promise<void> {
-  const profile = await getUserProfile(userId);
-  if (!profile) return;
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+    select: { id: true, profile_image: true },
+  });
+  if (!user) return;
 
   // Remove image if it matches (though with single image, this just clears it)
-  if (profile.profile_image === fileId) {
+  if (user.profile_image === fileId) {
     await prisma.user.update({
-      where: { telegram_id: BigInt(userId) },
+      where: { id: user.id },
       data: { profile_image: null },
     });
-    await updateCompletionScore(userId);
+    await updateCompletionScoreById(user.id);
   }
 }
 
-export async function deleteUserData(userId: number): Promise<void> {
+export async function deleteUserData(telegramUserId: number): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { telegram_id: BigInt(telegramUserId) },
+  });
+  if (!user) return;
+
   // Delete user and all related data (cascade deletes will handle related records)
   await prisma.user.delete({
-    where: { telegram_id: BigInt(userId) },
+    where: { id: user.id },
   });
 }

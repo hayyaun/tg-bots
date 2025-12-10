@@ -39,6 +39,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://tgbots:tgbots@postgres:5432/tgbots
+    ports:
+      - "6520:${MATCHFOUND_API_PORT:-3000}"
 
 volumes:
   redis-data:

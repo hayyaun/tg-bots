@@ -7,6 +7,7 @@ import {
   addProfileImage,
   removeProfileImage,
   deleteUserData,
+  getUserIdFromTelegramId,
 } from "./database";
 import { displayUser, displayProfile } from "./display";
 import { getSession } from "./session";
@@ -153,17 +154,26 @@ export function setupCallbacks(
     }
 
     try {
+      // Get user ids from telegram_ids
+      const userIdBigInt = await getUserIdFromTelegramId(userId);
+      const likedUserIdBigInt = await getUserIdFromTelegramId(likedUserId);
+      
+      if (!userIdBigInt || !likedUserIdBigInt) {
+        await ctx.answerCallbackQuery(errors.userNotFound);
+        return;
+      }
+
       // Add like
       await prisma.like.upsert({
         where: {
           user_id_liked_user_id: {
-            user_id: BigInt(userId),
-            liked_user_id: BigInt(likedUserId),
+            user_id: userIdBigInt,
+            liked_user_id: likedUserIdBigInt,
           },
         },
         create: {
-          user_id: BigInt(userId),
-          liked_user_id: BigInt(likedUserId),
+          user_id: userIdBigInt,
+          liked_user_id: likedUserIdBigInt,
         },
         update: {},
       });
@@ -172,8 +182,8 @@ export function setupCallbacks(
       const mutualLike = await prisma.like.findUnique({
         where: {
           user_id_liked_user_id: {
-            user_id: BigInt(likedUserId),
-            liked_user_id: BigInt(userId),
+            user_id: likedUserIdBigInt,
+            liked_user_id: userIdBigInt,
           },
         },
       });
@@ -284,16 +294,25 @@ export function setupCallbacks(
 
     const likedUserId = parseInt(ctx.match[1]);
     try {
+      // Get user ids from telegram_ids
+      const userIdBigInt = await getUserIdFromTelegramId(userId);
+      const likedUserIdBigInt = await getUserIdFromTelegramId(likedUserId);
+      
+      if (!userIdBigInt || !likedUserIdBigInt) {
+        await ctx.answerCallbackQuery(errors.userNotFound);
+        return;
+      }
+
       await prisma.ignored.upsert({
         where: {
           user_id_ignored_user_id: {
-            user_id: BigInt(userId),
-            ignored_user_id: BigInt(likedUserId),
+            user_id: userIdBigInt,
+            ignored_user_id: likedUserIdBigInt,
           },
         },
         create: {
-          user_id: BigInt(userId),
-          ignored_user_id: BigInt(likedUserId),
+          user_id: userIdBigInt,
+          ignored_user_id: likedUserIdBigInt,
         },
         update: {},
       });
@@ -356,10 +375,20 @@ export function setupCallbacks(
       }
 
       try {
+        // Get user ids from telegram_ids
+        const userIdBigInt = await getUserIdFromTelegramId(userId);
+        const reportedUserIdBigInt = await getUserIdFromTelegramId(reportedUserId);
+        
+        if (!userIdBigInt || !reportedUserIdBigInt) {
+          await ctx.reply(errors.userNotFound);
+          delete session.reportingUserId;
+          return;
+        }
+
         await prisma.report.create({
           data: {
-            reporter_id: BigInt(userId),
-            reported_user_id: BigInt(reportedUserId),
+            reporter_id: userIdBigInt,
+            reported_user_id: reportedUserIdBigInt,
             reason,
           },
         });
