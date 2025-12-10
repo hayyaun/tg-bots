@@ -387,8 +387,18 @@ const startBot = async (botKey: string, agent: unknown) => {
       await saveQuizResultToDB(userId, user.quiz, result, ctx.from);
 
       // Notify admin about quiz completion
+      // Format result for display (stringify objects/arrays)
+      let resultDisplay: string;
+      if (typeof result === "object" && result !== null) {
+        resultDisplay = JSON.stringify(result);
+      } else if (Array.isArray(result)) {
+        resultDisplay = JSON.stringify(result);
+      } else {
+        resultDisplay = String(result);
+      }
+      
       notifyAdmin(
-        `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${result}`
+        `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${resultDisplay}`
       );
 
       // Ask user if they want to connect with people of their type
