@@ -21,6 +21,43 @@ passport.use(
         const email = profile.emails?.[0]?.value || null;
         const displayName = profile.displayName || null;
         const photo = profile.photos?.[0]?.value || null;
+        
+        // Try to get birthdate from Google People API
+        let birthDate: Date | null = null;
+        if (accessToken) {
+          try {
+            // Fetch birthday from Google People API
+            const peopleApiResponse = await fetch(
+              "https://people.googleapis.com/v1/people/me?personFields=birthdays",
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              }
+            );
+            
+            if (peopleApiResponse.ok) {
+              const peopleData = await peopleApiResponse.json();
+              const birthdays = peopleData?.birthdays;
+              
+              if (birthdays && birthdays.length > 0) {
+                // Get the first birthday (most users have one)
+                const birthday = birthdays[0];
+                if (birthday.date) {
+                  const date = birthday.date;
+                  // Google provides: {year: 1990, month: 1, day: 15}
+                  // Note: year might be missing for privacy, month/day are 1-indexed
+                  if (date.year && date.month && date.day) {
+                    birthDate = new Date(date.year, date.month - 1, date.day);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            // Silently fail - birthday might not be available or user hasn't granted permission
+            log.debug("Could not fetch birthday from Google People API", { error: err });
+          }
+        }
 
         // Find or create user
         let user = await prisma.user.findUnique({
@@ -37,14 +74,27 @@ passport.use(
 
           if (user) {
             // Link Google account to existing user
+            // Only update birth_date if user doesn't have one (don't overwrite existing)
+            const updateData: {
+              google_id: string;
+              email: string | null;
+              display_name: string | null;
+              profile_image: string | null;
+              birth_date?: Date;
+            } = {
+              google_id: googleId,
+              email: email || user.email,
+              display_name: user.display_name || displayName,
+              profile_image: user.profile_image || photo,
+            };
+            
+            if (birthDate && !user.birth_date) {
+              updateData.birth_date = birthDate;
+            }
+            
             user = await prisma.user.update({
               where: { id: user.id },
-              data: {
-                google_id: googleId,
-                email: email || user.email,
-                display_name: user.display_name || displayName,
-                profile_image: user.profile_image || photo,
-              },
+              data: updateData,
             });
           } else {
             // Create new user
@@ -54,18 +104,31 @@ passport.use(
                 email,
                 display_name: displayName,
                 profile_image: photo,
+                birth_date: birthDate,
               },
             });
           }
         } else {
           // Update existing user info
+          // Only update birth_date if user doesn't have one (don't overwrite existing)
+          const updateData: {
+            email: string | null;
+            display_name: string | null;
+            profile_image: string | null;
+            birth_date?: Date;
+          } = {
+            email: email || user.email,
+            display_name: user.display_name || displayName,
+            profile_image: user.profile_image || photo,
+          };
+          
+          if (birthDate && !user.birth_date) {
+            updateData.birth_date = birthDate;
+          }
+          
           user = await prisma.user.update({
             where: { id: user.id },
-            data: {
-              email: email || user.email,
-              display_name: user.display_name || displayName,
-              profile_image: user.profile_image || photo,
-            },
+            data: updateData,
           });
         }
 

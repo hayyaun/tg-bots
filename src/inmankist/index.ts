@@ -27,7 +27,14 @@ import {
   selectQuizQuestion,
   setCustomCommands,
 } from "./reducer";
-import { Gender, IUserData, Language, QuizMode, QuizType, Value } from "./types";
+import {
+  Gender,
+  IUserData,
+  Language,
+  QuizMode,
+  QuizType,
+  Value,
+} from "./types";
 import {
   getUserData,
   setUserData,
@@ -66,133 +73,159 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Helper function to handle expired/missing user data
   async function handleExpiredSession(ctx: Context): Promise<void> {
     await ctx.answerCallbackQuery("❌ جلسه منقضی شده است").catch(() => {});
-    await ctx.reply("❌ جلسه شما منقضی شده است. لطفا دوباره با دستور /start شروع کنید.").catch(() => {});
+    await ctx
+      .reply(
+        "❌ جلسه شما منقضی شده است. لطفا دوباره با دستور /start شروع کنید."
+      )
+      .catch(() => {});
   }
 
   // Helper function to get display name from Telegram user
-  function getDisplayName(from: { first_name?: string; last_name?: string } | undefined): string | null {
+  function getDisplayName(
+    from: { first_name?: string; last_name?: string } | undefined
+  ): string | null {
     if (!from) return null;
     const name = `${from.first_name || ""} ${from.last_name || ""}`.trim();
     return name || null;
   }
+
+  // Extract and process quiz result based on type
+  type QuizResultValue = string | null;
+
+  function extractQuizResult(
+    quizType: QuizType,
+    result: unknown
+  ): QuizResultValue {
+    switch (quizType) {
+      case QuizType.Archetype:
+        if (Array.isArray(result) && result.length > 0) {
+          // result is array of [Deity, number] tuples, get primary archetype
+          return result[0][0] as string;
+        }
+        return null;
+
+      case QuizType.MBTI:
+        if (typeof result === "string") {
+          return result.toUpperCase();
+        }
+        return null;
+
+      case QuizType.LeftRight:
+        if (typeof result === "string") {
+          return result;
+        }
+        return null;
+
+      case QuizType.PoliticalCompass:
+        if (
+          typeof result === "object" &&
+          result !== null &&
+          "quadrant" in result
+        ) {
+          // result is object with quadrant, economicScore, socialScore - store just quadrant
+          return (result as { quadrant: string }).quadrant;
+        }
+        return null;
+
+      case QuizType.Enneagram:
+        if (Array.isArray(result) && result.length > 0) {
+          // result is array of [EnneagramType, number] tuples, get primary type
+          return result[0][0] as string;
+        }
+        return null;
+
+      case QuizType.BigFive:
+        if (typeof result === "object" && result !== null) {
+          // result is object with traits and aspects - store as JSON string
+          return JSON.stringify(result);
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  }
+
+  // Map quiz types to database field names
+  const QUIZ_FIELD_MAP: Record<QuizType, string> = {
+    [QuizType.Archetype]: "archetype_result",
+    [QuizType.MBTI]: "mbti_result",
+    [QuizType.LeftRight]: "leftright_result",
+    [QuizType.PoliticalCompass]: "politicalcompass_result",
+    [QuizType.Enneagram]: "enneagram_result",
+    [QuizType.BigFive]: "bigfive_result",
+  } as const;
 
   // Save quiz result to PostgreSQL
   async function saveQuizResultToDB(
     userId: number,
     quizType: QuizType,
     result: unknown,
-    from?: { first_name?: string; last_name?: string }
+    from?: { first_name?: string; last_name?: string; username?: string }
   ): Promise<void> {
     try {
+      const resultValue = extractQuizResult(quizType, result);
+      if (resultValue === null) {
+        log.warn(BOT_NAME + " > Invalid quiz result format", {
+          userId,
+          quizType,
+          result,
+        });
+        return;
+      }
+
       const displayName = getDisplayName(from);
-      
-      // Get existing user to check if display_name already exists
+      const username = from?.username || null;
+
+      // Get existing user to check what fields already exist
       const existing = await prisma.user.findUnique({
         where: { telegram_id: BigInt(userId) },
-        select: { display_name: true },
+        select: { display_name: true, username: true },
       });
-      
-      // Only set display_name if user doesn't already have one (don't overwrite manual changes)
+
+      // Only update display_name if user doesn't already have one (don't overwrite manual changes)
       const shouldSetDisplayName = !existing || !existing.display_name;
       const finalDisplayName = shouldSetDisplayName ? displayName : undefined;
-      
-      if (quizType === QuizType.Archetype && Array.isArray(result) && result.length > 0) {
-        // result is array of [Deity, number] tuples, get primary archetype
-        const primaryArchetype = result[0][0];
-        await prisma.user.upsert({
-          where: { telegram_id: BigInt(userId) },
-          create: {
-            telegram_id: BigInt(userId),
-            display_name: displayName,
-            archetype_result: primaryArchetype,
-          },
-          update: {
-            archetype_result: primaryArchetype,
-            // Only update display_name if it doesn't exist and we have a non-null value
-            ...(finalDisplayName != null && { display_name: finalDisplayName }),
-          },
-        });
-        log.info(BOT_NAME + " > Saved archetype result", { userId, archetype: primaryArchetype });
-      } else if (quizType === QuizType.MBTI && typeof result === "string") {
-        // result is MBTI type string
-        await prisma.user.upsert({
-          where: { telegram_id: BigInt(userId) },
-          create: {
-            telegram_id: BigInt(userId),
-            display_name: displayName,
-            mbti_result: result.toUpperCase(),
-          },
-          update: {
-            mbti_result: result.toUpperCase(),
-            // Only update display_name if it doesn't exist and we have a non-null value
-            ...(finalDisplayName != null && { display_name: finalDisplayName }),
-          },
-        });
-        log.info(BOT_NAME + " > Saved MBTI result", { userId, mbti: result });
-      } else if (quizType === QuizType.LeftRight && typeof result === "string") {
-        // result is ResultType string
-        await prisma.user.upsert({
-          where: { telegram_id: BigInt(userId) },
-          create: {
-            telegram_id: BigInt(userId),
-            display_name: displayName,
-            leftright_result: result,
-          },
-          update: {
-            leftright_result: result,
-            ...(finalDisplayName != null && { display_name: finalDisplayName }),
-          },
-        });
-        log.info(BOT_NAME + " > Saved LeftRight result", { userId, result });
-      } else if (quizType === QuizType.PoliticalCompass && typeof result === "object" && result !== null && "quadrant" in result) {
-        // result is object with quadrant, economicScore, socialScore - store just quadrant
-        const quadrant = result.quadrant as string;
-        await prisma.user.upsert({
-          where: { telegram_id: BigInt(userId) },
-          create: {
-            telegram_id: BigInt(userId),
-            display_name: displayName,
-            politicalcompass_result: quadrant,
-          },
-          update: {
-            politicalcompass_result: quadrant,
-            ...(finalDisplayName != null && { display_name: finalDisplayName }),
-          },
-        });
-        log.info(BOT_NAME + " > Saved PoliticalCompass result", { userId, quadrant });
-      } else if (quizType === QuizType.Enneagram && Array.isArray(result) && result.length > 0) {
-        // result is array of [EnneagramType, number] tuples, get primary type
-        const primaryType = result[0][0];
-        await prisma.user.upsert({
-          where: { telegram_id: BigInt(userId) },
-          create: {
-            telegram_id: BigInt(userId),
-            display_name: displayName,
-            enneagram_result: primaryType,
-          },
-          update: {
-            enneagram_result: primaryType,
-            ...(finalDisplayName != null && { display_name: finalDisplayName }),
-          },
-        });
-        log.info(BOT_NAME + " > Saved Enneagram result", { userId, type: primaryType });
-      } else if (quizType === QuizType.BigFive && typeof result === "object" && result !== null) {
-        // result is object with traits and aspects - store as JSON string
-        const resultJson = JSON.stringify(result);
-        await prisma.user.upsert({
-          where: { telegram_id: BigInt(userId) },
-          create: {
-            telegram_id: BigInt(userId),
-            display_name: displayName,
-            bigfive_result: resultJson,
-          },
-          update: {
-            bigfive_result: resultJson,
-            ...(finalDisplayName != null && { display_name: finalDisplayName }),
-          },
-        });
-        log.info(BOT_NAME + " > Saved BigFive result", { userId, result: resultJson });
+
+      // Update username if provided and different (similar to matchfound bot behavior)
+      const shouldUpdateUsername = username && existing?.username !== username;
+
+      const fieldName = QUIZ_FIELD_MAP[quizType];
+      if (!fieldName) {
+        log.error(BOT_NAME + " > Unknown quiz type", { userId, quizType });
+        return;
       }
+
+      // Build update data object
+      const updateData: Record<string, unknown> = {
+        [fieldName]: resultValue,
+      };
+
+      if (finalDisplayName != null) {
+        updateData.display_name = finalDisplayName;
+      }
+
+      if (shouldUpdateUsername) {
+        updateData.username = username;
+      }
+
+      await prisma.user.upsert({
+        where: { telegram_id: BigInt(userId) },
+        create: {
+          telegram_id: BigInt(userId),
+          display_name: displayName,
+          username: username,
+          [fieldName]: resultValue,
+        },
+        update: updateData,
+      });
+
+      log.info(BOT_NAME + " > Saved quiz result", {
+        userId,
+        quizType,
+        result: resultValue,
+        usernameUpdated: shouldUpdateUsername,
+      });
     } catch (err) {
       log.error(BOT_NAME + " > Failed to save quiz result to PostgreSQL", err);
       // Don't fail the quiz completion if DB save fails
@@ -286,7 +319,9 @@ const startBot = async (botKey: string, agent: unknown) => {
   bot.command("language", async (ctx) => {
     ctx.react("⚡").catch(() => {});
     const strings = await getStringsForUser(ctx.from?.id);
-    ctx.reply(strings.select_language, { reply_markup: createLanguageKeyboard() });
+    ctx.reply(strings.select_language, {
+      reply_markup: createLanguageKeyboard(),
+    });
   });
 
   bot.command("userdata", async (ctx) => {
@@ -365,10 +400,14 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Callbacks
 
   // Quiz
-  async function sendQuestionOrResult(ctx: Context, current: number, userData?: IUserData) {
+  async function sendQuestionOrResult(
+    ctx: Context,
+    current: number,
+    userData?: IUserData
+  ) {
     const userId = ctx.from?.id;
     if (!userId) throw new Error("UserId Invalid!");
-    const user = userData || await getUserData(userId);
+    const user = userData || (await getUserData(userId));
     if (!user) {
       // User data expired or not found - show helpful message
       await handleExpiredSession(ctx);
@@ -396,17 +435,21 @@ const startBot = async (botKey: string, agent: unknown) => {
       } else {
         resultDisplay = String(result);
       }
-      
+
       notifyAdmin(
         `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${resultDisplay}`
       );
 
       // Ask user if they want to connect with people of their type
       const strings = getStrings(user.language || DEFAULT_LANGUAGE);
-      const matchKeyboard = new InlineKeyboard()
-        .url(strings.matchfound_button, `https://t.me/${MATCHFOUND_BOT_USERNAME}?start=quiz_complete`);
+      const matchKeyboard = new InlineKeyboard().url(
+        strings.matchfound_button,
+        `https://t.me/${MATCHFOUND_BOT_USERNAME}?start=quiz_complete`
+      );
 
-      await ctx.reply(strings.matchfound_message, { reply_markup: matchKeyboard });
+      await ctx.reply(strings.matchfound_message, {
+        reply_markup: matchKeyboard,
+      });
 
       await deleteUserData(userId);
       return; // end
@@ -432,12 +475,14 @@ const startBot = async (botKey: string, agent: unknown) => {
       await setUserLanguage(userId, language);
       ctx.answerCallbackQuery().catch(() => {});
       const strings = await getStringsForUser(userId);
-      ctx.editMessageText(
-        `✅ ${strings.language}: ${getLanguageName(language)}\n\n${strings.welcome}`,
-        {
-          reply_markup: undefined,
-        }
-      ).catch(() => {});
+      ctx
+        .editMessageText(
+          `✅ ${strings.language}: ${getLanguageName(language)}\n\n${strings.welcome}`,
+          {
+            reply_markup: undefined,
+          }
+        )
+        .catch(() => {});
       ctx.reply(strings.welcome, {
         reply_markup: createQuizTypesKeyboard(language),
       });
@@ -458,10 +503,12 @@ const startBot = async (botKey: string, agent: unknown) => {
       const language = await getUserLanguage(userId);
       const strings = await getStringsForUser(userId);
       ctx.answerCallbackQuery().catch(() => {});
-      ctx.editMessageText(
-        `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
-        { reply_markup: undefined }
-      ).catch(() => {});
+      ctx
+        .editMessageText(
+          `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
+          { reply_markup: undefined }
+        )
+        .catch(() => {});
       await setUser(ctx, type);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
@@ -544,7 +591,11 @@ const startBot = async (botKey: string, agent: unknown) => {
         .catch(() => {});
       user.gender = gender;
       user.order = selectOrder(user);
-      const updatedUser = await updateUserData(userId, { gender, order: user.order }, user);
+      const updatedUser = await updateUserData(
+        userId,
+        { gender, order: user.order },
+        user
+      );
       updateUserDataCache(userId, updatedUser);
       await sendQuestionOrResult(ctx, 0, updatedUser);
     } catch (err) {

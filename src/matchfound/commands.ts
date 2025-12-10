@@ -201,10 +201,25 @@ async function promptNextRequiredField(
       break;
     }
     case "date": {
-      if (fieldIndex > 0) {
-        await ctx.reply(profileCompletion.nextField(field.name, remaining));
+      // Check if user already has birthdate (e.g., from Google OAuth)
+      const profile = await getUserProfile(userId);
+      if (profile?.birth_date) {
+        // Birthdate already exists, skip this field
+        const { calculateAge } = await import("./utils");
+        const age = calculateAge(profile.birth_date);
+        await ctx.reply(success.birthdateUpdated(age || 0));
+        if (remaining > 0) {
+          await ctx.reply(profileCompletion.nextField(missingFields[fieldIndex + 1].name, remaining));
+        }
+        await promptNextRequiredField(ctx, bot, userId, missingFields, fieldIndex + 1);
+      } else {
+        // Telegram doesn't provide birthdate in user profile, so we need manual input
+        // Note: If user linked Google account, birthdate would have been imported via OAuth
+        if (fieldIndex > 0) {
+          await ctx.reply(profileCompletion.nextField(field.name, remaining));
+        }
+        await ctx.reply(profileCompletion.fieldPrompt.birthDate);
       }
-      await ctx.reply(profileCompletion.fieldPrompt.birthDate);
       break;
     }
     case "interests": {
