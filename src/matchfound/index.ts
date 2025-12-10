@@ -39,11 +39,6 @@ const startBot = async (botKey: string, agent: unknown) => {
     { command: "settings", description: "تنظیمات" },
   ];
 
-  // Add admin command if admin user ID is set
-  if (ADMIN_USER_ID) {
-    commands.push({ command: "admin", description: "🔐 Admin Panel" });
-  }
-
   await bot.api.setMyCommands(commands);
 
   // Setup commands and callbacks

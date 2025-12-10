@@ -262,17 +262,19 @@ export function setupCallbacks(
 
     await ctx.answerCallbackQuery();
     
-    // Show next match
-    const session = getSession(userId);
-    if (session.matches && session.currentMatchIndex !== undefined) {
-      session.currentMatchIndex++;
-      if (session.currentMatchIndex < session.matches.length) {
-        const profile = await getUserProfile(userId);
-        await displayUser(ctx, session.matches[session.currentMatchIndex], "match", false, session, profile?.interests || [], profile || undefined);
-      } else {
-        await ctx.reply(errors.noMatches);
+      // Show next match
+      const session = getSession(userId);
+      if (session.matches && session.currentMatchIndex !== undefined) {
+        session.currentMatchIndex++;
+        if (session.currentMatchIndex < session.matches.length) {
+          const profile = await getUserProfile(userId);
+          // Check if this is admin view (preserve showUsername setting)
+          const isAdminView = (session as any).isAdminView === true;
+          await displayUser(ctx, session.matches[session.currentMatchIndex], "match", isAdminView, session, profile?.interests || [], profile || undefined);
+        } else {
+          await ctx.reply(errors.noMatches);
+        }
       }
-    }
   });
 
   // Delete liked user (add to ignored)
@@ -1151,6 +1153,8 @@ export function setupCallbacks(
         const session = getSession(userId);
         session.matches = users;
         session.currentMatchIndex = 0;
+        // Mark as admin view so navigation preserves showUsername
+        (session as any).isAdminView = true;
 
         await ctx.reply(`👥 <b>All Users (${users.length})</b>`, { parse_mode: "HTML" });
 

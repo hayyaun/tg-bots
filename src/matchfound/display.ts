@@ -264,20 +264,6 @@ export async function displayUser(
       keyboard.text(buttons.like, `like:${user.telegram_id}`);
       keyboard.text(buttons.dislike, `dislike:${user.telegram_id}`);
       keyboard.row();
-
-      // Add "Next" button if there are more matches
-      if (
-        session &&
-        session.matches &&
-        session.currentMatchIndex !== undefined
-      ) {
-        const currentIndex = session.currentMatchIndex;
-        const totalMatches = session.matches.length;
-        if (currentIndex < totalMatches - 1) {
-          keyboard.text(buttons.next, `next_match:${user.telegram_id}`);
-          keyboard.row();
-        }
-      }
     } else if (mode === "liked") {
       keyboard.text(buttons.like, `like:${user.telegram_id}`);
       keyboard.text(buttons.delete, `delete_liked:${user.telegram_id}`);
@@ -288,6 +274,22 @@ export async function displayUser(
       }
     }
   }
+  
+  // Add "Next" button if there are more matches (works for both regular and admin view)
+  if (
+    mode === "match" &&
+    session &&
+    session.matches &&
+    session.currentMatchIndex !== undefined
+  ) {
+    const currentIndex = session.currentMatchIndex;
+    const totalMatches = session.matches.length;
+    if (currentIndex < totalMatches - 1) {
+      keyboard.text(buttons.next, `next_match:${user.telegram_id}`);
+      keyboard.row();
+    }
+  }
+  
   keyboard.text(buttons.report, `report:${user.telegram_id}`);
 
   try {
