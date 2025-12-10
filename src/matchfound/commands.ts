@@ -252,7 +252,8 @@ async function promptNextRequiredField(
 
 export function setupCommands(
   bot: Bot,
-  notifyAdmin: (message: string) => Promise<void>
+  notifyAdmin: (message: string) => Promise<void>,
+  adminUserId?: number
 ) {
   // /start command
   bot.command("start", async (ctx) => {
@@ -527,6 +528,30 @@ export function setupCommands(
         `❌ <b>Delete Data Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
     }
+  });
+
+  // /admin command
+  bot.command("admin", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    
+    // Check if user is admin
+    if (!adminUserId || userId !== adminUserId) {
+      await ctx.reply("❌ دسترسی محدود");
+      return;
+    }
+
+    ctx.react("👏").catch(() => {});
+    
+    const keyboard = new InlineKeyboard()
+      .text("📋 Reports", "admin:reports")
+      .text("👥 All Users", "admin:all_users")
+      .row();
+
+    await ctx.reply("🔐 <b>Admin Panel</b>", {
+      parse_mode: "HTML",
+      reply_markup: keyboard,
+    });
   });
 }
 

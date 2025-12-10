@@ -138,7 +138,8 @@ function buildLocationKeyboard(
 
 export function setupCallbacks(
   bot: Bot,
-  notifyAdmin: (message: string) => Promise<void>
+  notifyAdmin: (message: string) => Promise<void>,
+  adminUserId?: number
 ) {
   // Like action
   bot.callbackQuery(/like:(\d+)/, async (ctx) => {
@@ -1052,4 +1053,115 @@ export function setupCallbacks(
       await next();
     }
   });
+
+  // Admin callbacks
+  if (adminUserId) {
+    // Admin: Reports
+    bot.callbackQuery(/^admin:reports$/, async (ctx) => {
+      const userId = ctx.from?.id;
+      if (!userId || userId !== adminUserId) {
+        await ctx.answerCallbackQuery("❌ دسترسی محدود");
+        return;
+      }
+
+      await ctx.answerCallbackQuery();
+
+      try {
+        const reports = await prisma.report.findMany({
+          take: 50, // Show last 50 reports
+          orderBy: { created_at: "desc" },
+          include: {
+            reporter: {
+              select: {
+                telegram_id: true,
+                display_name: true,
+                username: true,
+              },
+            },
+            reportedUser: {
+              select: {
+                telegram_id: true,
+                display_name: true,
+                username: true,
+              },
+            },
+          },
+        });
+
+        if (reports.length === 0) {
+          await ctx.reply("📋 هیچ گزارشی ثبت نشده است.");
+          return;
+        }
+
+        let message = `📋 <b>Reports (${reports.length})</b>\n\n`;
+        for (const report of reports) {
+          const reporterName = report.reporter.display_name || report.reporter.username || `User ${report.reporter.telegram_id}`;
+          const reportedName = report.reportedUser.display_name || report.reportedUser.username || `User ${report.reportedUser.telegram_id}`;
+          const reason = report.reason || "بدون دلیل";
+          const date = report.created_at.toLocaleDateString("fa-IR");
+          
+          message += `👤 <b>Reporter:</b> ${reporterName} (<code>${report.reporter.telegram_id}</code>)\n`;
+          message += `🚫 <b>Reported:</b> ${reportedName} (<code>${report.reported_user_id}</code>)\n`;
+          message += `📝 <b>Reason:</b> ${reason}\n`;
+          message += `📅 <b>Date:</b> ${date}\n\n`;
+        }
+
+        await ctx.reply(message, { parse_mode: "HTML" });
+      } catch (err) {
+        log.error(BOT_NAME + " > Admin reports failed", err);
+        await ctx.reply("❌ خطا در دریافت گزارش‌ها");
+      }
+    });
+
+    // Admin: All Users
+    bot.callbackQuery(/^admin:all_users$/, async (ctx) => {
+      const userId = ctx.from?.id;
+      if (!userId || userId !== adminUserId) {
+        await ctx.answerCallbackQuery("❌ دسترسی محدود");
+        return;
+      }
+
+      await ctx.answerCallbackQuery();
+
+      try {
+        // Get all users without any filtering
+        const allUsers = await prisma.user.findMany({
+          orderBy: { created_at: "desc" },
+        });
+
+        if (allUsers.length === 0) {
+          await ctx.reply("👥 هیچ کاربری ثبت نشده است.");
+          return;
+        }
+
+        // Convert to MatchUser format for display
+        const users: MatchUser[] = allUsers.map((user) => {
+          const age = user.birth_date ? calculateAge(user.birth_date) : null;
+          return {
+            ...user,
+            telegram_id: Number(user.telegram_id),
+            birth_date: user.birth_date || null,
+            interests: user.interests || [],
+            age: age,
+            match_priority: 999, // Default priority for admin view
+          } as MatchUser;
+        });
+
+        // Store in session for pagination
+        const session = getSession(userId);
+        session.matches = users;
+        session.currentMatchIndex = 0;
+
+        await ctx.reply(`👥 <b>All Users (${users.length})</b>`, { parse_mode: "HTML" });
+
+        // Show first user
+        if (users.length > 0) {
+          await displayUser(ctx, users[0], "match", true, session);
+        }
+      } catch (err) {
+        log.error(BOT_NAME + " > Admin all users failed", err);
+        await ctx.reply("❌ خطا در دریافت کاربران");
+      }
+    });
+  }
 }
