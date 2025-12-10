@@ -63,4 +63,5 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Command to apply migrations and start the bot
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# If no migrations exist, use db push to sync schema (development fallback)
+CMD ["sh", "-c", "if [ -d prisma/migrations ] && [ \"$(ls -A prisma/migrations 2>/dev/null)\" ]; then npx prisma migrate deploy && npm start; else echo 'No migrations found, syncing schema with db push...' && npx prisma db push --accept-data-loss && npm start; fi"]
