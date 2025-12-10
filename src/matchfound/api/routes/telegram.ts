@@ -10,6 +10,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Connect Telegram account to mobile user
+// @ts-expect-error - Express 5 type compatibility
 router.post("/connect", async (req: AuthRequest, res) => {
   try {
     if (!req.userId) {

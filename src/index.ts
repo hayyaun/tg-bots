@@ -4,7 +4,6 @@ import { Bot } from "grammy";
 import converslation from "./converslation";
 import inmankist from "./inmankist";
 import ivwhat from "./ivwhat";
-import truthcheck from "./truthcheck";
 import matchfound from "./matchfound";
 import log from "./log";
 import { connectRedis } from "./redis";
@@ -17,7 +16,6 @@ const BOTS = [
   { name: "inmankist", module: inmankist, envKey: "INMANKIST_BOT_KEY" },
   { name: "ivwhat", module: ivwhat, envKey: "IVWHAT_BOT_KEY" },
   { name: "converslation", module: converslation, envKey: "CONVERSLATION_BOT_KEY" },
-  { name: "truthcheck", module: truthcheck, envKey: "TRUTHCHECK_BOT_KEY" },
   { name: "matchfound", module: matchfound, envKey: "MATCHFOUND_BOT_KEY" },
 ] as const;
 
