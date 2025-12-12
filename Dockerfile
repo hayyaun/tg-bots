@@ -56,6 +56,9 @@ COPY . .
 # Build TypeScript files
 RUN npm run build
 
+# Make start script executable
+RUN chmod +x scripts/start.sh
+
 # Set environment variables (if needed)
 ENV NODE_ENV=production
 
@@ -63,6 +66,4 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 # Command to apply migrations and start the bot
-# If migrations exist, use migrate deploy (production-safe)
-# If no migrations exist, use db push without --accept-data-loss (will fail on destructive changes)
-CMD ["sh", "-c", "if [ -d prisma/migrations ] && [ \"$(ls -A prisma/migrations 2>/dev/null)\" ]; then npx prisma migrate deploy && npm start; else echo 'No migrations found. Using db push (will fail if schema changes are destructive)...' && npx prisma db push && npm start; fi"]
+CMD ["scripts/start.sh"]
