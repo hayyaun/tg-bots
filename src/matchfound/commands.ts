@@ -163,7 +163,7 @@ async function promptNextRequiredField(
         const { updateUserField } = await import("./database");
         await updateUserField(userId, "username", currentUsername);
         await ctx.reply(success.usernameUpdated(currentUsername));
-        if (remaining > 0) {
+        if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
           await ctx.reply(profileCompletion.nextField(missingFields[fieldIndex + 1].name, remaining));
         }
         await promptNextRequiredField(ctx, bot, userId, missingFields, fieldIndex + 1);
@@ -208,7 +208,7 @@ async function promptNextRequiredField(
         const { calculateAge } = await import("./utils");
         const age = calculateAge(profile.birth_date);
         await ctx.reply(success.birthdateUpdated(age || 0));
-        if (remaining > 0) {
+        if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
           await ctx.reply(profileCompletion.nextField(missingFields[fieldIndex + 1].name, remaining));
         }
         await promptNextRequiredField(ctx, bot, userId, missingFields, fieldIndex + 1);

@@ -29,11 +29,11 @@ export function verifyToken(token: string): { userId: bigint } | null {
   }
 }
 
-export function authenticateToken(
+export async function authenticateToken(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
@@ -48,16 +48,18 @@ export function authenticateToken(
     return;
   }
 
-  // Verify user still exists
-  prisma.user.findUnique({
-    where: { id: decoded.userId },
-    select: {
-      id: true,
-      telegram_id: true,
-      google_id: true,
-      email: true,
-    },
-  }).then((user) => {
+  try {
+    // Verify user still exists
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        telegram_id: true,
+        google_id: true,
+        email: true,
+      },
+    });
+
     if (!user) {
       res.status(403).json({ error: "User not found" });
       return;
@@ -66,8 +68,8 @@ export function authenticateToken(
     req.userId = user.id;
     req.user = user;
     next();
-  }).catch(() => {
+  } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-  });
+  }
 }
 

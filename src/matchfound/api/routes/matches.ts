@@ -18,7 +18,7 @@ router.get("/", async (req: AuthRequest, res) => {
       return;
     }
 
-    const matches = await findMatches(Number(req.userId));
+    const matches = await findMatches(req.userId);
 
     // Convert BigInt to string for JSON
     const formattedMatches = matches.map((match) => ({
