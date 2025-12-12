@@ -5,6 +5,8 @@ import log from "../../../log";
 
 const router = express.Router();
 
+const REDIRECT_BASE_URL = process.env.MATCHFOUND_MOBILE_APP_REDIRECT_URL || "http://localhost:3000";
+
 // Initialize Google OAuth
 import "../auth/google";
 
@@ -23,15 +25,14 @@ router.get(
     try {
       const user = req.user as any;
       if (!user) {
-        return res.redirect(`${process.env.MATCHFOUND_MOBILE_APP_REDIRECT_URL || "http://localhost:3000"}/auth/error`);
+        return res.redirect(`${REDIRECT_BASE_URL}/auth/error`);
       }
 
       const token = generateToken(user.id);
-      const redirectUrl = `${process.env.MATCHFOUND_MOBILE_APP_REDIRECT_URL || "http://localhost:3000"}/auth/callback?token=${token}`;
-      res.redirect(redirectUrl);
+      res.redirect(`${REDIRECT_BASE_URL}/auth/callback?token=${token}`);
     } catch (error) {
       log.error("OAuth callback error", error);
-      res.redirect(`${process.env.MATCHFOUND_MOBILE_APP_REDIRECT_URL || "http://localhost:3000"}/auth/error`);
+      res.redirect(`${REDIRECT_BASE_URL}/auth/error`);
     }
   }
 );
