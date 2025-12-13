@@ -116,7 +116,7 @@ const restartBot = async (botName: string): Promise<boolean> => {
 const startAllBots = async (): Promise<void> => {
   log.info(`Starting ${BOTS.length} bot(s)...`);
   const results = await Promise.all(BOTS.map(startBot));
-  const successful = results.filter((r): r is RunningBot => r !== null).map((r) => r.username);
+  const successful = results.filter((r) => r !== null).map((r) => r.username);
   const failed = BOTS.filter((_, i) => results[i] === null).map((c) => c.name);
 
   if (successful.length > 0) log.info(`✓ Started ${successful.length}/${BOTS.length}: ${successful.join(", ")}`);

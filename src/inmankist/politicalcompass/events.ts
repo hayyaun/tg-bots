@@ -1,7 +1,8 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import { getQuestion } from ".";
 import { getStringsForUser } from "../i18n";
 import { IUserData, QuizType } from "../types";
+import { generateCompassChart } from "./canvas";
 import quadrants from "./quadrants";
 import { PoliticalAxis, Quadrant } from "./types";
 
@@ -147,6 +148,9 @@ export async function replyResult(ctx: Context, user: IUserData) {
     `  🏛️ اجتماعی: ${socialPosition} (${socialScore > 0 ? "+" : ""}${Math.round(socialScore)})`,
   ].join("\n");
 
+  // Generate chart
+  const chartBuffer = generateCompassChart(economicScore, socialScore);
+
   // Add button for detailed view
   const userId = ctx.from?.id;
   const strings = await getStringsForUser(userId);
@@ -155,7 +159,9 @@ export async function replyResult(ctx: Context, user: IUserData) {
     `detail:${QuizType.PoliticalCompass}:${quadrant}`
   );
 
-  await ctx.reply(resultText, {
+  // Send chart with caption
+  await ctx.replyWithPhoto(new InputFile(chartBuffer, "compass.png"), {
+    caption: resultText,
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
