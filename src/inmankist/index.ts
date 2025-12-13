@@ -274,7 +274,8 @@ const startBot = async (botKey: string, agent: unknown) => {
   const commands: BotCommand[] = [
     { command: "start", description: defaultStrings.start_btn },
     { command: "help", description: defaultStrings.help_btn },
-    { command: "language", description: "🌐 Language / Язык / زبان / اللغة" },
+    { command: "language", description: "🌐 Language / Язык / язык / اللغة" },
+    { command: "history", description: "📚 History / История / تاریخچه / التاريخ" },
   ];
 
   for (const key in quizTypes) {
@@ -332,6 +333,123 @@ const startBot = async (botKey: string, agent: unknown) => {
     } catch (err) {
       log.error(BOT_NAME + " > UserData Command", err);
       ctx.reply("❌ Error retrieving user data");
+    }
+  });
+
+  bot.command("history", async (ctx) => {
+    try {
+      ctx.react("🤔").catch(() => {});
+      const userId = ctx.from?.id;
+      if (!userId) {
+        ctx.reply("❌ Unable to get user ID");
+        return;
+      }
+
+      const strings = await getStringsForUser(userId);
+      const language = await getUserLanguage(userId);
+
+      // Get user from database
+      const user = await prisma.user.findUnique({
+        where: { telegram_id: BigInt(userId) },
+        select: {
+          archetype_result: true,
+          mbti_result: true,
+          leftright_result: true,
+          politicalcompass_result: true,
+          enneagram_result: true,
+          bigfive_result: true,
+        },
+      });
+
+      if (!user) {
+        await ctx.reply(strings.history_empty);
+        return;
+      }
+
+      // Build list of completed quizzes
+      const results: Array<{ type: QuizType; result: string; displayName: string }> = [];
+
+      if (user.archetype_result) {
+        results.push({
+          type: QuizType.Archetype,
+          result: user.archetype_result,
+          displayName: getQuizTypeName(QuizType.Archetype, language),
+        });
+      }
+
+      if (user.mbti_result) {
+        results.push({
+          type: QuizType.MBTI,
+          result: user.mbti_result,
+          displayName: getQuizTypeName(QuizType.MBTI, language),
+        });
+      }
+
+      if (user.leftright_result) {
+        results.push({
+          type: QuizType.LeftRight,
+          result: user.leftright_result,
+          displayName: getQuizTypeName(QuizType.LeftRight, language),
+        });
+      }
+
+      if (user.politicalcompass_result) {
+        results.push({
+          type: QuizType.PoliticalCompass,
+          result: user.politicalcompass_result,
+          displayName: getQuizTypeName(QuizType.PoliticalCompass, language),
+        });
+      }
+
+      if (user.enneagram_result) {
+        results.push({
+          type: QuizType.Enneagram,
+          result: user.enneagram_result,
+          displayName: getQuizTypeName(QuizType.Enneagram, language),
+        });
+      }
+
+      if (user.bigfive_result) {
+        results.push({
+          type: QuizType.BigFive,
+          result: user.bigfive_result,
+          displayName: getQuizTypeName(QuizType.BigFive, language),
+        });
+      }
+
+      if (results.length === 0) {
+        await ctx.reply(strings.history_empty);
+        return;
+      }
+
+      // Show summary first
+      const messageLines = [strings.history_title, ""];
+      results.forEach((item) => {
+        messageLines.push(`• *${item.displayName}*: ${item.result || strings.history_no_results}`);
+      });
+
+      await ctx.reply(messageLines.join("\n"), {
+        parse_mode: "Markdown",
+      });
+
+      // Show each result with proper formatting using replyDetail
+      for (const item of results) {
+        try {
+          await replyDetial(ctx, item.type, item.result);
+          // Add small delay between messages to avoid rate limiting
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        } catch (err) {
+          log.error(BOT_NAME + " > History Detail Error", {
+            type: item.type,
+            result: item.result,
+            error: err,
+          });
+        }
+      }
+    } catch (err) {
+      log.error(BOT_NAME + " > History Command", err);
+      const strings = await getStringsForUser(ctx.from?.id);
+      ctx.reply("❌ Error retrieving quiz history");
     }
   });
 

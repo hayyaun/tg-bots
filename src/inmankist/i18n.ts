@@ -61,6 +61,9 @@ export interface IStrings {
   compass_libRight: string;
   compass_authLeft: string;
   compass_authRight: string;
+  history_title: string;
+  history_empty: string;
+  history_no_results: string;
 }
 
 const translations: { [key in Language]: IStrings } = {
@@ -97,6 +100,9 @@ const translations: { [key in Language]: IStrings } = {
     compass_libRight: "راست آزادی‌خواه",
     compass_authLeft: "چپ اقتدارگرا",
     compass_authRight: "راست اقتدارگرا",
+    history_title: "📚 *تاریخچه نتایج آزمون‌های شما:*",
+    history_empty: "📭 شما هنوز هیچ آزمونی انجام نداده‌اید.",
+    history_no_results: "هیچ نتیجه‌ای ثبت نشده",
   },
   [Language.English]: {
     welcome: [
@@ -131,6 +137,9 @@ const translations: { [key in Language]: IStrings } = {
     compass_libRight: "Lib Right",
     compass_authLeft: "Auth Left",
     compass_authRight: "Auth Right",
+    history_title: "📚 *Your Quiz Results History:*",
+    history_empty: "📭 You haven't taken any quizzes yet.",
+    history_no_results: "No result recorded",
   },
   [Language.Russian]: {
     welcome: [
@@ -165,6 +174,9 @@ const translations: { [key in Language]: IStrings } = {
     compass_libRight: "Либ. Правые",
     compass_authLeft: "Авт. Левые",
     compass_authRight: "Авт. Правые",
+    history_title: "📚 *История ваших результатов тестов:*",
+    history_empty: "📭 Вы еще не прошли ни одного теста.",
+    history_no_results: "Результат не записан",
   },
   [Language.Arabic]: {
     welcome: [
@@ -199,6 +211,9 @@ const translations: { [key in Language]: IStrings } = {
     compass_libRight: "يمين ليبرتاري",
     compass_authLeft: "يسار استبدادي",
     compass_authRight: "يمين استبدادي",
+    history_title: "📚 *تاريخ نتائج الاختبارات الخاصة بك:*",
+    history_empty: "📭 لم تقم بإجراء أي اختبارات بعد.",
+    history_no_results: "لم يتم تسجيل النتيجة",
   },
 };
 
