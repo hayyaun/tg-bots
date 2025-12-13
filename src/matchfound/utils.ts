@@ -1,12 +1,8 @@
 import { Context } from "grammy";
+import { getUserName } from "../utils/string";
 
-export function getUserName(ctx: Context): string {
-  const from = ctx.from;
-  if (!from) return "Unknown";
-  return from.username
-    ? `@${from.username}`
-    : `${from.first_name || ""} ${from.last_name || ""}`.trim() || "Unknown";
-}
+// Re-export for backward compatibility
+export { getUserName };
 
 export function calculateAge(birthDate: Date | null): number | null {
   if (!birthDate) return null;

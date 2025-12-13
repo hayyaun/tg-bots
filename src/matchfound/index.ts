@@ -6,6 +6,7 @@ import { BOT_NAME } from "./constants";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";
 import { setupDailyReports, setupProfileReminders } from "./reports";
+import { createAdminNotifier, setupBotErrorHandling, initializeBot } from "../utils/bot";
 
 configDotenv();
 
@@ -19,16 +20,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   });
 
   // Admin notification helper
-  async function notifyAdmin(message: string) {
-    if (!ADMIN_USER_ID) return;
-    try {
-      await bot.api.sendMessage(ADMIN_USER_ID, `🤖 ${BOT_NAME}\n${message}`, {
-        parse_mode: "HTML",
-      });
-    } catch (err) {
-      log.error(BOT_NAME + " > Admin notification failed", err);
-    }
-  }
+  const notifyAdmin = createAdminNotifier(bot, BOT_NAME, ADMIN_USER_ID);
 
   // Commands
   const commands: BotCommand[] = [
@@ -51,14 +43,9 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Setup profile reminders
   setupProfileReminders(bot, notifyAdmin);
 
-  bot.catch = (err) => {
-    log.error(BOT_NAME + " > BOT", err);
-    notifyAdmin(`❌ <b>Critical Bot Error</b>\nError: ${err}`);
-  };
+  setupBotErrorHandling(bot, BOT_NAME, notifyAdmin);
 
-  bot.start();
-
-  await bot.init();
+  await initializeBot(bot);
 
   notifyAdmin(`🚀 <b>Bot Started</b>\nBot is now online and ready!`);
 

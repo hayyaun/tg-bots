@@ -3,6 +3,8 @@ import { Bot, Context, InlineKeyboard, InlineQueryResultBuilder } from "grammy";
 import log from "../log";
 import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
 import redis from "../redis";
+import { setupBotErrorHandling, initializeBot } from "../utils/bot";
+import { getTodayDateKey, getSecondsUntilMidnightUTC } from "../utils/date";
 
 configDotenv();
 
@@ -92,23 +94,6 @@ async function refreshLanguageTTL(userId: number): Promise<void> {
   }
 }
 
-// Get today's date string in YYYY-MM-DD format (UTC)
-function getTodayDateKey(): string {
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(now.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-// Get remaining seconds until midnight UTC
-function getSecondsUntilMidnightUTC(): number {
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  tomorrow.setUTCHours(0, 0, 0, 0);
-  return Math.floor((tomorrow.getTime() - now.getTime()) / 1000);
-}
 
 // Get today's translation count for a user
 async function getDailyTranslationCount(userId: number): Promise<number> {
@@ -451,13 +436,9 @@ const startBot = async (botKey: string, agent: unknown) => {
     }
   });
 
-  bot.catch = (err) => {
-    log.error(BOT_NAME + " > BOT", err);
-  };
+  setupBotErrorHandling(bot, BOT_NAME);
 
-  bot.start();
-
-  await bot.init();
+  await initializeBot(bot);
   return bot;
 };
 

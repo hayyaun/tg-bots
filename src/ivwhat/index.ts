@@ -2,6 +2,7 @@ import { configDotenv } from "dotenv";
 import { Bot } from "grammy";
 import { BotCommand } from "grammy/types";
 import log from "../log";
+import { setupBotErrorHandling, initializeBot } from "../utils/bot";
 
 configDotenv();
 
@@ -60,13 +61,9 @@ const startBot = async (botKey: string, agent: unknown) => {
     );
   });
 
-  bot.catch = (err) => {
-    log.error("IVWhat > BOT", err);
-  };
+  setupBotErrorHandling(bot, "IVWhat");
 
-  bot.start();
-
-  await bot.init();
+  await initializeBot(bot);
   return bot;
 };
 

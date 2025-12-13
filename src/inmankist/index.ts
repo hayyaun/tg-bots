@@ -3,6 +3,8 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { BotCommand } from "grammy/types";
 import log from "../log";
 import { prisma } from "../db";
+import { createAdminNotifier, setupBotErrorHandling, initializeBot } from "../utils/bot";
+import { getDisplayNameFromUser, getUserName } from "../utils/string";
 import {
   getQuizModeName,
   getQuizTypeName,
@@ -57,16 +59,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   });
 
   // Admin notification helper
-  async function notifyAdmin(message: string) {
-    if (!ADMIN_USER_ID) return;
-    try {
-      await bot.api.sendMessage(ADMIN_USER_ID, `🤖 ${BOT_NAME}\n${message}`, {
-        parse_mode: "HTML",
-      });
-    } catch (err) {
-      log.error(BOT_NAME + " > Admin notification failed", err);
-    }
-  }
+  const notifyAdmin = createAdminNotifier(bot, BOT_NAME, ADMIN_USER_ID);
 
   // Note: No periodic logging - Redis TTL handles cleanup automatically
 
@@ -80,14 +73,6 @@ const startBot = async (botKey: string, agent: unknown) => {
       .catch(() => {});
   }
 
-  // Helper function to get display name from Telegram user
-  function getDisplayName(
-    from: { first_name?: string; last_name?: string } | undefined
-  ): string | null {
-    if (!from) return null;
-    const name = `${from.first_name || ""} ${from.last_name || ""}`.trim();
-    return name || null;
-  }
 
   // Extract and process quiz result based on type
   type QuizResultValue = string | null;
@@ -174,7 +159,7 @@ const startBot = async (botKey: string, agent: unknown) => {
         return;
       }
 
-      const displayName = getDisplayName(from);
+      const displayName = getDisplayNameFromUser(from);
       const username = from?.username || null;
 
       // Get existing user to check what fields already exist
@@ -249,13 +234,6 @@ const startBot = async (botKey: string, agent: unknown) => {
     return keyboard;
   }
 
-  function getUserName(ctx: Context): string {
-    const from = ctx.from;
-    if (!from) return "Unknown";
-    return from.username
-      ? `@${from.username}`
-      : `${from.first_name || ""} ${from.last_name || ""}`.trim() || "Unknown";
-  }
 
   function getLanguageName(language: Language): string {
     const names: { [key in Language]: string } = {
@@ -674,14 +652,9 @@ const startBot = async (botKey: string, agent: unknown) => {
     }
   });
 
-  bot.catch = (err) => {
-    log.error(BOT_NAME + " > BOT", err);
-    notifyAdmin(`❌ <b>Critical Bot Error</b>\nError: ${err}`);
-  };
+  setupBotErrorHandling(bot, BOT_NAME, notifyAdmin);
 
-  bot.start();
-
-  await bot.init();
+  await initializeBot(bot);
 
   // Notify admin that bot started successfully
   notifyAdmin(`🚀 <b>Bot Started</b>\nBot is now online and ready!`);

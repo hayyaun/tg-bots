@@ -1,5 +1,6 @@
 import { prisma } from "../db";
 import { UserProfile } from "./types";
+import { getDisplayName } from "../utils/string";
 
 // Get user profile by id (new primary key)
 export async function getUserProfileById(
@@ -84,12 +85,6 @@ export async function updateCompletionScore(telegramUserId: number): Promise<voi
       data: { completion_score: score },
     });
   }
-}
-
-// Helper function to get display name from Telegram user
-function getDisplayName(firstName?: string, lastName?: string): string | null {
-  const name = `${firstName || ""} ${lastName || ""}`.trim();
-  return name || null;
 }
 
 // Helper function to get user id from telegram_id
