@@ -1,4 +1,6 @@
 import { createCanvas } from "canvas";
+import { getStrings } from "../i18n";
+import { Language } from "../types";
 
 const width = 800;
 const height = 800;
@@ -10,8 +12,11 @@ const axisRange = 100; // -100 to +100
 
 export function generateCompassChart(
   economicScore: number,
-  socialScore: number
+  socialScore: number,
+  language: Language = Language.Persian
 ): Buffer {
+  const strings = getStrings(language);
+  const isRTL = language === Language.Persian || language === Language.Arabic;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
@@ -59,32 +64,46 @@ export function generateCompassChart(
 
   // Draw axis labels
   ctx.fillStyle = "#333333";
-  ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.direction = "rtl";
+  ctx.direction = isRTL ? "rtl" : "ltr";
+  
+  // Use appropriate font based on language
+  if (isRTL) {
+    ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
+  } else {
+    ctx.font = "bold 20px Arial, sans-serif";
+  }
 
   // X-axis labels
-  ctx.fillText("چپ", padding - 30, centerY);
-  ctx.fillText("راست", width - padding + 30, centerY);
+  ctx.fillText(strings.compass_left, padding - 30, centerY);
+  ctx.fillText(strings.compass_right, width - padding + 30, centerY);
 
   // Y-axis labels
-  ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
-  ctx.fillText("اقتدارگرا", centerX, padding - 30);
-  ctx.fillText("آزادی‌خواه", centerX, height - padding + 30);
+  if (isRTL) {
+    ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
+  } else {
+    ctx.font = "bold 20px Arial, sans-serif";
+  }
+  ctx.fillText(strings.compass_authoritarian, centerX, padding - 30);
+  ctx.fillText(strings.compass_libertarian, centerX, height - padding + 30);
 
   // Draw quadrant labels
-  ctx.font = "18px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
+  if (isRTL) {
+    ctx.font = "18px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
+  } else {
+    ctx.font = "18px Arial, sans-serif";
+  }
   ctx.fillStyle = "#888888";
 
   // Top-left (LibLeft)
-  ctx.fillText("چپ آزادی‌خواه", padding + 60, padding + 30);
+  ctx.fillText(strings.compass_libLeft, padding + 60, padding + 30);
   // Top-right (LibRight)
-  ctx.fillText("راست آزادی‌خواه", width - padding - 60, padding + 30);
+  ctx.fillText(strings.compass_libRight, width - padding - 60, padding + 30);
   // Bottom-left (AuthLeft)
-  ctx.fillText("چپ اقتدارگرا", padding + 60, height - padding - 30);
+  ctx.fillText(strings.compass_authLeft, padding + 60, height - padding - 30);
   // Bottom-right (AuthRight)
-  ctx.fillText("راست اقتدارگرا", width - padding - 60, height - padding - 30);
+  ctx.fillText(strings.compass_authRight, width - padding - 60, height - padding - 30);
 
   // Draw center point
   ctx.fillStyle = "#999999";

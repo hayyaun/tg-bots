@@ -53,6 +53,14 @@ export interface IStrings {
   complete: string;
   matchfound_message: string;
   matchfound_button: string;
+  compass_left: string;
+  compass_right: string;
+  compass_authoritarian: string;
+  compass_libertarian: string;
+  compass_libLeft: string;
+  compass_libRight: string;
+  compass_authLeft: string;
+  compass_authRight: string;
 }
 
 const translations: { [key in Language]: IStrings } = {
@@ -81,6 +89,14 @@ const translations: { [key in Language]: IStrings } = {
     complete: "کامل",
     matchfound_message: "🎯 آیا مایلید با افرادی هم تایپ خودتون آشنا بشید؟",
     matchfound_button: "✅ بله",
+    compass_left: "چپ",
+    compass_right: "راست",
+    compass_authoritarian: "اقتدارگرا",
+    compass_libertarian: "آزادی‌خواه",
+    compass_libLeft: "چپ آزادی‌خواه",
+    compass_libRight: "راست آزادی‌خواه",
+    compass_authLeft: "چپ اقتدارگرا",
+    compass_authRight: "راست اقتدارگرا",
   },
   [Language.English]: {
     welcome: [
@@ -107,6 +123,14 @@ const translations: { [key in Language]: IStrings } = {
     complete: "Complete",
     matchfound_message: "🎯 Would you like to meet people of your type?",
     matchfound_button: "✅ Yes",
+    compass_left: "Left",
+    compass_right: "Right",
+    compass_authoritarian: "Authoritarian",
+    compass_libertarian: "Libertarian",
+    compass_libLeft: "Lib Left",
+    compass_libRight: "Lib Right",
+    compass_authLeft: "Auth Left",
+    compass_authRight: "Auth Right",
   },
   [Language.Russian]: {
     welcome: [
@@ -133,6 +157,14 @@ const translations: { [key in Language]: IStrings } = {
     complete: "Полный",
     matchfound_message: "🎯 Хотите ли вы познакомиться с людьми вашего типа?",
     matchfound_button: "✅ Да",
+    compass_left: "Левые",
+    compass_right: "Правые",
+    compass_authoritarian: "Авторитарный",
+    compass_libertarian: "Либертарианский",
+    compass_libLeft: "Либ. Левые",
+    compass_libRight: "Либ. Правые",
+    compass_authLeft: "Авт. Левые",
+    compass_authRight: "Авт. Правые",
   },
   [Language.Arabic]: {
     welcome: [
@@ -159,6 +191,14 @@ const translations: { [key in Language]: IStrings } = {
     complete: "كامل",
     matchfound_message: "🎯 هل تريد التعرف على أشخاص من نوعك؟",
     matchfound_button: "✅ نعم",
+    compass_left: "يسار",
+    compass_right: "يمين",
+    compass_authoritarian: "استبدادي",
+    compass_libertarian: "ليبرتاري",
+    compass_libLeft: "يسار ليبرتاري",
+    compass_libRight: "يمين ليبرتاري",
+    compass_authLeft: "يسار استبدادي",
+    compass_authRight: "يمين استبدادي",
   },
 };
 

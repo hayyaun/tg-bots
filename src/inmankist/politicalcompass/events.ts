@@ -1,7 +1,7 @@
 import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import { getQuestion } from ".";
 import { getStringsForUser } from "../i18n";
-import { IUserData, QuizType } from "../types";
+import { IUserData, Language, QuizType } from "../types";
 import { generateCompassChart } from "./canvas";
 import quadrants from "./quadrants";
 import { PoliticalAxis, Quadrant } from "./types";
@@ -149,7 +149,8 @@ export async function replyResult(ctx: Context, user: IUserData) {
   ].join("\n");
 
   // Generate chart
-  const chartBuffer = generateCompassChart(economicScore, socialScore);
+  const language = user.language || Language.Persian;
+  const chartBuffer = generateCompassChart(economicScore, socialScore, language);
 
   // Add button for detailed view
   const userId = ctx.from?.id;
