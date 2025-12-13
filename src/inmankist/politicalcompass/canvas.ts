@@ -39,7 +39,7 @@ export function generateCompassChart(
 
   // Horizontal grid lines
   for (let i = -100; i <= 100; i += 25) {
-    const y = centerY - (i / axisRange) * (chartSize / 2);
+    const y = centerY + (i / axisRange) * (chartSize / 2);
     ctx.beginPath();
     ctx.moveTo(padding, y);
     ctx.lineTo(width - padding, y);
@@ -96,14 +96,14 @@ export function generateCompassChart(
   }
   ctx.fillStyle = "#888888";
 
-  // Top-left (LibLeft)
-  ctx.fillText(strings.compass_libLeft, padding + 60, padding + 30);
-  // Top-right (LibRight)
-  ctx.fillText(strings.compass_libRight, width - padding - 60, padding + 30);
-  // Bottom-left (AuthLeft)
-  ctx.fillText(strings.compass_authLeft, padding + 60, height - padding - 30);
-  // Bottom-right (AuthRight)
-  ctx.fillText(strings.compass_authRight, width - padding - 60, height - padding - 30);
+  // Top-left (AuthLeft) - Authoritarian at top
+  ctx.fillText(strings.compass_authLeft, padding + 60, padding + 30);
+  // Top-right (AuthRight) - Authoritarian at top
+  ctx.fillText(strings.compass_authRight, width - padding - 60, padding + 30);
+  // Bottom-left (LibLeft) - Libertarian at bottom
+  ctx.fillText(strings.compass_libLeft, padding + 60, height - padding - 30);
+  // Bottom-right (LibRight) - Libertarian at bottom
+  ctx.fillText(strings.compass_libRight, width - padding - 60, height - padding - 30);
 
   // Draw center point
   ctx.fillStyle = "#999999";
@@ -113,9 +113,10 @@ export function generateCompassChart(
 
   // Calculate user's position on chart
   // X: economicScore (-100 to +100) maps to (padding to width-padding)
-  // Y: socialScore (-100 to +100) maps to (height-padding to padding) [inverted]
+  // Y: socialScore (-100 to +100) maps to (padding to height-padding)
+  //    negative (authoritarian) at top, positive (libertarian) at bottom
   const userX = centerX + (economicScore / axisRange) * (chartSize / 2);
-  const userY = centerY - (socialScore / axisRange) * (chartSize / 2);
+  const userY = centerY + (socialScore / axisRange) * (chartSize / 2);
 
   // Draw user's position as a dot
   ctx.fillStyle = "#ff4444";
