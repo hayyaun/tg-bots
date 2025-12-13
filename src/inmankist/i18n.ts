@@ -1,6 +1,5 @@
 import { getWithPrefix, setWithPrefix } from "../redis";
-import { Language, QuizType } from "./types";
-import { getQuizTypeName } from "./config";
+import { Language } from "./types";
 
 // Default language
 export const DEFAULT_LANGUAGE = Language.Persian;
@@ -237,26 +236,5 @@ export function getStrings(language: Language = DEFAULT_LANGUAGE): IStrings {
 export async function getStringsForUser(userId?: number): Promise<IStrings> {
   const lang = await getUserLanguage(userId);
   return getStrings(lang);
-}
-
-// Get a string in all languages joined with "/"
-export function getStringAllLanguages(
-  key: keyof IStrings
-): string {
-  const values = Object.values(Language).map((lang) => {
-    const strings = getStrings(lang);
-    return strings[key];
-  });
-  return values.join(" / ");
-}
-
-// Get "show_about" string for a quiz type in all languages joined with "/"
-export function getShowAboutAllLanguages(type: QuizType): string {
-  const values = Object.values(Language).map((lang) => {
-    const strings = getStrings(lang);
-    const quizTypeName = getQuizTypeName(type, lang);
-    return strings.show_about(quizTypeName);
-  });
-  return values.join(" / ");
 }
 

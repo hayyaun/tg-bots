@@ -3,7 +3,8 @@ import { Bot } from "grammy";
 import { BotCommand } from "grammy/types";
 import { createAdminNotifier, setupBotErrorHandling, initializeBot } from "../utils/bot";
 import { getQuizTypeName, quizTypes } from "./config";
-import { getStringAllLanguages, getShowAboutAllLanguages } from "./i18n";
+import { getStrings } from "./i18n";
+import { Language } from "./types";
 import { setCustomCommands } from "./reducer";
 import { QuizType } from "./types";
 import { setupCommands } from "./commands";
@@ -25,18 +26,19 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Admin notification helper
   const notifyAdmin = createAdminNotifier(bot, BOT_NAME, ADMIN_USER_ID);
 
-  // Commands - use multilingual descriptions for all commands
+  // Commands - use English descriptions
+  const englishStrings = getStrings(Language.English);
   const commands: BotCommand[] = [
-    { command: "start", description: getStringAllLanguages("start_btn") },
-    { command: "help", description: getStringAllLanguages("help_btn") },
-    { command: "language", description: getStringAllLanguages("language_btn") },
-    { command: "history", description: getStringAllLanguages("history_btn") },
+    { command: "start", description: englishStrings.start_btn },
+    { command: "help", description: englishStrings.help_btn },
+    { command: "language", description: englishStrings.language_btn },
+    { command: "history", description: englishStrings.history_btn },
   ];
 
   for (const key in quizTypes) {
     commands.push({
       command: key,
-      description: getShowAboutAllLanguages(key as QuizType),
+      description: englishStrings.show_about(getQuizTypeName(key as QuizType, Language.English)),
     });
   }
 
