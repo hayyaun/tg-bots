@@ -53,6 +53,9 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const sortedResults = _.reverse(_.sortBy([...result], ([, value]) => value));
   const language = user.language || Language.Persian;
 
+  // Calculate total of all scores for weighted percentage
+  const totalScores = sortedResults.reduce((sum, [, value]) => sum + value, 0);
+
   // process image
   const textRight = sortedResults
     .slice(0, 3)
@@ -60,7 +63,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const textLeft = sortedResults
     .slice(0, 3)
     .map(
-      ([, value]) => `${toPercentage(value, quizModes[user.mode].size * 3)}% \n`
+      ([, value]) => `${toPercentage(value, totalScores)}% \n`
     );
 
   const mainDeity = sortedResults[0][0];
