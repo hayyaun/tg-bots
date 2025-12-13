@@ -1,5 +1,6 @@
 import { getWithPrefix, setWithPrefix } from "../redis";
-import { Language } from "./types";
+import { Language, QuizType } from "./types";
+import { getQuizTypeName } from "./config";
 
 // Default language
 export const DEFAULT_LANGUAGE = Language.Persian;
@@ -39,6 +40,8 @@ export interface IStrings {
   gender: string;
   start_btn: string;
   help_btn: string;
+  language_btn: string;
+  history_btn: string;
   help: string;
   got_it: string;
   values: string[];
@@ -78,6 +81,8 @@ const translations: { [key in Language]: IStrings } = {
     gender: "لطفا جنسیت خود را مشخص کنید \n👇",
     start_btn: "🚀 شروع آزمون",
     help_btn: "❓ راهنما",
+    language_btn: "🌐 زبان",
+    history_btn: "📚 تاریخچه",
     help: ["📌 لطفا برای شروع روی دکمه «شروع آزمون» بزنید!"].join("\n"),
     got_it: "متوجه شدم!",
     values: ["اصلا", "نه زیاد", "حدودا", "کاملا"],
@@ -115,6 +120,8 @@ const translations: { [key in Language]: IStrings } = {
     gender: "Please specify your gender \n👇",
     start_btn: "🚀 Start Quiz",
     help_btn: "❓ Help",
+    language_btn: "🌐 Language",
+    history_btn: "📚 History",
     help: ["📌 Please click the «Start Quiz» button to begin!"].join("\n"),
     got_it: "Got it!",
     values: ["Not at all", "Not much", "Somewhat", "Completely"],
@@ -152,6 +159,8 @@ const translations: { [key in Language]: IStrings } = {
     gender: "Пожалуйста, укажите ваш пол \n👇",
     start_btn: "🚀 Начать тест",
     help_btn: "❓ Помощь",
+    language_btn: "🌐 Язык",
+    history_btn: "📚 История",
     help: ["📌 Пожалуйста, нажмите кнопку «Начать тест», чтобы начать!"].join("\n"),
     got_it: "Понятно!",
     values: ["Совсем нет", "Не очень", "Отчасти", "Полностью"],
@@ -189,6 +198,8 @@ const translations: { [key in Language]: IStrings } = {
     gender: "الرجاء تحديد جنسك \n👇",
     start_btn: "🚀 ابدأ الاختبار",
     help_btn: "❓ مساعدة",
+    language_btn: "🌐 اللغة",
+    history_btn: "📚 التاريخ",
     help: ["📌 الرجاء الضغط على زر «ابدأ الاختبار» للبدء!"].join("\n"),
     got_it: "فهمت!",
     values: ["إطلاقا", "ليس كثيرا", "نوعا ما", "تماما"],
@@ -226,5 +237,26 @@ export function getStrings(language: Language = DEFAULT_LANGUAGE): IStrings {
 export async function getStringsForUser(userId?: number): Promise<IStrings> {
   const lang = await getUserLanguage(userId);
   return getStrings(lang);
+}
+
+// Get a string in all languages joined with "/"
+export function getStringAllLanguages(
+  key: keyof IStrings
+): string {
+  const values = Object.values(Language).map((lang) => {
+    const strings = getStrings(lang);
+    return strings[key];
+  });
+  return values.join(" / ");
+}
+
+// Get "show_about" string for a quiz type in all languages joined with "/"
+export function getShowAboutAllLanguages(type: QuizType): string {
+  const values = Object.values(Language).map((lang) => {
+    const strings = getStrings(lang);
+    const quizTypeName = getQuizTypeName(type, lang);
+    return strings.show_about(quizTypeName);
+  });
+  return values.join(" / ");
 }
 

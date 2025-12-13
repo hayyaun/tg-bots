@@ -19,6 +19,8 @@ import {
   hasUserLanguage,
   refreshUserLanguageTTL,
   DEFAULT_LANGUAGE,
+  getStringAllLanguages,
+  getShowAboutAllLanguages,
 } from "./i18n";
 import { MATCHFOUND_BOT_USERNAME } from "./config";
 import {
@@ -269,21 +271,18 @@ const startBot = async (botKey: string, agent: unknown) => {
     });
   }
 
-  // Commands - use default language for commands
-  const defaultStrings = getStrings(DEFAULT_LANGUAGE);
+  // Commands - use multilingual descriptions for all commands
   const commands: BotCommand[] = [
-    { command: "start", description: defaultStrings.start_btn },
-    { command: "help", description: defaultStrings.help_btn },
-    { command: "language", description: "🌐 Language / Язык / язык / اللغة" },
-    { command: "history", description: "📚 History / История / تاریخچه / التاريخ" },
+    { command: "start", description: getStringAllLanguages("start_btn") },
+    { command: "help", description: getStringAllLanguages("help_btn") },
+    { command: "language", description: getStringAllLanguages("language_btn") },
+    { command: "history", description: getStringAllLanguages("history_btn") },
   ];
 
   for (const key in quizTypes) {
     commands.push({
       command: key,
-      description: defaultStrings.show_about(
-        getQuizTypeName(key as QuizType, DEFAULT_LANGUAGE)
-      ),
+      description: getShowAboutAllLanguages(key as QuizType),
     });
   }
 
