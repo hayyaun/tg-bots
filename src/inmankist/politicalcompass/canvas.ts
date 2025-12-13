@@ -59,30 +59,31 @@ export function generateCompassChart(
 
   // Draw axis labels
   ctx.fillStyle = "#333333";
-  ctx.font = "bold 20px Arial";
+  ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  ctx.direction = "rtl";
 
   // X-axis labels
   ctx.fillText("چپ", padding - 30, centerY);
   ctx.fillText("راست", width - padding + 30, centerY);
-  ctx.font = "16px Arial";
+  ctx.font = "16px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.fillText("اقتصادی", width / 2, height - padding + 40);
 
   // Y-axis labels
   ctx.save();
   ctx.translate(centerX - 40, padding - 30);
   ctx.rotate(-Math.PI / 2);
-  ctx.font = "16px Arial";
+  ctx.font = "16px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.fillText("اجتماعی", 0, 0);
   ctx.restore();
 
-  ctx.font = "bold 20px Arial";
+  ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.fillText("اقتدارگرا", centerX, padding - 30);
   ctx.fillText("آزادی‌خواه", centerX, height - padding + 30);
 
   // Draw quadrant labels
-  ctx.font = "18px Arial";
+  ctx.font = "18px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.fillStyle = "#888888";
 
   // Top-left (LibLeft)
@@ -121,8 +122,9 @@ export function generateCompassChart(
 
   // Draw coordinates text near the dot
   ctx.fillStyle = "#ff4444";
-  ctx.font = "bold 16px Arial";
+  ctx.font = "bold 16px 'DejaVu Sans Mono', monospace";
   ctx.textAlign = "center";
+  ctx.direction = "ltr";
   ctx.fillText(
     `(${Math.round(economicScore)}, ${Math.round(socialScore)})`,
     userX,
