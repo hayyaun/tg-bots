@@ -4,7 +4,7 @@ import { BotCommand } from "grammy/types";
 import log from "../log";
 import { prisma } from "../db";
 import { createAdminNotifier, setupBotErrorHandling, initializeBot } from "../utils/bot";
-import { getDisplayNameFromUser, getUserName } from "../utils/string";
+import { escapeMarkdownV2, getDisplayNameFromUser, getUserName } from "../utils/string";
 import {
   getQuizModeName,
   getQuizTypeName,
@@ -425,7 +425,10 @@ const startBot = async (botKey: string, agent: unknown) => {
       // Show summary first
       const messageLines = [strings.history_title, ""];
       results.forEach((item) => {
-        messageLines.push(`• *${item.displayName}*: ${item.result || strings.history_no_results}`);
+        // Escape Markdown special characters in result to avoid parsing issues
+        const resultText = item.result || strings.history_no_results;
+        const escapedResult = escapeMarkdownV2(resultText);
+        messageLines.push(`• *${item.displayName}*: ${escapedResult}`);
       });
 
       await ctx.reply(messageLines.join("\n"), {
