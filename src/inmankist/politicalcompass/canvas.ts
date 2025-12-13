@@ -67,17 +67,8 @@ export function generateCompassChart(
   // X-axis labels
   ctx.fillText("چپ", padding - 30, centerY);
   ctx.fillText("راست", width - padding + 30, centerY);
-  ctx.font = "16px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
-  ctx.fillText("اقتصادی", width / 2, height - padding + 40);
 
   // Y-axis labels
-  ctx.save();
-  ctx.translate(centerX - 40, padding - 30);
-  ctx.rotate(-Math.PI / 2);
-  ctx.font = "16px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
-  ctx.fillText("اجتماعی", 0, 0);
-  ctx.restore();
-
   ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
   ctx.fillText("اقتدارگرا", centerX, padding - 30);
   ctx.fillText("آزادی‌خواه", centerX, height - padding + 30);
