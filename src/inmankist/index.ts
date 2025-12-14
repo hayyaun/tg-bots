@@ -36,6 +36,7 @@ const startBot = async (botKey: string, agent: unknown) => {
     { command: "start", description: englishStrings.start_btn },
     { command: "language", description: englishStrings.language_btn },
     { command: "history", description: englishStrings.history_btn },
+    { command: "profile", description: "👤 View your profile" },
   ];
 
   for (const key in quizTypes) {

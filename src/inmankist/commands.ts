@@ -12,6 +12,7 @@ import {
 import { replyAbout, replyDetial } from "./reducer";
 import { Language, QuizType } from "./types";
 import { getUserData } from "./userData";
+import { setupProfileCommand } from "../shared/profileCommand";
 
 const BOT_NAME = "Inmankist";
 
@@ -239,5 +240,11 @@ export function setupCommands(
   for (const key in quizTypes) {
     bot.command(key, (ctx) => replyAbout(ctx, key as QuizType));
   }
+
+  // /profile command (using shared module)
+  setupProfileCommand(bot, {
+    botName: BOT_NAME,
+    notifyAdmin,
+  });
 }
 

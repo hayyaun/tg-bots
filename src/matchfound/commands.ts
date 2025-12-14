@@ -20,6 +20,7 @@ import {
   profileValues,
   deleteData,
 } from "./strings";
+import { setupProfileCommand } from "../shared/profileCommand";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -475,29 +476,10 @@ export function setupCommands(
     }
   });
 
-  // /profile command
-  bot.command("profile", async (ctx) => {
-    ctx.react("🤔").catch(() => {});
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    try {
-      // Recalculate completion score to ensure it's up to date
-      await updateCompletionScore(userId);
-      const profile = await getUserProfile(userId);
-      if (!profile) {
-        await ctx.reply(errors.startFirst);
-        return;
-      }
-
-      await displayProfile(ctx, profile);
-    } catch (err) {
-      log.error(BOT_NAME + " > Profile command failed", err);
-      await ctx.reply("❌ خطا در نمایش پروفایل. لطفا دوباره تلاش کنید.");
-      notifyAdmin(
-        `❌ <b>Profile Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
-      );
-    }
+  // /profile command (using shared module)
+  setupProfileCommand(bot, {
+    botName: BOT_NAME,
+    notifyAdmin,
   });
 
 
