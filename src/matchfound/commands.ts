@@ -1,8 +1,8 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
-import { getUserProfile, ensureUserExists, updateCompletionScore, getUserIdFromTelegramId } from "./database";
+import { getUserProfile, ensureUserExists, getUserIdFromTelegramId } from "./database";
 import { findMatches } from "./matching";
-import { displayUser, displayProfile } from "./display";
+import { displayUser } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser, UserProfile } from "./types";

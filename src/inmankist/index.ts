@@ -8,9 +8,8 @@ import {
 } from "../utils/bot";
 import { getQuizTypeName, quizTypes } from "./config";
 import { getStrings } from "./i18n";
-import { Language } from "./types";
+import { Language, QuizType } from "./types";
 import { setCustomCommands } from "./reducer";
-import { QuizType } from "./types";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";
 

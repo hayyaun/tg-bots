@@ -1,4 +1,4 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
 import { escapeMarkdownV2, getUserName } from "../utils/string";
