@@ -10,6 +10,20 @@ const centerX = width / 2;
 const centerY = height / 2;
 const axisRange = 100; // -100 to +100
 
+// Quadrant background colors
+const authRightColor = "#aedef2"; // Light blue
+const libRightColor = "#caaef2"; // Light purple
+const authLeftColor = "#f2aee6"; // Light pink
+const libLeftColor = "#aef2cf"; // Light green
+
+// Chart colors
+const backgroundColor = "#ffffff"; // White
+const gridLineColor = "#e0e0e0"; // Light gray
+const axisColor = "#333333"; // Dark gray
+const labelColor = "#888888"; // Medium gray
+const centerPointColor = "#999999"; // Medium-light gray
+const userPositionColor = "#ff4444"; // Red
+
 export function generateCompassChart(
   economicScore: number,
   socialScore: number,
@@ -21,11 +35,28 @@ export function generateCompassChart(
   const ctx = canvas.getContext("2d");
 
   // Background
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = backgroundColor;
   ctx.fillRect(0, 0, width, height);
 
+  // Draw quadrant backgrounds
+  // Top-left (AuthLeft)
+  ctx.fillStyle = authLeftColor;
+  ctx.fillRect(padding, padding, chartSize / 2, chartSize / 2);
+  
+  // Top-right (AuthRight)
+  ctx.fillStyle = authRightColor;
+  ctx.fillRect(centerX, padding, chartSize / 2, chartSize / 2);
+  
+  // Bottom-left (LibLeft)
+  ctx.fillStyle = libLeftColor;
+  ctx.fillRect(padding, centerY, chartSize / 2, chartSize / 2);
+  
+  // Bottom-right (LibRight)
+  ctx.fillStyle = libRightColor;
+  ctx.fillRect(centerX, centerY, chartSize / 2, chartSize / 2);
+
   // Draw grid lines
-  ctx.strokeStyle = "#e0e0e0";
+  ctx.strokeStyle = gridLineColor;
   ctx.lineWidth = 1;
 
   // Vertical grid lines
@@ -47,7 +78,7 @@ export function generateCompassChart(
   }
 
   // Draw axes
-  ctx.strokeStyle = "#333333";
+  ctx.strokeStyle = axisColor;
   ctx.lineWidth = 2;
 
   // X-axis (Economic: Left to Right)
@@ -63,7 +94,7 @@ export function generateCompassChart(
   ctx.stroke();
 
   // Draw axis labels
-  ctx.fillStyle = "#333333";
+  ctx.fillStyle = axisColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.direction = isRTL ? "rtl" : "ltr";
@@ -94,7 +125,7 @@ export function generateCompassChart(
   } else {
     ctx.font = "18px Arial, sans-serif";
   }
-  ctx.fillStyle = "#888888";
+  ctx.fillStyle = labelColor;
 
   // Top-left (AuthLeft) - Authoritarian at top
   ctx.fillText(strings.compass_authLeft, padding + 60, padding + 30);
@@ -106,7 +137,7 @@ export function generateCompassChart(
   ctx.fillText(strings.compass_libRight, width - padding - 60, height - padding - 30);
 
   // Draw center point
-  ctx.fillStyle = "#999999";
+  ctx.fillStyle = centerPointColor;
   ctx.beginPath();
   ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
   ctx.fill();
@@ -119,20 +150,20 @@ export function generateCompassChart(
   const userY = centerY + (socialScore / axisRange) * (chartSize / 2);
 
   // Draw user's position as a dot
-  ctx.fillStyle = "#ff4444";
+  ctx.fillStyle = userPositionColor;
   ctx.beginPath();
   ctx.arc(userX, userY, 8, 0, Math.PI * 2);
   ctx.fill();
 
   // Draw a circle around the dot for visibility
-  ctx.strokeStyle = "#ff4444";
+  ctx.strokeStyle = userPositionColor;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(userX, userY, 12, 0, Math.PI * 2);
   ctx.stroke();
 
   // Draw coordinates text near the dot
-  ctx.fillStyle = "#ff4444";
+  ctx.fillStyle = userPositionColor;
   ctx.font = "bold 16px 'DejaVu Sans Mono', monospace";
   ctx.textAlign = "center";
   ctx.direction = "ltr";
