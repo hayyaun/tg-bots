@@ -3,19 +3,19 @@ import { Language, QuizMode, QuizType } from "./types";
 export const quizTypes: { [k: string]: { [key in Language]: string } } = {
   [QuizType.Archetype]: {
     [Language.Persian]: "آزمون کهن الگوها",
-    [Language.English]: "Archetype Test",
+    [Language.English]: "Archetype Quiz",
     [Language.Russian]: "Тест архетипов",
     [Language.Arabic]: "اختبار الأنماط الأصلية",
   },
   [QuizType.MBTI]: {
     [Language.Persian]: "آزمون شخصیت MBTI",
-    [Language.English]: "MBTI Personality Test",
+    [Language.English]: "MBTI Personality",
     [Language.Russian]: "Тест личности MBTI",
     [Language.Arabic]: "اختبار شخصية MBTI",
   },
   [QuizType.LeftRight]: {
     [Language.Persian]: "آزمون سبک شناختی",
-    [Language.English]: "Cognitive Style Test",
+    [Language.English]: "Cognitive Style",
     [Language.Russian]: "Тест когнитивного стиля",
     [Language.Arabic]: "اختبار الأسلوب المعرفي",
   },
@@ -27,7 +27,7 @@ export const quizTypes: { [k: string]: { [key in Language]: string } } = {
   },
   [QuizType.Enneagram]: {
     [Language.Persian]: "آزمون انیاگرام",
-    [Language.English]: "Enneagram Test",
+    [Language.English]: "Enneagram",
     [Language.Russian]: "Тест эннеаграммы",
     [Language.Arabic]: "اختبار الإنياجرام",
   },

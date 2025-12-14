@@ -36,13 +36,6 @@ export function setupCommands(
   bot: Bot,
   notifyAdmin: (message: string) => Promise<void>
 ) {
-  // /help command
-  bot.command("help", async (ctx) => {
-    ctx.react("🤔").catch(() => {});
-    const strings = await getStringsForUser(ctx.from?.id);
-    ctx.reply(strings.help);
-  });
-
   // /language command
   bot.command("language", async (ctx) => {
     ctx.react("⚡").catch(() => {});

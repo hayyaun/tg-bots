@@ -14,8 +14,16 @@ export async function getUserLanguage(userId?: number): Promise<Language> {
 }
 
 // Set user language
-export async function setUserLanguage(userId: number, language: Language): Promise<void> {
-  await setWithPrefix(REDIS_PREFIX, `user:${userId}:lang`, language, USER_LANG_TTL);
+export async function setUserLanguage(
+  userId: number,
+  language: Language
+): Promise<void> {
+  await setWithPrefix(
+    REDIS_PREFIX,
+    `user:${userId}:lang`,
+    language,
+    USER_LANG_TTL
+  );
 }
 
 // Check if user has set a language (vs using default)
@@ -28,7 +36,12 @@ export async function hasUserLanguage(userId: number): Promise<boolean> {
 export async function refreshUserLanguageTTL(userId: number): Promise<void> {
   const lang = await getUserLanguage(userId);
   if (lang !== DEFAULT_LANGUAGE) {
-    await setWithPrefix(REDIS_PREFIX, `user:${userId}:lang`, lang, USER_LANG_TTL);
+    await setWithPrefix(
+      REDIS_PREFIX,
+      `user:${userId}:lang`,
+      lang,
+      USER_LANG_TTL
+    );
   }
 }
 
@@ -47,7 +60,7 @@ export interface IStrings {
   done: string;
   male: string;
   female: string;
-  show_about: (s: string) => string;
+  about: string;
   language: string;
   select_language: string;
   quick: string;
@@ -88,7 +101,7 @@ const translations: { [key in Language]: IStrings } = {
     done: "🎉 خسته نباشید!",
     male: "مرد",
     female: "زن",
-    show_about: (s: string) => `درباره ${s}`,
+    about: "درباره",
     language: "زبان",
     select_language: "لطفا زبان خود را انتخاب کنید:",
     quick: "سریع",
@@ -127,7 +140,7 @@ const translations: { [key in Language]: IStrings } = {
     done: "🎉 Well done!",
     male: "Male",
     female: "Female",
-    show_about: (s: string) => `About ${s}`,
+    about: "About",
     language: "Language",
     select_language: "Please select your language:",
     quick: "Quick",
@@ -160,13 +173,15 @@ const translations: { [key in Language]: IStrings } = {
     help_btn: "❓ Помощь",
     language_btn: "🌐 Язык",
     history_btn: "📚 История",
-    help: ["📌 Пожалуйста, нажмите кнопку «Начать тест», чтобы начать!"].join("\n"),
+    help: ["📌 Пожалуйста, нажмите кнопку «Начать тест», чтобы начать!"].join(
+      "\n"
+    ),
     got_it: "Понятно!",
     values: ["Совсем нет", "Не очень", "Отчасти", "Полностью"],
     done: "🎉 Молодец!",
     male: "Мужской",
     female: "Женский",
-    show_about: (s: string) => `О ${s}`,
+    about: "О",
     language: "Язык",
     select_language: "Пожалуйста, выберите ваш язык:",
     quick: "Быстрый",
@@ -205,7 +220,7 @@ const translations: { [key in Language]: IStrings } = {
     done: "🎉 أحسنت!",
     male: "ذكر",
     female: "أنثى",
-    show_about: (s: string) => `حول ${s}`,
+    about: "حول",
     language: "اللغة",
     select_language: "الرجاء اختيار لغتك:",
     quick: "سريع",
@@ -237,4 +252,3 @@ export async function getStringsForUser(userId?: number): Promise<IStrings> {
   const lang = await getUserLanguage(userId);
   return getStrings(lang);
 }
-

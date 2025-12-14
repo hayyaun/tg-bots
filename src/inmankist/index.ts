@@ -1,7 +1,11 @@
 import { configDotenv } from "dotenv";
 import { Bot } from "grammy";
 import { BotCommand } from "grammy/types";
-import { createAdminNotifier, setupBotErrorHandling, initializeBot } from "../utils/bot";
+import {
+  createAdminNotifier,
+  setupBotErrorHandling,
+  initializeBot,
+} from "../utils/bot";
 import { getQuizTypeName, quizTypes } from "./config";
 import { getStrings } from "./i18n";
 import { Language } from "./types";
@@ -30,7 +34,6 @@ const startBot = async (botKey: string, agent: unknown) => {
   const englishStrings = getStrings(Language.English);
   const commands: BotCommand[] = [
     { command: "start", description: englishStrings.start_btn },
-    { command: "help", description: englishStrings.help_btn },
     { command: "language", description: englishStrings.language_btn },
     { command: "history", description: englishStrings.history_btn },
   ];
@@ -38,7 +41,7 @@ const startBot = async (botKey: string, agent: unknown) => {
   for (const key in quizTypes) {
     commands.push({
       command: key,
-      description: englishStrings.show_about(getQuizTypeName(key as QuizType, Language.English)),
+      description: `❓ ${englishStrings.about} ${getQuizTypeName(key as QuizType, Language.English)}`,
     });
   }
 
