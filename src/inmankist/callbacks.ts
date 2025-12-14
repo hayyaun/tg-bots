@@ -210,6 +210,35 @@ function getLanguageName(language: Language): string {
   return names[language];
 }
 
+async function updateWelcomeMessage(
+  ctx: Context,
+  welcomeId: number,
+  quiz: QuizType,
+  language: Language,
+  mode?: QuizMode,
+  gender?: Gender
+): Promise<void> {
+  const strings = getStrings(language);
+  const parts: string[] = [getQuizTypeName(quiz, language)];
+
+  if (mode !== undefined) {
+    parts.push(getQuizModeName(mode, language));
+  }
+
+  if (gender !== undefined) {
+    parts.push(gender === Gender.male ? strings.male : strings.female);
+  }
+
+  await ctx.api
+    .editMessageText(
+      ctx.chat!.id!,
+      welcomeId,
+      `${strings.welcome} \n\n✅  ${parts.join(" - ")}`,
+      { reply_markup: undefined }
+    )
+    .catch(() => {});
+}
+
 async function setUser(
   ctx: Context,
   type: QuizType,
@@ -345,14 +374,11 @@ export function setupCallbacks(
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
       const language = await getUserLanguage(userId);
-      const strings = await getStringsForUser(userId);
       ctx.answerCallbackQuery().catch(() => {});
-      ctx
-        .editMessageText(
-          `${strings.welcome} \n\n✅  ${getQuizTypeName(type, language)}`,
-          { reply_markup: undefined }
-        )
-        .catch(() => {});
+      const welcomeId = ctx.callbackQuery?.message?.message_id;
+      if (welcomeId) {
+        await updateWelcomeMessage(ctx, welcomeId, type, language);
+      }
       await setUser(ctx, type, notifyAdmin);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
@@ -361,9 +387,8 @@ export function setupCallbacks(
           `mode:${k}`
         )
       );
-      ctx.reply(strings.mode, {
-        reply_markup: keyboard,
-      });
+      const strings = getStrings(language);
+      ctx.reply(strings.mode, { reply_markup: keyboard });
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Type", err);
       notifyAdmin(
@@ -387,16 +412,48 @@ export function setupCallbacks(
       const strings = getStrings(language);
       ctx.answerCallbackQuery().catch(() => {});
       ctx.deleteMessage().catch(() => {});
-      ctx.api
-        .editMessageText(
-          ctx.chat!.id!,
-          user.welcomeId!,
-          `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(mode, language)}`,
-          { reply_markup: undefined }
-        )
-        .catch(() => {});
+      await updateWelcomeMessage(
+        ctx,
+        user.welcomeId!,
+        user.quiz,
+        language,
+        mode
+      );
       const updatedUser = await updateUserData(userId, { mode }, user);
       updateUserDataCache(userId, updatedUser);
+
+      // Check if user has gender in database
+      const dbUser = await prisma.user.findUnique({
+        where: { telegram_id: BigInt(userId) },
+        select: { gender: true },
+      });
+
+      if (
+        dbUser?.gender &&
+        (dbUser.gender === Gender.male || dbUser.gender === Gender.female)
+      ) {
+        // User has gender in database, use it and proceed
+        const gender = dbUser.gender as Gender;
+        updatedUser.gender = gender;
+        updatedUser.order = selectOrder(updatedUser);
+        const finalUser = await updateUserData(
+          userId,
+          { gender, order: updatedUser.order },
+          updatedUser
+        );
+        updateUserDataCache(userId, finalUser);
+        await updateWelcomeMessage(
+          ctx,
+          updatedUser.welcomeId!,
+          updatedUser.quiz,
+          language,
+          mode,
+          gender
+        );
+        await sendQuestionOrResult(ctx, 0, finalUser, notifyAdmin);
+        return;
+      }
+      // No gender in database, ask for it
       ctx.reply(strings.gender, {
         reply_markup: new InlineKeyboard()
           .text(strings.male, `gender:${Gender.male}`)
@@ -422,17 +479,16 @@ export function setupCallbacks(
         return;
       }
       const language = user.language || DEFAULT_LANGUAGE;
-      const strings = getStrings(language);
       ctx.answerCallbackQuery().catch(() => {});
       ctx.deleteMessage().catch(() => {});
-      ctx.api
-        .editMessageText(
-          ctx.chat!.id!,
-          user.welcomeId!,
-          `${strings.welcome} \n\n✅  ${getQuizTypeName(user.quiz, language)} - ${getQuizModeName(user.mode, language)} - ${gender === Gender.male ? strings.male : strings.female}`,
-          { reply_markup: undefined }
-        )
-        .catch(() => {});
+      await updateWelcomeMessage(
+        ctx,
+        user.welcomeId!,
+        user.quiz,
+        language,
+        user.mode,
+        gender
+      );
       user.gender = gender;
       user.order = selectOrder(user);
       const updatedUser = await updateUserData(
@@ -441,6 +497,19 @@ export function setupCallbacks(
         user
       );
       updateUserDataCache(userId, updatedUser);
+
+      // Save gender to database
+      await prisma.user.upsert({
+        where: { telegram_id: BigInt(userId) },
+        create: {
+          telegram_id: BigInt(userId),
+          gender: gender,
+        },
+        update: {
+          gender: gender,
+        },
+      });
+
       await sendQuestionOrResult(ctx, 0, updatedUser, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
