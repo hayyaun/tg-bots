@@ -2,11 +2,42 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
 import { getDisplayNameFromUser, getUserName } from "../utils/string";
-import { getQuizModeName, getQuizTypeName, quizModes, quizTypes, MATCHFOUND_BOT_USERNAME } from "./config";
-import { getStrings, getStringsForUser, getUserLanguage, setUserLanguage, DEFAULT_LANGUAGE } from "./i18n";
-import { replyResult, replyDetial, selectOrder, selectQuizQuestion } from "./reducer";
-import { Gender, IUserData, Language, QuizMode, QuizType, Value } from "./types";
-import { getUserData, setUserData, updateUserData, updateUserDataCache, deleteUserData } from "./userData";
+import {
+  getQuizModeName,
+  getQuizTypeName,
+  quizModes,
+  quizTypes,
+  MATCHFOUND_BOT_USERNAME,
+} from "./config";
+import {
+  getStrings,
+  getStringsForUser,
+  getUserLanguage,
+  setUserLanguage,
+  DEFAULT_LANGUAGE,
+  ANSWER_VALUES,
+} from "./i18n";
+import {
+  replyResult,
+  replyDetial,
+  selectOrder,
+  selectQuizQuestion,
+} from "./reducer";
+import {
+  Gender,
+  IUserData,
+  Language,
+  QuizMode,
+  QuizType,
+  Value,
+} from "./types";
+import {
+  getUserData,
+  setUserData,
+  updateUserData,
+  updateUserDataCache,
+  deleteUserData,
+} from "./userData";
 
 const BOT_NAME = "Inmankist";
 
@@ -14,9 +45,7 @@ const BOT_NAME = "Inmankist";
 async function handleExpiredSession(ctx: Context): Promise<void> {
   await ctx.answerCallbackQuery("❌ جلسه منقضی شده است").catch(() => {});
   await ctx
-    .reply(
-      "❌ جلسه شما منقضی شده است. لطفا دوباره با دستور /start شروع کنید."
-    )
+    .reply("❌ جلسه شما منقضی شده است. لطفا دوباره با دستور /start شروع کنید.")
     .catch(() => {});
 }
 
@@ -163,15 +192,6 @@ async function saveQuizResultToDB(
   }
 }
 
-function createLanguageKeyboard(): InlineKeyboard {
-  return new InlineKeyboard()
-    .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
-    .text("🇬🇧 English", `lang:${Language.English}`)
-    .row()
-    .text("🇷🇺 Русский", `lang:${Language.Russian}`)
-    .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
-}
-
 function createQuizTypesKeyboard(language: Language): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   Object.keys(quizTypes).forEach((k) =>
@@ -190,7 +210,11 @@ function getLanguageName(language: Language): string {
   return names[language];
 }
 
-async function setUser(ctx: Context, type: QuizType, notifyAdmin: (message: string) => Promise<void>) {
+async function setUser(
+  ctx: Context,
+  type: QuizType,
+  notifyAdmin: (message: string) => Promise<void>
+) {
   const userId = ctx.from?.id;
   if (!userId) throw new Error("UserId Invalid!");
   const language = await getUserLanguage(userId);
@@ -274,7 +298,7 @@ async function sendQuestionOrResult(
   }
 
   const keyboard = new InlineKeyboard();
-  strings.values.forEach((v, i: Value) =>
+  ANSWER_VALUES.forEach((v, i: Value) =>
     keyboard.text(v, `answer:${current}-${i}`)
   );
 
@@ -300,9 +324,7 @@ export function setupCallbacks(
       ctx
         .editMessageText(
           `✅ ${strings.language}: ${getLanguageName(language)}\n\n${strings.welcome}`,
-          {
-            reply_markup: undefined,
-          }
+          { reply_markup: undefined }
         )
         .catch(() => {});
       ctx.reply(strings.welcome, {
@@ -468,7 +490,7 @@ export function setupCallbacks(
 
       // Update keyboard
       const keyboard = new InlineKeyboard();
-      strings.values.forEach((v, i: Value) =>
+      ANSWER_VALUES.forEach((v, i: Value) =>
         keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
       );
 
@@ -497,4 +519,3 @@ export function setupCallbacks(
     }
   });
 }
-

@@ -6,6 +6,9 @@ export const DEFAULT_LANGUAGE = Language.Persian;
 const REDIS_PREFIX = "inmankist";
 const USER_LANG_TTL = 14 * 24 * 60 * 60; // 2 weeks in seconds
 
+// Answer values (language-independent emojis)
+export const ANSWER_VALUES = ["👎👎", "👎", "👍", "👍👍"] as const;
+
 // Get user language or default (no cache here - userData cache handles active sessions)
 export async function getUserLanguage(userId?: number): Promise<Language> {
   if (!userId) return DEFAULT_LANGUAGE;
@@ -56,7 +59,6 @@ export interface IStrings {
   history_btn: string;
   help: string;
   got_it: string;
-  values: string[];
   done: string;
   male: string;
   female: string;
@@ -97,7 +99,6 @@ const translations: { [key in Language]: IStrings } = {
     history_btn: "📚 تاریخچه",
     help: ["📌 لطفا برای شروع روی دکمه «شروع آزمون» بزنید!"].join("\n"),
     got_it: "متوجه شدم!",
-    values: ["اصلا", "نه زیاد", "حدودا", "کاملا"],
     done: "🎉 خسته نباشید!",
     male: "مرد",
     female: "زن",
@@ -136,7 +137,6 @@ const translations: { [key in Language]: IStrings } = {
     history_btn: "📚 History",
     help: ["📌 Please click the «Start Quiz» button to begin!"].join("\n"),
     got_it: "Got it!",
-    values: ["Not at all", "Not much", "Somewhat", "Completely"],
     done: "🎉 Well done!",
     male: "Male",
     female: "Female",
@@ -177,7 +177,6 @@ const translations: { [key in Language]: IStrings } = {
       "\n"
     ),
     got_it: "Понятно!",
-    values: ["Совсем нет", "Не очень", "Отчасти", "Полностью"],
     done: "🎉 Молодец!",
     male: "Мужской",
     female: "Женский",
@@ -216,7 +215,6 @@ const translations: { [key in Language]: IStrings } = {
     history_btn: "📚 التاريخ",
     help: ["📌 الرجاء الضغط على زر «ابدأ الاختبار» للبدء!"].join("\n"),
     got_it: "فهمت!",
-    values: ["إطلاقا", "ليس كثيرا", "نوعا ما", "تماما"],
     done: "🎉 أحسنت!",
     male: "ذكر",
     female: "أنثى",
