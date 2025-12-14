@@ -78,7 +78,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard();
   sortedResults.slice(0, 3).forEach((r) => {
-    const text = strings.show_about(`کهن الگو ${deities[r[0]].name[language]}`);
+    const text = `${strings.about} کهن الگو ${deities[r[0]].name[language]}`;
     const to = `detail:${QuizType.Archetype}:${r[0]}`;
     keyboard.text(text, to).row();
   });

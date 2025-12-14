@@ -135,7 +135,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   topTypes.forEach(([type]) => {
     const desc = descriptions[type];
     keyboard.text(
-      strings.show_about(`تیپ ${type.replace("type", "")}`),
+      `${strings.about} تیپ ${type.replace("type", "")}`,
       `detail:${QuizType.Enneagram}:${type}`
     );
     keyboard.row();

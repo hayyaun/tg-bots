@@ -140,7 +140,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const userId = ctx.from?.id;
   const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard().text(
-    strings.show_about(`تیپ ${mbtiType.toUpperCase()}`),
+    `${strings.about} تیپ ${mbtiType.toUpperCase()}`,
     `detail:${QuizType.MBTI}:${mbtiType}`
   );
 

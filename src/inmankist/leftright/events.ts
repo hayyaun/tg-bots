@@ -123,7 +123,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const userId = ctx.from?.id;
   const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard().text(
-    strings.show_about(`سبک ${style.name[language]}`),
+    `${strings.about} سبک ${style.name[language]}`,
     `detail:${QuizType.LeftRight}:${resultType}`
   );
 

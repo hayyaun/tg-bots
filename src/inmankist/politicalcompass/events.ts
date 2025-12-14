@@ -156,7 +156,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const userId = ctx.from?.id;
   const strings = await getStringsForUser(userId);
   const keyboard = new InlineKeyboard().text(
-    strings.show_about(`قطب ${quadrantInfo.name}`),
+    `${strings.about} قطب ${quadrantInfo.name}`,
     `detail:${QuizType.PoliticalCompass}:${quadrant}`
   );
 
