@@ -93,10 +93,8 @@ export const IRAN_PROVINCES = [
   "sistan_baluchestan",
 ] as const;
 
-export type IranProvince = typeof IRAN_PROVINCES[number];
-
 // Province display names (Persian)
-export const PROVINCE_NAMES: Record<IranProvince, string> = {
+export const PROVINCE_NAMES: Record<typeof IRAN_PROVINCES[number], string> = {
   tehran: "تهران",
   isfahan: "اصفهان",
   fars: "فارس",

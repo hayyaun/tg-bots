@@ -298,14 +298,6 @@ export async function getSharedStrings(
   return translations[language] || translations[Language.Persian];
 }
 
-/**
- * Get shared strings for a specific language
- */
-export function getSharedStringsForLanguage(
-  language: Language = Language.Persian
-): ISharedStrings {
-  return translations[language] || translations[Language.Persian];
-}
 
 // Interest names translations
 const interestTranslations: { [key in Language]: Record<Interest, string> } = {
@@ -734,13 +726,6 @@ const interestTranslations: { [key in Language]: Record<Interest, string> } = {
     social_media: "وسائل التواصل الاجتماعي",
   },
 };
-
-/**
- * Get interest name in a specific language
- */
-export function getInterestName(interest: Interest, language: Language): string {
-  return interestTranslations[language]?.[interest] || interest;
-}
 
 /**
  * Get interest names for a user based on bot name
