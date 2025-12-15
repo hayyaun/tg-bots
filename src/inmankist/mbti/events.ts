@@ -97,7 +97,7 @@ function getDimensionPercentages(
   });
 }
 
-export async function replyResult(ctx: Context, user: IUserData) {
+export function calculateResult(user: IUserData): MBTIType {
   // Calculate scores for each dimension
   const dimensionScores = new Map<Dimension, number>();
 
@@ -112,6 +112,10 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
   // Determine MBTI type
   const mbtiType = calculateMBTIType(dimensionScores);
+  return mbtiType;
+}
+
+export async function replyResult(ctx: Context, user: IUserData, mbtiType: MBTIType) {
   const personality = personalities[mbtiType];
   const language = user.language || Language.Persian;
 
@@ -150,8 +154,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
-
-  return mbtiType;
 }
 
 export async function replyDetail(ctx: Context, key: MBTIType) {

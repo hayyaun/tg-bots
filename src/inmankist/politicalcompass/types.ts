@@ -13,3 +13,9 @@ export enum Quadrant {
   Center = "center",           // Center
 }
 
+export interface PoliticalCompassResult {
+  quadrant: Quadrant;
+  economicScore: number;
+  socialScore: number;
+}
+

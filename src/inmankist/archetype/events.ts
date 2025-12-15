@@ -42,7 +42,7 @@ export async function replyAbout(ctx: Context) {
   await ctx.reply(aboutText[language], { reply_markup: keyboard });
 }
 
-export async function replyResult(ctx: Context, user: IUserData) {
+export function calculateResult(user: IUserData): Array<[Deity, number]> {
   const result = new Map<Deity, number>();
   Object.entries(user.answers).forEach((answer) => {
     const index = parseInt(answer[0]);
@@ -53,6 +53,10 @@ export async function replyResult(ctx: Context, user: IUserData) {
     result.set(question.belong, (previous ?? 0) + value);
   });
   const sortedResults = _.reverse(_.sortBy([...result], ([, value]) => value));
+  return sortedResults;
+}
+
+export async function replyResult(ctx: Context, user: IUserData, sortedResults: Array<[Deity, number]>) {
   const language = user.language || Language.Persian;
 
   // Calculate total of all scores for weighted percentage

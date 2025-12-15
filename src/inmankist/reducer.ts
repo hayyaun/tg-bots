@@ -8,12 +8,13 @@ import { ResultType } from "./leftright/types";
 import * as mbti from "./mbti";
 import { MBTIType } from "./mbti/types";
 import * as politicalcompass from "./politicalcompass";
-import { Quadrant } from "./politicalcompass/types";
+import { Quadrant, PoliticalCompassResult } from "./politicalcompass/types";
 import * as bigfive from "./bigfive";
-import { BigFiveAspect } from "./bigfive/types";
+import { BigFiveAspect, BigFiveTrait } from "./bigfive/types";
 import { quizModes } from "./config";
 import { Language } from "../shared/types";
 import { IQuest, IUserData, QuizType } from "./types";
+import { storeQuizResult } from "./quizResults";
 
 // Optional customization for each quiz
 
@@ -97,19 +98,51 @@ export async function replyAbout(ctx: Context, type: QuizType) {
 }
 
 export async function replyResult(ctx: Context, user: IUserData) {
+  const userId = ctx.from?.id;
+  if (!userId) throw new Error("User ID not found");
+
+  let result: unknown;
+
   switch (user.quiz) {
-    case QuizType.Archetype:
-      return archetype.replyResult(ctx, user);
-    case QuizType.MBTI:
-      return mbti.replyResult(ctx, user);
-    case QuizType.LeftRight:
-      return leftright.replyResult(ctx, user);
-    case QuizType.PoliticalCompass:
-      return politicalcompass.replyResult(ctx, user);
-    case QuizType.Enneagram:
-      return enneagram.replyResult(ctx, user);
-    case QuizType.BigFive:
-      return bigfive.replyResult(ctx, user);
+    case QuizType.Archetype: {
+      result = archetype.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await archetype.replyResult(ctx, user, result as Array<[Deity, number]>);
+      return result;
+    }
+    case QuizType.MBTI: {
+      result = mbti.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await mbti.replyResult(ctx, user, result as MBTIType);
+      return result;
+    }
+    case QuizType.LeftRight: {
+      result = leftright.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await leftright.replyResult(ctx, user, result as ResultType);
+      return result;
+    }
+    case QuizType.PoliticalCompass: {
+      result = politicalcompass.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await politicalcompass.replyResult(ctx, user, result as PoliticalCompassResult);
+      return result;
+    }
+    case QuizType.Enneagram: {
+      result = enneagram.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await enneagram.replyResult(ctx, user, result as Array<[EnneagramType, number]>);
+      return result;
+    }
+    case QuizType.BigFive: {
+      result = bigfive.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await bigfive.replyResult(ctx, user, result as {
+        traits: { [key in BigFiveTrait]?: number };
+        aspects: { [key in BigFiveAspect]?: number };
+      });
+      return result;
+    }
   }
 }
 

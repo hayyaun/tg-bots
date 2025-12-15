@@ -5,7 +5,7 @@ import { Language } from "../../shared/types";
 import { IUserData, QuizType } from "../types";
 import { generateCompassChart } from "./canvas";
 import quadrants from "./quadrants";
-import { PoliticalAxis, Quadrant } from "./types";
+import { PoliticalAxis, Quadrant, PoliticalCompassResult } from "./types";
 
 export function setCustomCommands(bot: Bot) {
   // No custom commands needed for political compass
@@ -65,7 +65,7 @@ function determineQuadrant(
   }
 }
 
-export async function replyResult(ctx: Context, user: IUserData) {
+export function calculateResult(user: IUserData): PoliticalCompassResult {
   // Calculate scores for each axis
   let economicLeftScore = 0;
   let economicRightScore = 0;
@@ -108,6 +108,11 @@ export async function replyResult(ctx: Context, user: IUserData) {
 
   // Determine quadrant
   const quadrant = determineQuadrant(economicScore, socialScore);
+  return { quadrant, economicScore, socialScore };
+}
+
+export async function replyResult(ctx: Context, user: IUserData, result: PoliticalCompassResult) {
+  const { quadrant, economicScore, socialScore } = result;
   const quadrantInfo = quadrants[quadrant];
 
   // Create descriptive position
@@ -167,8 +172,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
-
-  return { quadrant, economicScore, socialScore };
 }
 
 export async function replyDetail(ctx: Context, key: Quadrant) {

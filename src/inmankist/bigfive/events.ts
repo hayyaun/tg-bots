@@ -196,7 +196,48 @@ function calculatePercentage(score: number, maxPossible: number): number {
   return Math.round((score / maxPossible) * 100);
 }
 
-export async function replyResult(ctx: Context, user: IUserData) {
+export function calculateResult(user: IUserData): {
+  traits: { [key in BigFiveTrait]?: number };
+  aspects: { [key in BigFiveAspect]?: number };
+} {
+  const { aspectScores, traitScores } = calculateScores(user);
+  const totalQuestions = user.order.length;
+  const maxScorePerQuestion = 3; // Value.D = 3
+
+  // Calculate trait percentages
+  const traitResults = Array.from(traitScores.entries()).map(([trait, score]) => {
+    const questionsPerAspect = totalQuestions / 10;
+    const maxTraitScore = questionsPerAspect * 2 * maxScorePerQuestion;
+    return {
+      trait,
+      percentage: calculatePercentage(score, maxTraitScore),
+    };
+  });
+
+  // Calculate aspect percentages
+  const aspectResults = Array.from(aspectScores.entries()).map(([aspect, score]) => {
+    const questionsPerAspect = totalQuestions / 10;
+    const maxAspectScore = questionsPerAspect * maxScorePerQuestion;
+    return {
+      aspect,
+      percentage: calculatePercentage(score, maxAspectScore),
+    };
+  });
+
+  return {
+    traits: Object.fromEntries(
+      traitResults.map((r) => [r.trait, r.percentage])
+    ) as { [key in BigFiveTrait]?: number },
+    aspects: Object.fromEntries(
+      aspectResults.map((r) => [r.aspect, r.percentage])
+    ) as { [key in BigFiveAspect]?: number },
+  };
+}
+
+export async function replyResult(ctx: Context, user: IUserData, result: {
+  traits: { [key in BigFiveTrait]?: number };
+  aspects: { [key in BigFiveAspect]?: number };
+}) {
   const { aspectScores, traitScores } = calculateScores(user);
   const language = user.language || Language.Persian;
   const totalQuestions = user.order.length;
@@ -278,16 +319,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
   await ctx.reply(resultText, {
     parse_mode: "Markdown",
   });
-
-  // Return result as object with trait scores
-  return {
-    traits: Object.fromEntries(
-      traitResults.map((r) => [r.trait, r.percentage])
-    ),
-    aspects: Object.fromEntries(
-      aspectResults.map((r) => [r.aspect, r.percentage])
-    ),
-  };
 }
 
 export async function replyDetail(ctx: Context, key: string) {

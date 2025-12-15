@@ -72,7 +72,7 @@ export async function replyAbout(ctx: Context) {
   await ctx.reply(aboutText[resolvedLanguage].join("\n"), { reply_markup: keyboard });
 }
 
-export async function replyResult(ctx: Context, user: IUserData) {
+export function calculateResult(user: IUserData): Array<[EnneagramType, number]> {
   // Calculate scores for each type
   const typeScores = new Map<EnneagramType, number>();
 
@@ -89,7 +89,10 @@ export async function replyResult(ctx: Context, user: IUserData) {
   const sortedResults = _.reverse(
     _.sortBy([...typeScores], ([, value]) => value)
   );
+  return sortedResults;
+}
 
+export async function replyResult(ctx: Context, user: IUserData, sortedResults: Array<[EnneagramType, number]>) {
   // Get top 3 types
   const topTypes = sortedResults.slice(0, 3);
   const mainType = topTypes[0][0];
@@ -147,8 +150,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
-
-  return sortedResults;
 }
 
 export async function replyDetail(ctx: Context, key: EnneagramType) {

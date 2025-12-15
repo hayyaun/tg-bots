@@ -71,7 +71,7 @@ function determineResultType(
   return ResultType.StrongRight;
 }
 
-export async function replyResult(ctx: Context, user: IUserData) {
+export function calculateResult(user: IUserData): ResultType {
   // Calculate scores for each cognitive style
   let leftScore = 0;
   let rightScore = 0;
@@ -92,8 +92,27 @@ export async function replyResult(ctx: Context, user: IUserData) {
   // Determine result type
   const totalQuestions = user.order.length;
   const resultType = determineResultType(leftScore, rightScore, totalQuestions);
+  return resultType;
+}
+
+export async function replyResult(ctx: Context, user: IUserData, resultType: ResultType) {
   const style = styles[resultType];
   const language = user.language || Language.Persian;
+  
+  // Recalculate scores for display
+  let leftScore = 0;
+  let rightScore = 0;
+  Object.entries(user.answers).forEach((answer) => {
+    const index = parseInt(answer[0]);
+    const question = getQuestion(user, index);
+    if (!question) throw "Something went wrong!";
+    const value = answer[1];
+    if (question.belong === CognitiveStyle.Left) {
+      leftScore += value;
+    } else {
+      rightScore += value;
+    }
+  });
 
   // Calculate percentages
   const total = leftScore + rightScore;
@@ -133,8 +152,6 @@ export async function replyResult(ctx: Context, user: IUserData) {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
-
-  return resultType;
 }
 
 export async function replyDetail(ctx: Context, key: ResultType) {
