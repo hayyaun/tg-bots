@@ -610,9 +610,10 @@ export function setupCallbacks(
     }
   });
 
-  // Setup shared profile callbacks (interests and location)
+  // Setup shared profile callbacks (all profile editing)
   setupProfileCallbacks(bot, {
     botName: BOT_NAME,
     getSession,
+    notifyAdmin,
   });
 }

@@ -337,103 +337,7 @@ export function setupCallbacks(
       return;
     }
 
-    // Handle profile editing
-    if (session.editingField) {
-      const text = ctx.message.text;
-      
-      // Handle cancel
-      if (text === "/cancel") {
-        delete session.editingField;
-        // If in profile completion flow, exit it
-        if (session.completingProfile) {
-          session.completingProfile = false;
-          session.profileCompletionFieldIndex = undefined;
-          await ctx.reply(errors.editCancelled + "\n\nبرای تکمیل پروفایل، دوباره از دستور /start استفاده کنید.");
-        } else {
-          await ctx.reply(errors.editCancelled);
-        }
-        return;
-      }
-
-      try {
-        switch (session.editingField) {
-          case "name":
-            if (text.length > MAX_DISPLAY_NAME_LENGTH) {
-              await ctx.reply(errors.nameTooLong);
-              return;
-            }
-            await updateUserField(userId, "display_name", text);
-            delete session.editingField;
-            await ctx.reply(success.nameUpdated(text));
-            // Continue profile completion if in progress
-            if (session.completingProfile) {
-              await continueProfileCompletion(ctx, bot, userId);
-            }
-            break;
-
-          case "bio":
-            if (text.length > 500) {
-              await ctx.reply(errors.bioTooLong + `\n\n📝 تعداد کاراکتر فعلی: ${text.length}/500`);
-              return;
-            }
-            await updateUserField(userId, "biography", text);
-            delete session.editingField;
-            await ctx.reply(success.bioUpdated + `\n\n📝 تعداد کاراکتر: ${text.length}/500`);
-            break;
-
-          case "birthdate":
-            // Validate date format YYYY-MM-DD
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(text)) {
-              await ctx.reply(errors.invalidDate);
-              return;
-            }
-            // Parse date string to Date object
-            // Note: Date constructor with YYYY-MM-DD string interprets it as UTC midnight
-            // We need to create a proper Date object for the local timezone
-            const [year, month, day] = text.split("-").map(Number);
-            const birthDate = new Date(year, month - 1, day); // month is 0-indexed
-            if (isNaN(birthDate.getTime())) {
-              await ctx.reply(errors.invalidDateValue);
-              return;
-            }
-            // Check if date is not in the future
-            if (birthDate > new Date()) {
-              await ctx.reply(errors.futureDate);
-              return;
-            }
-            // Check if age is reasonable
-            const age = calculateAge(birthDate);
-            if (!age || age < MIN_AGE || age > MAX_AGE) {
-              await ctx.reply(errors.invalidAge);
-              return;
-            }
-            // Pass Date object to Prisma, not the string
-            await updateUserField(userId, "birth_date", birthDate);
-            delete session.editingField;
-            await ctx.reply(success.birthdateUpdated(age));
-            // Continue profile completion if in progress
-            if (session.completingProfile) {
-              await continueProfileCompletion(ctx, bot, userId);
-            }
-            break;
-
-          default:
-            await next();
-            return;
-        }
-      } catch (err) {
-        log.error(BOT_NAME + " > Profile edit failed", err);
-        const editingField = session.editingField || "unknown";
-        await ctx.reply(errors.updateFailed);
-        delete session.editingField;
-        notifyAdmin(
-          `❌ <b>Profile Edit Failed</b>\nUser: <code>${userId}</code>\nField: ${editingField}\nError: ${err}`
-        );
-      }
-      return;
-    }
-
+    // Profile editing is now handled by setupProfileCallbacks
     await next();
   });
 
@@ -522,190 +426,7 @@ export function setupCallbacks(
     }
   });
 
-  // Profile editing callbacks
-  bot.callbackQuery(/profile:edit:(.+)/, async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const action = ctx.match[1];
-    const session = getSession(userId);
-    await ctx.answerCallbackQuery();
-
-    switch (action) {
-      case "name":
-        session.editingField = "name";
-        await ctx.reply(editPrompts.name);
-        break;
-
-      case "bio":
-        session.editingField = "bio";
-        await ctx.reply(editPrompts.bio);
-        break;
-
-      case "birthdate":
-        session.editingField = "birthdate";
-        await ctx.reply(editPrompts.birthdate);
-        break;
-
-      case "gender":
-        session.editingField = "gender";
-        const genderKeyboard = new InlineKeyboard()
-          .text(profileValues.male, "profile:set:gender:male")
-          .text(profileValues.female, "profile:set:gender:female");
-        await ctx.reply(editPrompts.gender, { reply_markup: genderKeyboard });
-        break;
-
-      case "looking_for":
-        session.editingField = "looking_for";
-        const lookingForKeyboard = new InlineKeyboard()
-          .text(profileValues.male, "profile:set:looking_for:male")
-          .text(profileValues.female, "profile:set:looking_for:female")
-          .row()
-          .text(profileValues.both, "profile:set:looking_for:both");
-        await ctx.reply(editPrompts.lookingFor, { reply_markup: lookingForKeyboard });
-        break;
-
-      case "images":
-        session.editingField = "images";
-        const profile = await getUserProfile(userId);
-        if (profile?.profile_image) {
-          const imagesKeyboard = new InlineKeyboard()
-            .text(buttons.addImage, "profile:images:add")
-            .row()
-            .text(buttons.clearImages, "profile:images:clear");
-          await ctx.reply(
-            editPrompts.images.hasImages(),
-            { reply_markup: imagesKeyboard }
-          );
-        } else {
-          const imagesKeyboard = new InlineKeyboard().text(buttons.addImage, "profile:images:add");
-          await ctx.reply(editPrompts.images.noImages, { reply_markup: imagesKeyboard });
-        }
-        break;
-
-      case "username":
-        session.editingField = "username";
-        // Update username from current Telegram profile
-        const currentUsername = ctx.from?.username;
-        if (currentUsername) {
-          await updateUserField(userId, "username", currentUsername);
-          await ctx.reply(success.usernameUpdated(currentUsername));
-          delete session.editingField;
-          // Continue profile completion if in progress
-          if (session.completingProfile) {
-            await continueProfileCompletion(ctx, bot, userId);
-          }
-        } else {
-          await ctx.reply(errors.noUsername);
-          // Don't delete editingField or continue if username is missing
-        }
-        break;
-
-      case "mood":
-        session.editingField = "mood";
-        const moodKeyboard = new InlineKeyboard()
-          .text(`${MOODS.happy} خوشحال`, "profile:set:mood:happy")
-          .text(`${MOODS.sad} غمگین`, "profile:set:mood:sad")
-          .row()
-          .text(`${MOODS.tired} خسته`, "profile:set:mood:tired")
-          .text(`${MOODS.cool} باحال`, "profile:set:mood:cool")
-          .row()
-          .text(`${MOODS.thinking} در حال فکر`, "profile:set:mood:thinking")
-          .text(`${MOODS.excited} هیجان‌زده`, "profile:set:mood:excited")
-          .row()
-          .text(`${MOODS.calm} آرام`, "profile:set:mood:calm")
-          .text(`${MOODS.angry} عصبانی`, "profile:set:mood:angry")
-          .row()
-          .text(`${MOODS.neutral} خنثی`, "profile:set:mood:neutral")
-          .text(`${MOODS.playful} بازیگوش`, "profile:set:mood:playful");
-        await ctx.reply(editPrompts.mood, { reply_markup: moodKeyboard });
-        break;
-
-      case "interests":
-      case "location":
-        // These are now handled by setupProfileCallbacks
-        // This case should not be reached, but kept for safety
-        break;
-
-      default:
-        await ctx.reply(errors.invalidOperation);
-    }
-  });
-
-  // Handle setting mood
-  bot.callbackQuery(/profile:set:mood:(.+)/, async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const mood = ctx.match[1];
-    await ctx.answerCallbackQuery();
-    const session = getSession(userId);
-
-    if (!Object.keys(MOODS).includes(mood)) {
-      await ctx.reply(errors.invalidMood);
-      delete session.editingField;
-      return;
-    }
-
-    await updateUserField(userId, "mood", mood);
-    delete session.editingField;
-    await ctx.reply(success.moodUpdated(MOODS[mood]));
-  });
-
-  // Handle setting gender
-  bot.callbackQuery(/profile:set:gender:(.+)/, async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const gender = ctx.match[1];
-    await ctx.answerCallbackQuery();
-    const session = getSession(userId);
-    await updateUserField(userId, "gender", gender);
-    delete session.editingField;
-    await ctx.reply(success.genderUpdated(gender === "male" ? profileValues.male : profileValues.female));
-    // Continue profile completion if in progress
-    if (session.completingProfile) {
-      await continueProfileCompletion(ctx, bot, userId);
-    }
-  });
-
-  // Handle setting looking_for
-  bot.callbackQuery(/profile:set:looking_for:(.+)/, async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const lookingFor = ctx.match[1];
-    await ctx.answerCallbackQuery();
-    const session = getSession(userId);
-    const text =
-      lookingFor === "male" ? profileValues.male : lookingFor === "female" ? profileValues.female : profileValues.both;
-    await updateUserField(userId, "looking_for_gender", lookingFor);
-    delete session.editingField;
-    await ctx.reply(success.lookingForUpdated(text));
-    // Continue profile completion if in progress
-    if (session.completingProfile) {
-      await continueProfileCompletion(ctx, bot, userId);
-    }
-  });
-
-  // Handle image management
-  bot.callbackQuery("profile:images:add", async (ctx) => {
-    await ctx.answerCallbackQuery();
-    await ctx.reply(editPrompts.photo);
-  });
-
-  bot.callbackQuery("profile:images:clear", async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    await ctx.answerCallbackQuery();
-    await updateUserField(userId, "profile_image", null);
-    delete getSession(userId).editingField;
-    await ctx.reply(success.imagesCleared);
-  });
-
-
-  // Profile callbacks for interests and location are now handled by setupProfileCallbacks
+  // Profile editing callbacks are now handled by setupProfileCallbacks
   // This is called at the end of setupCallbacks
 
   // Wipe data confirmation
@@ -746,34 +467,7 @@ export function setupCallbacks(
     await ctx.editMessageText(deleteData.cancelled);
   });
 
-  // Handle photo uploads for profile images
-  bot.on("message:photo", async (ctx, next) => {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const session = getSession(userId);
-    if (session.editingField === "images") {
-      const photo = ctx.message.photo;
-      if (photo && photo.length > 0) {
-        // Get the largest photo
-        const largestPhoto = photo[photo.length - 1];
-        const fileId = largestPhoto.file_id;
-
-        try {
-          await addProfileImage(userId, fileId);
-          await ctx.reply(success.imageAdded());
-        } catch (err) {
-          log.error(BOT_NAME + " > Add image failed", err);
-          await ctx.reply(errors.addImageFailed);
-          notifyAdmin(
-            `❌ <b>Add Profile Image Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
-          );
-        }
-      }
-    } else {
-      await next();
-    }
-  });
+  // Photo uploads for profile images are now handled by setupProfileCallbacks
 
   // Admin callbacks
   if (adminUserId) {
@@ -888,10 +582,11 @@ export function setupCallbacks(
     });
   }
 
-  // Setup shared profile callbacks (interests and location)
+  // Setup shared profile callbacks (all profile editing)
   setupProfileCallbacks(bot, {
     botName: BOT_NAME,
     getSession,
     onContinueProfileCompletion: continueProfileCompletion,
+    notifyAdmin,
   });
 }
