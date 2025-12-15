@@ -22,75 +22,9 @@ import { UserProfile } from "../shared/types";
 import { MatchUser, SessionData } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
-import { QuizType } from "../shared/types";
-import { getQuizTypeEmoji, getQuizResult } from "../shared/quizUtils";
+import { buildQuizResultsSection } from "../shared/display";
 
 type DisplayMode = "match" | "liked";
-
-// Helper function to format BigFive result
-function formatBigFiveResult(bigfiveResult: string | null): string | null {
-  if (!bigfiveResult) return null;
-  try {
-    const data = JSON.parse(bigfiveResult);
-    const topTrait = Object.entries(data.traits || {})
-      .sort(([, a], [, b]) => (b as number) - (a as number))[0];
-    return topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : "ثبت شده";
-  } catch {
-    return "ثبت شده";
-  }
-}
-
-// Helper function to format quiz result text for displayUser
-function formatQuizResultText(
-  result: string | null,
-  label: string,
-  formatter?: (value: string) => string
-): string | null {
-  if (!result) return null;
-  const formatted = formatter ? formatter(result) : result;
-  return `${label}: ${formatted}`;
-}
-
-// Helper function to build quiz results section for displayUser
-function buildQuizResultsSection(user: MatchUser): string {
-  const sections: string[] = [];
-  
-  const archetypeResult = getQuizResult(user, QuizType.Archetype);
-  if (archetypeResult) {
-    const emoji = getQuizTypeEmoji(QuizType.Archetype);
-    sections.push(`${emoji} ${formatQuizResultText(archetypeResult, "کهن الگو")}`);
-  }
-  const mbtiResult = getQuizResult(user, QuizType.MBTI);
-  if (mbtiResult) {
-    const emoji = getQuizTypeEmoji(QuizType.MBTI);
-    sections.push(`${emoji} ${formatQuizResultText(mbtiResult, "تست MBTI", (v) => v.toUpperCase())}`);
-  }
-  const leftrightResult = getQuizResult(user, QuizType.LeftRight);
-  if (leftrightResult) {
-    const emoji = getQuizTypeEmoji(QuizType.LeftRight);
-    sections.push(`${emoji} ${formatQuizResultText(leftrightResult, "سبک شناختی")}`);
-  }
-  const politicalcompassResult = getQuizResult(user, QuizType.PoliticalCompass);
-  if (politicalcompassResult) {
-    const emoji = getQuizTypeEmoji(QuizType.PoliticalCompass);
-    sections.push(`${emoji} ${formatQuizResultText(politicalcompassResult, "قطب‌نمای سیاسی")}`);
-  }
-  const enneagramResult = getQuizResult(user, QuizType.Enneagram);
-  if (enneagramResult) {
-    const emoji = getQuizTypeEmoji(QuizType.Enneagram);
-    sections.push(`${emoji} ${formatQuizResultText(enneagramResult, "انیاگرام", (v) => v.replace("type", "تیپ "))}`);
-  }
-  const bigfiveResult = getQuizResult(user, QuizType.BigFive);
-  if (bigfiveResult) {
-    const formatted = formatBigFiveResult(bigfiveResult);
-    if (formatted) {
-      const emoji = getQuizTypeEmoji(QuizType.BigFive);
-      sections.push(`${emoji} پنج عامل بزرگ: ${formatted}`);
-    }
-  }
-  
-  return sections.length > 0 ? sections.join("\n") : "";
-}
 
 // Helper function to calculate compatibility score between two users
 function calculateCompatibilityScore(
@@ -197,7 +131,12 @@ export async function displayUser(
       ? `\n💯 سازگاری: ${compatibilityScore}%`
       : "";
 
-  const quizResultsSection = buildQuizResultsSection(user);
+  const quizResultsSection = await buildQuizResultsSection(
+    user,
+    BOT_NAME,
+    ctx.from?.id,
+    false // Don't show "not set" for other users, only show existing quizzes
+  );
   
   let message = `👤 ${nameText}\n`;
   message += `🎂 ${ageText}${compatibilityText}\n\n`;

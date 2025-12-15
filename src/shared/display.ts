@@ -29,21 +29,23 @@ async function formatBigFiveResult(
   }
 }
 
-// Helper function to build quiz results section for displayProfile
-async function buildProfileQuizResultsSection(
+// Helper function to build quiz results section
+// showNotSet: if true, shows "not set" messages for required quizzes even when missing
+export async function buildQuizResultsSection(
   profile: UserProfile,
   botName: string,
-  userId: number | undefined
+  userId: number | undefined,
+  showNotSet = false
 ): Promise<string> {
   const strings = await getSharedStrings(userId, botName);
   const sections: string[] = [];
 
-  // Required quizzes - always show with instructions if missing
+  // Required quizzes
   const archetypeEmoji = getQuizTypeEmoji(QuizType.Archetype);
   const archetypeResult = getQuizResult(profile, QuizType.Archetype);
   if (archetypeResult) {
     sections.push(`${archetypeEmoji} ${strings.archetype}: ${archetypeResult}`);
-  } else {
+  } else if (showNotSet) {
     sections.push(
       `${archetypeEmoji} ${strings.archetype}: ${strings.archetypeNotSet}`
     );
@@ -53,7 +55,7 @@ async function buildProfileQuizResultsSection(
   const mbtiResult = getQuizResult(profile, QuizType.MBTI);
   if (mbtiResult) {
     sections.push(`${mbtiEmoji} ${strings.mbti}: ${mbtiResult.toUpperCase()}`);
-  } else {
+  } else if (showNotSet) {
     sections.push(
       `${mbtiEmoji} ${strings.mbti}: ${strings.mbtiNotSet}`
     );
@@ -159,11 +161,12 @@ export async function displayProfile(
     message += `${strings.location}: ${strings.notSet}\n`;
   }
 
-  // Show quiz results with instructions if missing
-  const quizResultsSection = await buildProfileQuizResultsSection(
+  // Show quiz results with instructions if missing (showNotSet = true for own profile)
+  const quizResultsSection = await buildQuizResultsSection(
     profile,
     botName,
-    userId
+    userId,
+    true
   );
   if (quizResultsSection) {
     message += `\n${quizResultsSection}\n`;
