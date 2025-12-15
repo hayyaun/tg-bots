@@ -173,6 +173,9 @@ export async function replyDetail(ctx: Context, key: MBTIType) {
     personality.description[language],
   ].join("\n");
 
-  ctx.reply(message, { parse_mode: "Markdown" });
+  await ctx.replyWithPhoto(new InputFile(personality.image, `${key}.jpg`), {
+    caption: message,
+    parse_mode: "Markdown",
+  });
 }
 
