@@ -39,6 +39,8 @@ import { MatchUser } from "./types";
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
 
+const formatNumber = (value: number | bigint) => value.toLocaleString("en-US");
+
 // Helper function to get missing required fields
 interface RequiredField {
   key: keyof UserProfile;
@@ -663,14 +665,53 @@ export function setupCommands(
 
     ctx.react("👏").catch(() => {});
 
-    const keyboard = new InlineKeyboard()
-      .text("📋 Reports", "admin:reports")
-      .text("👥 All Users", "admin:all_users")
-      .row();
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    await ctx.reply("🔐 <b>Admin Panel</b>", {
-      parse_mode: "HTML",
-      reply_markup: keyboard,
-    });
+    try {
+      const [totalUsers, completedProfiles, newUsers, totalLikes, totalReports, mutualLikesRows] =
+        await prisma.$transaction([
+          prisma.user.count(),
+          prisma.user.count({
+            where: { completion_score: { gte: MIN_COMPLETION_THRESHOLD } },
+          }),
+          prisma.user.count({
+            where: { created_at: { gte: since24h } },
+          }),
+          prisma.like.count(),
+          prisma.report.count(),
+          prisma.$queryRaw<{ count: bigint }[]>`
+            SELECT COUNT(*)::bigint AS count
+            FROM likes l1
+            JOIN likes l2
+              ON l1.user_id = l2.liked_user_id
+             AND l1.liked_user_id = l2.user_id
+           WHERE l1.user_id < l1.liked_user_id
+          `,
+        ]);
+
+      const mutualLikes = Number(mutualLikesRows?.[0]?.count ?? 0);
+
+      const keyboard = new InlineKeyboard()
+        .text("📋 Reports", "admin:reports")
+        .text("👥 All Users", "admin:all_users")
+        .row();
+
+      const statsMessage =
+        "🔐 <b>Admin Panel</b>\n\n" +
+        "📊 <b>Statistics</b>\n" +
+        `👥 Users: ${formatNumber(totalUsers)} (24h: ${formatNumber(newUsers)})\n` +
+        `✅ Completed (>=${MIN_COMPLETION_THRESHOLD}%): ${formatNumber(completedProfiles)}\n` +
+        `❤️ Likes: ${formatNumber(totalLikes)}\n` +
+        `🤝 Matches (mutual likes): ${formatNumber(mutualLikes)}\n` +
+        `🚫 Reports: ${formatNumber(totalReports)}`;
+
+      await ctx.reply(statsMessage, {
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+      });
+    } catch (err) {
+      log.error(BOT_NAME + " > Admin stats failed", err);
+      await ctx.reply("⚠️ خطا در دریافت آمار. لطفا دوباره تلاش کنید.");
+    }
   });
 }
