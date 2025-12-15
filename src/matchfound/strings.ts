@@ -3,18 +3,18 @@ import {
   MAX_COMPLETION_SCORE,
   MAX_DISPLAY_NAME_LENGTH,
 } from "../shared/constants";
-import {
-  MIN_INTERESTS,
-  MAX_INTERESTS,
-  MIN_COMPLETION_THRESHOLD,
-} from "./constants";
-import {
-  errors as sharedErrors,
-  success as sharedSuccess,
-  profileValues as sharedProfileValues,
-  buttons as sharedButtons,
-  editPrompts as sharedEditPrompts,
-} from "../shared/profileStrings";
+import { getProfileStringsSync } from "../shared/i18n/profileStrings";
+import { Language } from "../shared/types";
+import { MIN_COMPLETION_THRESHOLD, MIN_INTERESTS } from "./constants";
+
+const defaultProfileStrings = getProfileStringsSync(Language.Persian);
+const {
+  errors: sharedErrors,
+  success: sharedSuccess,
+  profileValues: sharedProfileValues,
+  buttons: sharedButtons,
+  editPrompts: sharedEditPrompts,
+} = defaultProfileStrings;
 
 // Helper function to format welcome message with dynamic values
 export function getWelcomeMessage(completionScore: number): string {
@@ -107,7 +107,8 @@ export const report = {
 
 // Delete data messages
 export const deleteData = {
-  confirmPrompt: "⚠️ <b>هشدار: حذف کامل اطلاعات</b>\n\n" +
+  confirmPrompt:
+    "⚠️ <b>هشدار: حذف کامل اطلاعات</b>\n\n" +
     "آیا مطمئن هستید که می‌خواهید تمام اطلاعات خود را حذف کنید؟\n\n" +
     "این عمل شامل موارد زیر است:\n" +
     "• پروفایل شما\n" +
@@ -165,14 +166,16 @@ export const profileCompletion = {
     `✅ فیلد قبلی ثبت شد!\n\n` +
     `📝 فیلد بعدی: ${fieldName}\n` +
     `(${remaining} فیلد باقی مانده)`,
-  allRequiredComplete: "🎉 تبریک! تمام فیلدهای اجباری تکمیل شدند!\n\nحالا می‌تونی از تمام امکانات ربات استفاده کنی!",
+  allRequiredComplete:
+    "🎉 تبریک! تمام فیلدهای اجباری تکمیل شدند!\n\nحالا می‌تونی از تمام امکانات ربات استفاده کنی!",
   fieldPrompt: {
-    username: "🔗 لطفا نام کاربری تلگرام خود را تنظیم کنید و سپس دکمه زیر را بزنید:",
+    username:
+      "🔗 لطفا نام کاربری تلگرام خود را تنظیم کنید و سپس دکمه زیر را بزنید:",
     displayName: `👤 لطفا نام نمایشی خود را ارسال کنید (حداکثر ${MAX_DISPLAY_NAME_LENGTH} کاراکتر):\n\nبرای لغو: /cancel`,
     gender: "⚧️ جنسیت خود را انتخاب کنید:",
     lookingFor: "🤝 می‌خواهید چه کسی به شما پیشنهاد شود؟",
-    birthDate: "🎂 لطفا تاریخ تولد خود را به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15):\n\nبرای لغو: /cancel",
+    birthDate:
+      "🎂 لطفا تاریخ تولد خود را به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15):\n\nبرای لغو: /cancel",
     interests: `🎯 لطفا حداقل ${MIN_INTERESTS} علاقه انتخاب کنید:`,
   },
 };
-
