@@ -5,12 +5,13 @@ import { INTERESTS, IRAN_PROVINCES, MOODS } from "./constants";
 import { MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "../matchfound/constants";
 import { editPrompts, errors, buttons, success, profileValues } from "../matchfound/strings";
 import { calculateAge } from "./utils";
+import { ProfileEditingField } from "./types";
 import log from "../log";
 
 export interface ProfileCallbacksConfig {
   botName: string;
   getSession: (userId: number) => {
-    editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "image" | "username" | "mood" | "interests" | "location";
+    editingField?: ProfileEditingField;
     interestsPage?: number;
     locationPage?: number;
     completingProfile?: boolean;

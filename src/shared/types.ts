@@ -5,6 +5,18 @@ export enum Language {
   Arabic = "ar",
 }
 
+export type ProfileEditingField = 
+  | "name" 
+  | "bio" 
+  | "birthdate" 
+  | "gender" 
+  | "looking_for" 
+  | "image" 
+  | "username" 
+  | "mood" 
+  | "interests" 
+  | "location";
+
 export interface UserProfile {
   telegram_id: number | null;
   username: string | null;

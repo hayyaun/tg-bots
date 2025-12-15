@@ -1,8 +1,10 @@
 // Simple session storage for inmankist bot
 // Used for profile editing state
 
+import { ProfileEditingField } from "../shared/types";
+
 interface SessionData {
-  editingField?: string;
+  editingField?: ProfileEditingField;
   interestsPage?: number;
   locationPage?: number;
   completingProfile?: boolean;
