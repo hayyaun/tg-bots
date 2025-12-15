@@ -10,7 +10,7 @@ import log from "../log";
 export interface ProfileCallbacksConfig {
   botName: string;
   getSession: (userId: number) => {
-    editingField?: string;
+    editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "image" | "username" | "mood" | "interests" | "location";
     interestsPage?: number;
     locationPage?: number;
     completingProfile?: boolean;
@@ -450,21 +450,21 @@ export function setupProfileCallbacks(
         await ctx.reply(editPrompts.lookingFor, { reply_markup: lookingForKeyboard });
         break;
 
-      case "images":
-        session.editingField = "images";
+      case "image":
+        session.editingField = "image";
         const profile = await getUserProfile(userId);
         if (profile?.profile_image) {
-          const imagesKeyboard = new InlineKeyboard()
-            .text(buttons.addImage, "profile:images:add")
+          const imageKeyboard = new InlineKeyboard()
+            .text(buttons.addImage, "profile:image:add")
             .row()
-            .text(buttons.clearImages, "profile:images:clear");
+            .text(buttons.clearImage, "profile:image:clear");
           await ctx.reply(
-            editPrompts.images.hasImages(),
-            { reply_markup: imagesKeyboard }
+            editPrompts.image.hasImage(),
+            { reply_markup: imageKeyboard }
           );
         } else {
-          const imagesKeyboard = new InlineKeyboard().text(buttons.addImage, "profile:images:add");
-          await ctx.reply(editPrompts.images.noImages, { reply_markup: imagesKeyboard });
+          const imageKeyboard = new InlineKeyboard().text(buttons.addImage, "profile:image:add");
+          await ctx.reply(editPrompts.image.noImage, { reply_markup: imageKeyboard });
         }
         break;
 
@@ -573,19 +573,19 @@ export function setupProfileCallbacks(
   });
 
   // Handle image management
-  bot.callbackQuery("profile:images:add", async (ctx) => {
+  bot.callbackQuery("profile:image:add", async (ctx) => {
     await ctx.answerCallbackQuery();
     await ctx.reply(editPrompts.photo);
   });
 
-  bot.callbackQuery("profile:images:clear", async (ctx) => {
+  bot.callbackQuery("profile:image:clear", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
     await ctx.answerCallbackQuery();
     await updateUserField(userId, "profile_image", null);
     delete getSession(userId).editingField;
-    await ctx.reply(success.imagesCleared);
+    await ctx.reply(success.imageCleared);
   });
 
   // Handle text messages for profile editing (name, bio, birthdate)
@@ -692,13 +692,13 @@ export function setupProfileCallbacks(
     await next();
   });
 
-  // Handle photo uploads for profile images
+  // Handle photo uploads for profile image
   bot.on("message:photo", async (ctx, next) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
     const session = getSession(userId);
-    if (session.editingField === "images") {
+    if (session.editingField === "image") {
       const photo = ctx.message.photo;
       if (photo && photo.length > 0) {
         // Get the largest photo

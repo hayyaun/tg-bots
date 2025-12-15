@@ -17,8 +17,9 @@ async function formatBigFiveResult(
   if (!bigfiveResult) return null;
   try {
     const data = JSON.parse(bigfiveResult);
-    const topTrait = Object.entries(data.traits || {})
-      .sort(([, a], [, b]) => (b as number) - (a as number))[0];
+    const topTrait = Object.entries(data.traits || {}).sort(
+      ([, a], [, b]) => (b as number) - (a as number)
+    )[0];
     const strings = await getSharedStrings(userId, botName);
     return topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : strings.registered;
   } catch {
@@ -35,26 +36,32 @@ async function buildProfileQuizResultsSection(
 ): Promise<string> {
   const strings = await getSharedStrings(userId, botName);
   const sections: string[] = [];
-  
+
   // Required quizzes - always show with instructions if missing
   if (profile.archetype_result) {
     sections.push(`${strings.archetype}: ${profile.archetype_result}`);
   } else {
-    sections.push(`${strings.archetype}: ${strings.archetypeNotSet(INMANKIST_BOT_USERNAME)}`);
+    sections.push(
+      `${strings.archetype}: ${strings.archetypeNotSet(INMANKIST_BOT_USERNAME)}`
+    );
   }
-  
+
   if (profile.mbti_result) {
     sections.push(`${strings.mbti}: ${profile.mbti_result.toUpperCase()}`);
   } else {
-    sections.push(`${strings.mbti}: ${strings.mbtiNotSet(INMANKIST_BOT_USERNAME)}`);
+    sections.push(
+      `${strings.mbti}: ${strings.mbtiNotSet(INMANKIST_BOT_USERNAME)}`
+    );
   }
-  
+
   // Optional quizzes - only show if present
   if (profile.leftright_result) {
     sections.push(`${strings.leftright}: ${profile.leftright_result}`);
   }
   if (profile.politicalcompass_result) {
-    sections.push(`${strings.politicalcompass}: ${profile.politicalcompass_result}`);
+    sections.push(
+      `${strings.politicalcompass}: ${profile.politicalcompass_result}`
+    );
   }
   if (profile.enneagram_result) {
     // Keep Persian formatting for enneagram type (type -> تیپ)
@@ -62,12 +69,16 @@ async function buildProfileQuizResultsSection(
     sections.push(`${strings.enneagram}: ${enneagramText}`);
   }
   if (profile.bigfive_result) {
-    const formatted = await formatBigFiveResult(profile.bigfive_result, botName, userId);
+    const formatted = await formatBigFiveResult(
+      profile.bigfive_result,
+      botName,
+      userId
+    );
     if (formatted) {
       sections.push(`${strings.bigfive}: ${formatted}`);
     }
   }
-  
+
   return sections.join("\n");
 }
 
@@ -79,23 +90,30 @@ export async function displayProfile(
   userId?: number
 ) {
   const strings = await getSharedStrings(userId, botName);
-  
+
   const ageText = profile.birth_date
     ? `${calculateAge(profile.birth_date)} ${strings.year}`
     : strings.notSet;
-  const genderText = profile.gender === "male" ? strings.male : profile.gender === "female" ? strings.female : strings.notSet;
+  const genderText =
+    profile.gender === "male"
+      ? strings.male
+      : profile.gender === "female"
+        ? strings.female
+        : strings.notSet;
   const lookingForText =
     profile.looking_for_gender === "male"
       ? strings.male
       : profile.looking_for_gender === "female"
-      ? strings.female
-      : profile.looking_for_gender === "both"
-      ? strings.both
-      : strings.notSet;
+        ? strings.female
+        : profile.looking_for_gender === "both"
+          ? strings.both
+          : strings.notSet;
 
   let message = `${strings.profileTitle}\n\n`;
   // Show mood emoji after display name if available
-  const moodEmoji = profile.mood ? " " + (MOODS[profile.mood] || profile.mood) : "";
+  const moodEmoji = profile.mood
+    ? " " + (MOODS[profile.mood] || profile.mood)
+    : "";
   message += `${strings.name}: ${profile.display_name || strings.notSet}${moodEmoji}\n`;
   message += `${strings.age}: ${ageText}\n`;
   message += `${strings.genderLabel}: ${genderText}\n`;
@@ -104,32 +122,40 @@ export async function displayProfile(
     message += `${strings.lookingFor}: ${lookingForText}\n`;
   }
   message += `${strings.biography}: ${profile.biography || strings.notSet}\n`;
-  
+
   // Show interests and location before quiz results
-  
+
   if (profile.interests && profile.interests.length > 0) {
     const interestNamesMap = await getInterestNames(userId, botName);
     const interestNames = profile.interests
-      .map((interest) => interestNamesMap[interest as keyof typeof interestNamesMap] || interest)
+      .map(
+        (interest) =>
+          interestNamesMap[interest as keyof typeof interestNamesMap] ||
+          interest
+      )
       .join(", ");
     message += `${strings.interests}: ${interestNames}\n`;
   } else {
     message += `${strings.interests}: ${strings.notSet}\n`;
   }
-  
+
   if (profile.location) {
     const provinceNamesMap = await getProvinceNames(userId, botName);
     message += `${strings.location}: ${provinceNamesMap[profile.location as keyof typeof provinceNamesMap] || profile.location}\n`;
   } else {
     message += `${strings.location}: ${strings.notSet}\n`;
   }
-  
+
   // Show quiz results with instructions if missing
-  const quizResultsSection = await buildProfileQuizResultsSection(profile, botName, userId);
+  const quizResultsSection = await buildProfileQuizResultsSection(
+    profile,
+    botName,
+    userId
+  );
   if (quizResultsSection) {
     message += `\n${quizResultsSection}\n`;
   }
-  
+
   message += `\n${strings.completion}: ${profile.completion_score}/${MAX_COMPLETION_SCORE}`;
 
   const keyboard = new InlineKeyboard()
@@ -138,27 +164,31 @@ export async function displayProfile(
     .row()
     .text(strings.editBirthdate, "profile:edit:birthdate")
     .text(strings.editGender, "profile:edit:gender");
-  
+
   // Only show "Looking for" button for matchfound bot
   if (botName !== "Inmankist") {
-    keyboard.row()
+    keyboard
+      .row()
       .text(strings.editLookingFor, "profile:edit:looking_for")
-      .text(strings.editImages, "profile:edit:images");
-  } else {
-    keyboard.row()
-      .text(strings.editImages, "profile:edit:images");
+      .text(strings.editImage, "profile:edit:image");
   }
-  
-  keyboard.row()
+
+  keyboard
+    .row()
     .text(strings.editUsername, "profile:edit:username")
     .text(strings.editMood, "profile:edit:mood")
     .row()
     .text(strings.editInterests, "profile:edit:interests")
     .text(strings.editLocation, "profile:edit:location");
-  
+
   // Only show quiz button for matchfound bot
   if (botName !== "Inmankist") {
-    keyboard.row().url(strings.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+    keyboard
+      .row()
+      .url(
+        strings.takeQuizzes,
+        `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`
+      );
   }
 
   // Send photo if available - attach text as caption
@@ -169,8 +199,7 @@ export async function displayProfile(
       reply_markup: keyboard,
     });
   } else {
-    // No images - send text message only
+    // No image - send text message only
     await ctx.reply(message, { parse_mode: "HTML", reply_markup: keyboard });
   }
 }
-

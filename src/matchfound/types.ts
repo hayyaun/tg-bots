@@ -12,7 +12,7 @@ export interface SessionData {
   likedUsers?: MatchUser[];
   currentLikedIndex?: number;
   reportingUserId?: number;
-  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "images" | "username" | "mood" | "interests" | "location";
+  editingField?: "name" | "bio" | "birthdate" | "gender" | "looking_for" | "image" | "username" | "mood" | "interests" | "location";
   interestsPage?: number; // Current page for interests pagination (0-indexed)
   locationPage?: number; // Current page for location pagination (0-indexed)
   completingProfile?: boolean; // Whether user is in profile completion flow

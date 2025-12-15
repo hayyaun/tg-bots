@@ -94,7 +94,7 @@ export interface ISharedStrings {
   editBirthdate: string;
   editGender: string;
   editLookingFor: string;
-  editImages: string;
+  editImage: string;
   editUsername: string;
   editMood: string;
   editInterests: string;
@@ -138,7 +138,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     editBirthdate: "🎂 تاریخ تولد",
     editGender: "⚧️ جنسیت",
     editLookingFor: "💝 پیشنهاد",
-    editImages: "📷 تصاویر",
+    editImage: "📷 تصویر",
     editUsername: "🔗 نام کاربری",
     editMood: "😊 مود",
     editInterests: "🎯 علایق",
@@ -179,7 +179,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     editBirthdate: "🎂 Birth Date",
     editGender: "⚧️ Gender",
     editLookingFor: "💝 Looking For",
-    editImages: "📷 Images",
+    editImage: "📷 Image",
     editUsername: "🔗 Username",
     editMood: "😊 Mood",
     editInterests: "🎯 Interests",
@@ -221,7 +221,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     editBirthdate: "🎂 Дата рождения",
     editGender: "⚧️ Пол",
     editLookingFor: "💝 Ищу",
-    editImages: "📷 Изображения",
+    editImage: "📷 Изображение",
     editUsername: "🔗 Имя пользователя",
     editMood: "😊 Настроение",
     editInterests: "🎯 Интересы",
@@ -262,7 +262,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     editBirthdate: "🎂 تاريخ الميلاد",
     editGender: "⚧️ الجنس",
     editLookingFor: "💝 أبحث عن",
-    editImages: "📷 الصور",
+    editImage: "📷 الصورة",
     editUsername: "🔗 اسم المستخدم",
     editMood: "😊 المزاج",
     editInterests: "🎯 الاهتمامات",

@@ -265,13 +265,13 @@ export async function displayUser(
         reply_markup: keyboard,
       });
     } else {
-      // No images - send text message only
+      // No image - send text message only
       await ctx.reply(message, { reply_markup: keyboard });
     }
   } catch (err) {
     const errorContext = mode === "match" ? "match" : "liked user";
     log.error(BOT_NAME + ` > Display ${errorContext} failed`, err);
-    // Try to send just the message without images if photo send fails
+    // Try to send just the message without image if photo send fails
     try {
       await ctx.reply(message, { reply_markup: keyboard });
     } catch (replyErr) {

@@ -467,7 +467,7 @@ export function setupCallbacks(
     await ctx.editMessageText(deleteData.cancelled);
   });
 
-  // Photo uploads for profile images are now handled by setupProfileCallbacks
+  // Photo uploads for profile image are now handled by setupProfileCallbacks
 
   // Admin callbacks
   if (adminUserId) {
