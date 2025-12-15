@@ -107,5 +107,8 @@ const getQuestionByIndex = (
 
 export const getQuestion = (user: IUserData, index: number) => {
   const language = user.language || Language.Persian;
+  if (!user.gender) {
+    throw new Error("Gender is required for Archetype quiz");
+  }
   return getQuestionByIndex(user.order, index, user.gender, language);
 };

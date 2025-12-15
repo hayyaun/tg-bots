@@ -30,19 +30,23 @@ export async function setCustomCommands(bot: Bot) {
 export function selectOrder(user: IUserData) {
   const size = quizModes[user.mode].size;
   const language = user.language || Language.Persian;
+  
   switch (user.quiz) {
     case QuizType.Archetype:
+      if (!user.gender) {
+        throw new Error("Gender is required for Archetype quiz");
+      }
       return archetype.getSample(user.gender, size, language);
     case QuizType.MBTI:
-      return mbti.getSample(user.gender, size, language);
+      return mbti.getSample(size, language);
     case QuizType.LeftRight:
-      return leftright.getSample(user.gender, size, language);
+      return leftright.getSample(size, language);
     case QuizType.PoliticalCompass:
-      return politicalcompass.getSample(user.gender, size, language);
+      return politicalcompass.getSample(size, language);
     case QuizType.Enneagram:
-      return enneagram.getSample(user.gender, size, language);
+      return enneagram.getSample(size, language);
     case QuizType.BigFive:
-      return bigfive.getSample(user.gender, size, language);
+      return bigfive.getSample(size, language);
   }
 }
 

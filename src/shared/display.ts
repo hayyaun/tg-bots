@@ -7,7 +7,7 @@ import {
   MAX_COMPLETION_SCORE,
 } from "../matchfound/constants";
 import { buttons, fields, profileValues } from "../matchfound/strings";
-import { UserProfile } from "../matchfound/types";
+import { UserProfile } from "./types";
 import { calculateAge } from "../matchfound/utils";
 import { getSharedStrings } from "./i18n";
 

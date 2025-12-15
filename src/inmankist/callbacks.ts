@@ -8,6 +8,7 @@ import {
   quizModes,
   quizTypes,
   MATCHFOUND_BOT_USERNAME,
+  quizNeedsGender,
 } from "./config";
 import {
   getStrings,
@@ -261,7 +262,6 @@ async function setUser(
     // zero values - defaults
     quiz: type,
     mode: QuizMode.MD,
-    gender: Gender.male,
     order: [],
     language,
   });
@@ -422,43 +422,56 @@ export function setupCallbacks(
       const updatedUser = await updateUserData(userId, { mode }, user);
       updateUserDataCache(userId, updatedUser);
 
-      // Check if user has gender in database
-      const dbUser = await prisma.user.findUnique({
-        where: { telegram_id: BigInt(userId) },
-        select: { gender: true },
-      });
+      // Only ask for gender if the quiz type needs it
+      if (quizNeedsGender(updatedUser.quiz)) {
+        // Check if user has gender in database
+        const dbUser = await prisma.user.findUnique({
+          where: { telegram_id: BigInt(userId) },
+          select: { gender: true },
+        });
 
-      if (
-        dbUser?.gender &&
-        (dbUser.gender === Gender.male || dbUser.gender === Gender.female)
-      ) {
-        // User has gender in database, use it and proceed
-        const gender = dbUser.gender as Gender;
-        updatedUser.gender = gender;
+        if (
+          dbUser?.gender &&
+          (dbUser.gender === Gender.male || dbUser.gender === Gender.female)
+        ) {
+          // User has gender in database, use it and proceed
+          const gender = dbUser.gender as Gender;
+          updatedUser.gender = gender;
+          updatedUser.order = selectOrder(updatedUser);
+          const finalUser = await updateUserData(
+            userId,
+            { gender, order: updatedUser.order },
+            updatedUser
+          );
+          updateUserDataCache(userId, finalUser);
+          await updateWelcomeMessage(
+            ctx,
+            updatedUser.welcomeId!,
+            updatedUser.quiz,
+            language,
+            mode,
+            gender
+          );
+          await sendQuestionOrResult(ctx, 0, finalUser, notifyAdmin);
+          return;
+        }
+        // No gender in database, ask for it
+        ctx.reply(strings.gender, {
+          reply_markup: new InlineKeyboard()
+            .text(strings.male, `gender:${Gender.male}`)
+            .text(strings.female, `gender:${Gender.female}`),
+        });
+      } else {
+        // Quiz doesn't need gender, proceed directly
         updatedUser.order = selectOrder(updatedUser);
         const finalUser = await updateUserData(
           userId,
-          { gender, order: updatedUser.order },
+          { order: updatedUser.order },
           updatedUser
         );
         updateUserDataCache(userId, finalUser);
-        await updateWelcomeMessage(
-          ctx,
-          updatedUser.welcomeId!,
-          updatedUser.quiz,
-          language,
-          mode,
-          gender
-        );
         await sendQuestionOrResult(ctx, 0, finalUser, notifyAdmin);
-        return;
       }
-      // No gender in database, ask for it
-      ctx.reply(strings.gender, {
-        reply_markup: new InlineKeyboard()
-          .text(strings.male, `gender:${Gender.male}`)
-          .text(strings.female, `gender:${Gender.female}`),
-      });
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Mode", err);
       notifyAdmin(
@@ -476,6 +489,11 @@ export function setupCallbacks(
       const user = await getUserData(userId);
       if (!user) {
         await handleExpiredSession(ctx);
+        return;
+      }
+      // Defensive check: only process gender selection if quiz needs it
+      if (!quizNeedsGender(user.quiz)) {
+        await ctx.answerCallbackQuery("❌ This quiz doesn't require gender selection").catch(() => {});
         return;
       }
       const language = user.language || DEFAULT_LANGUAGE;

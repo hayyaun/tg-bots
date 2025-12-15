@@ -23,7 +23,7 @@ export enum Value {
 export interface IUserData {
   welcomeId?: number;
   date: number;
-  gender: Gender;
+  gender?: Gender;
   answers: { [i: number]: Value };
   order: number[];
   quiz: QuizType;

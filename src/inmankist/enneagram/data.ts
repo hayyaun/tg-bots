@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData, Language } from "../types";
+import { IQuest, IUserData, Language } from "../types";
 import { EnneagramType } from "./types";
 
 // Load questions by language
@@ -62,7 +62,7 @@ function getItems(language: Language): IListItem[] {
   ];
 }
 
-export const getSample = (gender: Gender, size: number, language: Language = Language.Persian) => {
+export const getSample = (size: number, language: Language = Language.Persian) => {
   const items = getItems(language);
   const all = combine(items);
   return sample(items, all, size);

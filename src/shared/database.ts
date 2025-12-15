@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import { UserProfile } from "../matchfound/types";
+import { UserProfile } from "./types";
 import { getDisplayName } from "../utils/string";
 
 // Get user profile by id (new primary key)
