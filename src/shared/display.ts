@@ -99,7 +99,10 @@ export async function displayProfile(
   message += `${strings.name}: ${profile.display_name || strings.notSet}${moodEmoji}\n`;
   message += `${strings.age}: ${ageText}\n`;
   message += `${strings.genderLabel}: ${genderText}\n`;
-  message += `${strings.lookingFor}: ${lookingForText}\n`;
+  // Only show "Looking for" for matchfound bot
+  if (botName !== "Inmankist") {
+    message += `${strings.lookingFor}: ${lookingForText}\n`;
+  }
   message += `${strings.biography}: ${profile.biography || strings.notSet}\n`;
   
   // Show interests and location before quiz results
@@ -134,19 +137,29 @@ export async function displayProfile(
     .text(strings.editBio, "profile:edit:bio")
     .row()
     .text(strings.editBirthdate, "profile:edit:birthdate")
-    .text(strings.editGender, "profile:edit:gender")
-    .row()
-    .text(strings.editLookingFor, "profile:edit:looking_for")
-    .text(strings.editImages, "profile:edit:images")
-    .row()
+    .text(strings.editGender, "profile:edit:gender");
+  
+  // Only show "Looking for" button for matchfound bot
+  if (botName !== "Inmankist") {
+    keyboard.row()
+      .text(strings.editLookingFor, "profile:edit:looking_for")
+      .text(strings.editImages, "profile:edit:images");
+  } else {
+    keyboard.row()
+      .text(strings.editImages, "profile:edit:images");
+  }
+  
+  keyboard.row()
     .text(strings.editUsername, "profile:edit:username")
     .text(strings.editMood, "profile:edit:mood")
     .row()
     .text(strings.editInterests, "profile:edit:interests")
     .text(strings.editLocation, "profile:edit:location");
   
-  // Always show quiz button to allow users to take/retake quizzes
-  keyboard.row().url(strings.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+  // Only show quiz button for matchfound bot
+  if (botName !== "Inmankist") {
+    keyboard.row().url(strings.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+  }
 
   // Send photo if available - attach text as caption
   if (profile.profile_image) {
