@@ -23,11 +23,11 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   // Commands
   const commands: BotCommand[] = [
-    { command: "start", description: "شروع ربات" },
-    { command: "find", description: "پیدا کردن افراد" },
-    { command: "liked", description: "افرادی که من را لایک کردند" },
-    { command: "profile", description: "مشاهده و ویرایش پروفایل" },
-    { command: "settings", description: "تنظیمات" },
+    { command: "start", description: "🚀 شروع ربات" },
+    { command: "find", description: "🔍 پیدا کردن افراد" },
+    { command: "liked", description: "❤️ افرادی که من را لایک کردند" },
+    { command: "profile", description: "📋 مشاهده و ویرایش پروفایل" },
+    { command: "settings", description: "⚙️ تنظیمات" },
   ];
 
   await bot.api.setMyCommands(commands);

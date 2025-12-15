@@ -6,7 +6,7 @@ import {
   setupBotErrorHandling,
   initializeBot,
 } from "../utils/bot";
-import { getQuizTypeName, quizTypes } from "./config";
+import { getQuizTypeName, quizTypes, getQuizTypeEmoji } from "./config";
 import { getStrings } from "./i18n";
 import { Language } from "../shared/types";
 import { QuizType } from "./types";
@@ -39,9 +39,11 @@ const startBot = async (botKey: string, agent: unknown) => {
   ];
 
   for (const key in quizTypes) {
+    const quizType = key as QuizType;
+    const emoji = getQuizTypeEmoji(quizType);
     commands.push({
       command: key,
-      description: `❓ ${englishStrings.about} ${getQuizTypeName(key as QuizType, Language.English)}`,
+      description: `${emoji} ${englishStrings.about} ${getQuizTypeName(quizType, Language.English)}`,
     });
   }
 
