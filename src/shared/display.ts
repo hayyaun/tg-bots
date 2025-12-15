@@ -5,7 +5,7 @@ import {
   MOODS,
   PROVINCE_NAMES,
   MAX_COMPLETION_SCORE,
-} from "../matchfound/constants";
+} from "./constants";
 import { UserProfile } from "./types";
 import { calculateAge } from "./utils";
 import { getSharedStrings } from "./i18n";
