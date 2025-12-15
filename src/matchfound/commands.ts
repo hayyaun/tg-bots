@@ -668,18 +668,24 @@ export function setupCommands(
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     try {
-      const [totalUsers, completedProfiles, newUsers, totalLikes, totalReports, mutualLikesRows] =
-        await prisma.$transaction([
-          prisma.user.count(),
-          prisma.user.count({
-            where: { completion_score: { gte: MIN_COMPLETION_THRESHOLD } },
-          }),
-          prisma.user.count({
-            where: { created_at: { gte: since24h } },
-          }),
-          prisma.like.count(),
-          prisma.report.count(),
-          prisma.$queryRaw<{ count: bigint }[]>`
+      const [
+        totalUsers,
+        completedProfiles,
+        newUsers,
+        totalLikes,
+        totalReports,
+        mutualLikesRows,
+      ] = await prisma.$transaction([
+        prisma.user.count(),
+        prisma.user.count({
+          where: { completion_score: { gte: MIN_COMPLETION_THRESHOLD } },
+        }),
+        prisma.user.count({
+          where: { created_at: { gte: since24h } },
+        }),
+        prisma.like.count(),
+        prisma.report.count(),
+        prisma.$queryRaw<{ count: bigint }[]>`
             SELECT COUNT(*)::bigint AS count
             FROM likes l1
             JOIN likes l2
@@ -687,13 +693,14 @@ export function setupCommands(
              AND l1.liked_user_id = l2.user_id
            WHERE l1.user_id < l1.liked_user_id
           `,
-        ]);
+      ]);
 
       const mutualLikes = Number(mutualLikesRows?.[0]?.count ?? 0);
 
       const keyboard = new InlineKeyboard()
         .text("📋 Reports", "admin:reports")
-        .text("👥 All Users", "admin:all_users")
+        .row()
+        .text("👥 Users", "admin:all_users")
         .row();
 
       const statsMessage =
