@@ -21,7 +21,7 @@ const backgroundColor = "#ffffff"; // White
 const gridLineColor = "#e0e0e0"; // Light gray
 const axisColor = "#999999"; // Dark gray
 const labelColor = "#333333"; // Medium gray
-const userPositionColor = "#330C2F"; // Red
+const userPositionColor = "#33190C"; // Red
 
 export function generateCompassChart(
   economicScore: number,
@@ -41,15 +41,15 @@ export function generateCompassChart(
   // Top-left (AuthLeft)
   ctx.fillStyle = authLeftColor;
   ctx.fillRect(padding, padding, chartSize / 2, chartSize / 2);
-  
+
   // Top-right (AuthRight)
   ctx.fillStyle = authRightColor;
   ctx.fillRect(centerX, padding, chartSize / 2, chartSize / 2);
-  
+
   // Bottom-left (LibLeft)
   ctx.fillStyle = libLeftColor;
   ctx.fillRect(padding, centerY, chartSize / 2, chartSize / 2);
-  
+
   // Bottom-right (LibRight)
   ctx.fillStyle = libRightColor;
   ctx.fillRect(centerX, centerY, chartSize / 2, chartSize / 2);
@@ -97,7 +97,7 @@ export function generateCompassChart(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.direction = isRTL ? "rtl" : "ltr";
-  
+
   // Use appropriate font based on language
   if (isRTL) {
     ctx.font = "bold 20px 'Vazirmatn', sans-serif, 'Noto Color Emoji'";
@@ -133,7 +133,17 @@ export function generateCompassChart(
   // Bottom-left (LibLeft) - Libertarian at bottom
   ctx.fillText(strings.compass_libLeft, padding + 60, height - padding - 30);
   // Bottom-right (LibRight) - Libertarian at bottom
-  ctx.fillText(strings.compass_libRight, width - padding - 60, height - padding - 30);
+  ctx.fillText(
+    strings.compass_libRight,
+    width - padding - 60,
+    height - padding - 30
+  );
+
+  // Draw center point
+  ctx.fillStyle = axisColor;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
+  ctx.fill();
 
   // Calculate user's position on chart
   // X: economicScore (-100 to +100) maps to (padding to width-padding)
@@ -158,4 +168,3 @@ export function generateCompassChart(
   // Return as PNG buffer
   return canvas.toBuffer("image/png");
 }
-
