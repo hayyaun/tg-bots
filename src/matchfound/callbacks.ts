@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, Context } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
 import {
@@ -10,22 +10,75 @@ import {
 import { displayProfile } from "../shared/display";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
 import { calculateAge } from "../shared/utils";
-import { continueProfileCompletion } from "./commands";
-import { BOT_NAME, MIN_COMPLETION_THRESHOLD, MIN_INTERESTS } from "./constants";
+import {
+  continueProfileCompletion,
+  executeFindAndDisplay,
+  validateProfileForFind,
+} from "./helpers";
+import { BOT_NAME } from "./constants";
 import { displayUser } from "./display";
-import { findMatches } from "./matching";
 import { getSession } from "./session";
 import {
   callbacks,
   deleteData,
   display,
   errors,
-  fields,
   notifications,
   report,
   success,
 } from "./strings";
 import { MatchUser } from "./types";
+
+// Helper to show next user after action (like/dislike/next/delete)
+async function showNextUser(
+  ctx: Context,
+  userId: number,
+  type: "match" | "liked"
+): Promise<void> {
+  const session = getSession(userId);
+  const profile = await getUserProfile(userId);
+
+  if (
+    type === "match" &&
+    session.matches &&
+    session.currentMatchIndex !== undefined
+  ) {
+    session.currentMatchIndex++;
+    if (session.currentMatchIndex < session.matches.length) {
+      const isAdminView = (session as any).isAdminView === true;
+      await displayUser(
+        ctx,
+        session.matches[session.currentMatchIndex],
+        "match",
+        isAdminView,
+        session,
+        profile?.interests || [],
+        profile || undefined
+      );
+    } else {
+      await ctx.reply(errors.noMatches);
+    }
+  } else if (
+    type === "liked" &&
+    session.likedUsers &&
+    session.currentLikedIndex !== undefined
+  ) {
+    session.currentLikedIndex++;
+    if (session.currentLikedIndex < session.likedUsers.length) {
+      await displayUser(
+        ctx,
+        session.likedUsers[session.currentLikedIndex],
+        "liked",
+        false,
+        undefined,
+        profile?.interests || [],
+        profile || undefined
+      );
+    } else {
+      await ctx.reply(display.allLikedSeen);
+    }
+  }
+}
 
 export function setupCallbacks(
   bot: Bot,
@@ -114,41 +167,12 @@ export function setupCallbacks(
       // Show next match or next liked user
       const session = getSession(userId);
       if (session.matches && session.currentMatchIndex !== undefined) {
-        session.currentMatchIndex++;
-        if (session.currentMatchIndex < session.matches.length) {
-          const profile = await getUserProfile(userId);
-          await displayUser(
-            ctx,
-            session.matches[session.currentMatchIndex],
-            "match",
-            false,
-            session,
-            profile?.interests || [],
-            profile || undefined
-          );
-        } else {
-          await ctx.reply(errors.noMatches);
-        }
+        await showNextUser(ctx, userId, "match");
       } else if (
         session.likedUsers &&
         session.currentLikedIndex !== undefined
       ) {
-        // Handle navigation for liked users list
-        session.currentLikedIndex++;
-        if (session.currentLikedIndex < session.likedUsers.length) {
-          const profile = await getUserProfile(userId);
-          await displayUser(
-            ctx,
-            session.likedUsers[session.currentLikedIndex],
-            "liked",
-            false,
-            undefined,
-            profile?.interests || [],
-            profile || undefined
-          );
-        } else {
-          await ctx.reply(display.allLikedSeen);
-        }
+        await showNextUser(ctx, userId, "liked");
       }
     } catch (err) {
       log.error(BOT_NAME + " > Like action failed", err);
@@ -165,26 +189,7 @@ export function setupCallbacks(
     if (!userId) return;
 
     await ctx.answerCallbackQuery(callbacks.disliked);
-
-    // Show next match
-    const session = getSession(userId);
-    if (session.matches && session.currentMatchIndex !== undefined) {
-      session.currentMatchIndex++;
-      if (session.currentMatchIndex < session.matches.length) {
-        const profile = await getUserProfile(userId);
-        await displayUser(
-          ctx,
-          session.matches[session.currentMatchIndex],
-          "match",
-          false,
-          session,
-          profile?.interests || [],
-          profile || undefined
-        );
-      } else {
-        await ctx.reply(errors.noMatches);
-      }
-    }
+    await showNextUser(ctx, userId, "match");
   });
 
   // Next match action (skip without like/dislike)
@@ -193,28 +198,7 @@ export function setupCallbacks(
     if (!userId) return;
 
     await ctx.answerCallbackQuery();
-
-    // Show next match
-    const session = getSession(userId);
-    if (session.matches && session.currentMatchIndex !== undefined) {
-      session.currentMatchIndex++;
-      if (session.currentMatchIndex < session.matches.length) {
-        const profile = await getUserProfile(userId);
-        // Check if this is admin view (preserve showUsername setting)
-        const isAdminView = (session as any).isAdminView === true;
-        await displayUser(
-          ctx,
-          session.matches[session.currentMatchIndex],
-          "match",
-          isAdminView,
-          session,
-          profile?.interests || [],
-          profile || undefined
-        );
-      } else {
-        await ctx.reply(errors.noMatches);
-      }
-    }
+    await showNextUser(ctx, userId, "match");
   });
 
   // Delete liked user (add to ignored)
@@ -248,26 +232,7 @@ export function setupCallbacks(
       });
 
       await ctx.answerCallbackQuery(callbacks.deleted);
-
-      // Show next liked user
-      const session = getSession(userId);
-      if (session.likedUsers && session.currentLikedIndex !== undefined) {
-        session.currentLikedIndex++;
-        if (session.currentLikedIndex < session.likedUsers.length) {
-          const profile = await getUserProfile(userId);
-          await displayUser(
-            ctx,
-            session.likedUsers[session.currentLikedIndex],
-            "liked",
-            false,
-            undefined,
-            profile?.interests || [],
-            profile || undefined
-          );
-        } else {
-          await ctx.reply(display.allLikedSeen);
-        }
-      }
+      await showNextUser(ctx, userId, "liked");
     } catch (err) {
       log.error(BOT_NAME + " > Delete liked failed", err);
       await ctx.answerCallbackQuery("❌ خطا"); // TODO: Add to strings
@@ -395,66 +360,13 @@ export function setupCallbacks(
 
     try {
       const profile = await getUserProfile(userId);
-      if (!profile) {
-        await ctx.reply(errors.startFirst);
-        return;
-      }
-
-      // Check required fields first (these are mandatory for matching to work)
-      const missingRequiredFields: string[] = [];
-      if (!profile.username) missingRequiredFields.push(fields.username);
-      if (!profile.display_name) missingRequiredFields.push(fields.displayName);
-      if (!profile.gender) missingRequiredFields.push(fields.gender);
-      if (!profile.looking_for_gender)
-        missingRequiredFields.push(fields.lookingForGender);
-      if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
-
-      // Check interests separately to show specific count
-      if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
-        await ctx.reply(
-          errors.minInterestsNotMet(profile.interests?.length || 0)
-        );
-        return;
-      }
-
-      if (missingRequiredFields.length > 0) {
-        await ctx.reply(errors.missingRequiredFields(missingRequiredFields));
-        return;
-      }
-
-      // Check minimum completion for other optional fields
-      if (profile.completion_score < MIN_COMPLETION_THRESHOLD) {
-        await ctx.reply(errors.incompleteProfile(profile.completion_score));
+      if (!(await validateProfileForFind(profile, ctx))) {
         return;
       }
 
       // Note: Rate limiting is skipped for button clicks to improve UX
       // Users can still use /find command which has rate limiting
-
-      const matches = await findMatches(userId);
-      if (matches.length === 0) {
-        await ctx.reply(errors.noMatches);
-        return;
-      }
-
-      // Store matches in session for pagination
-      const session = getSession(userId);
-      session.matches = matches;
-      session.currentMatchIndex = 0;
-
-      // Show match count
-      await ctx.reply(success.matchesFound(matches.length));
-
-      // Show first match
-      await displayUser(
-        ctx,
-        matches[0],
-        "match",
-        false,
-        session,
-        profile.interests || [],
-        profile
-      );
+      await executeFindAndDisplay(ctx, userId, profile!, false);
     } catch (err) {
       log.error(BOT_NAME + " > Find callback failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
