@@ -15,12 +15,12 @@ import { getSession } from "./session";
 import { calculateAge } from "../shared/utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
+import { getInterestNames } from "../shared/i18n";
 import {
   BOT_NAME,
   INMANKIST_BOT_USERNAME,
   MOODS,
   INTERESTS,
-  INTEREST_NAMES,
   IRAN_PROVINCES,
   PROVINCE_NAMES,
   MIN_INTERESTS,
@@ -62,10 +62,11 @@ function buildInterestsKeyboard(
   const pageItems = INTERESTS.slice(startIndex, endIndex);
 
   // Add interest buttons (2 per row)
+  const interestNamesMap = await getInterestNames(userId, BOT_NAME);
   let rowCount = 0;
   for (const interest of pageItems) {
     const isSelected = selectedInterests.has(interest);
-    const displayName = INTEREST_NAMES[interest];
+    const displayName = interestNamesMap[interest];
     const prefix = isSelected ? "✅ " : "";
     keyboard.text(`${prefix}${displayName}`, `profile:toggle:interest:${interest}`);
     rowCount++;

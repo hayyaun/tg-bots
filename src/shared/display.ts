@@ -1,14 +1,13 @@
 import { Context, InlineKeyboard } from "grammy";
 import {
   INMANKIST_BOT_USERNAME,
-  INTEREST_NAMES,
   MOODS,
   PROVINCE_NAMES,
   MAX_COMPLETION_SCORE,
 } from "./constants";
 import { UserProfile } from "./types";
 import { calculateAge } from "./utils";
-import { getSharedStrings } from "./i18n";
+import { getSharedStrings, getInterestNames } from "./i18n";
 
 // Helper function to format BigFive result
 async function formatBigFiveResult(
@@ -107,8 +106,9 @@ export async function displayProfile(
   // Show interests and location before quiz results
   
   if (profile.interests && profile.interests.length > 0) {
+    const interestNamesMap = await getInterestNames(userId, botName);
     const interestNames = profile.interests
-      .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+      .map((interest) => interestNamesMap[interest as keyof typeof interestNamesMap] || interest)
       .join(", ");
     message += `${strings.interests}: ${interestNames}\n`;
   } else {

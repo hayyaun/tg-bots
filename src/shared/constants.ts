@@ -61,113 +61,17 @@ export const INTERESTS = [
 
 export type Interest = typeof INTERESTS[number];
 
-// Interest display names (Persian)
-export const INTEREST_NAMES: Record<Interest, string> = {
-  // Animals & Pets
-  cat: "گربه",
-  dog: "سگ",
-  bird: "پرنده",
-  fish: "ماهی",
-  // Sports & Fitness
-  football: "فوتبال",
-  basketball: "بسکتبال",
-  tennis: "تنیس",
-  swimming: "شنا",
-  running: "دویدن",
-  cycling: "دوچرخه‌سواری",
-  boxing: "بوکس",
-  martial_arts: "هنرهای رزمی",
-  golf: "گلف",
-  skiing: "اسکی",
-  surfing: "موج‌سواری",
-  skateboarding: "اسکیت‌بورد",
-  climbing: "صخره‌نوردی",
-  hiking: "کوهنوردی",
-  camping: "کمپینگ",
-  fitness: "تناسب اندام",
-  yoga: "یوگا",
-  meditation: "مدیتیشن",
-  // Music
-  music: "موسیقی",
-  rock: "راک",
-  pop: "پاپ",
-  jazz: "جاز",
-  classical: "کلاسیک",
-  electronic: "الکترونیک",
-  hip_hop: "هیپ‌هاپ",
-  kpop: "کی‌پاپ",
-  guitar: "گیتار",
-  piano: "پیانو",
-  singing: "آواز",
-  concerts: "کنسرت",
-  // Entertainment & Media
-  movie: "فیلم",
-  tv_shows: "سریال",
-  anime: "انیمه",
-  manga: "مانگا",
-  comics: "کمیک",
-  books: "کتاب",
-  theater: "تئاتر",
-  dancing: "رقص",
-  gaming: "بازی",
-  podcasts: "پادکست",
-  youtube: "یوتیوب",
-  // Technology
-  technology: "تکنولوژی",
-  programming: "برنامه‌نویسی",
-  ai: "هوش مصنوعی",
-  photography: "عکاسی",
-  graphic_design: "طراحی گرافیک",
-  // Food & Drink
-  cooking: "آشپزی",
-  wine: "شراب",
-  coffee: "قهوه",
-  tea: "چای",
-  vegetarian: "گیاهخواری",
-  vegan: "وگان",
-  sushi: "سوشی",
-  pizza: "پیتزا",
-  // Travel & Adventure
-  traveling: "سفر",
-  history: "تاریخ",
-  culture: "فرهنگ",
-  adventure: "ماجراجویی",
-  // Arts & Crafts
-  art: "هنر",
-  painting: "نقاشی",
-  drawing: "طراحی",
-  // Fashion & Beauty
-  fashion: "مد",
-  makeup: "آرایش",
-  jewelry: "جواهرات",
-  shopping: "خرید",
-  vintage: "وینتیج",
-  // Education & Learning
-  education: "آموزش",
-  science: "علم",
-  languages: "زبان‌ها",
-  // Nature & Outdoors
-  nature: "طبیعت",
-  gardening: "باغبانی",
-  // Vehicles
-  cars: "ماشین",
-  bicycles: "دوچرخه",
-  // Hobbies & Games
-  board_games: "بازی رومیزی",
-  chess: "شطرنج",
-  // Social & Community
-  volunteering: "داوطلب",
-  events: "رویداد",
-  festivals: "جشنواره",
-  // Business
-  business: "کسب و کار",
-  // Spiritual & Religious
-  spirituality: "معنویت",
-  religion: "دین",
-  // Communication & Media
-  content_creation: "تولید محتوا",
-  social_media: "شبکه‌های اجتماعی",
-};
+// Re-export interest names from i18n (Persian default for backward compatibility)
+// Use getInterestNames() from i18n for language-aware interest names
+export { getInterestName } from "./i18n";
+import { getInterestName } from "./i18n";
+import { Language } from "./types";
+
+// Interest display names (Persian) - kept for backward compatibility
+// Prefer using getInterestNames() for i18n support
+export const INTEREST_NAMES: Record<Interest, string> = Object.fromEntries(
+  INTERESTS.map((interest) => [interest, getInterestName(interest, Language.Persian)])
+) as Record<Interest, string>;
 
 // Iran provinces list (31 provinces)
 export const IRAN_PROVINCES = [

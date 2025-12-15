@@ -3,7 +3,6 @@ import log from "../log";
 import {
   BOT_NAME,
   INMANKIST_BOT_USERNAME,
-  INTEREST_NAMES,
   MOODS,
   PROVINCE_NAMES,
   MAX_INTERESTS,
@@ -21,6 +20,7 @@ import {
 import { buttons, display, fields, profileValues } from "./strings";
 import { MatchUser, SessionData, UserProfile } from "./types";
 import { calculateAge } from "../shared/utils";
+import { getInterestNames } from "../shared/i18n";
 
 type DisplayMode = "match" | "liked";
 
@@ -231,10 +231,11 @@ export async function displayUser(
     message += `\n😊 مود: ${MOODS[user.mood] || user.mood}`;
   }
   if (user.interests && user.interests.length > 0) {
+    const interestNamesMap = await getInterestNames(ctx.from?.id, BOT_NAME);
     const interestNames = user.interests
       .map(
         (interest) =>
-          INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest
+          interestNamesMap[interest as keyof typeof interestNamesMap] || interest
       )
       .join(", ");
 
@@ -343,8 +344,9 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
   // Show interests and location before quiz results
   
   if (profile.interests && profile.interests.length > 0) {
+    const interestNamesMap = await getInterestNames(ctx.from?.id, BOT_NAME);
     const interestNames = profile.interests
-      .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
+      .map((interest) => interestNamesMap[interest as keyof typeof interestNamesMap] || interest)
       .join(", ");
     message += `${fields.interests}: ${interestNames}\n`;
   } else {

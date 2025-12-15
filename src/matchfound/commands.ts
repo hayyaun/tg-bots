@@ -7,7 +7,8 @@ import { getSession } from "./session";
 import { calculateAge } from "../shared/utils";
 import { MatchUser, UserProfile } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE, INTERESTS, INTEREST_NAMES } from "./constants";
+import { getInterestNames } from "../shared/i18n";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE, INTERESTS } from "./constants";
 import {
   getWelcomeMessage,
   errors,
@@ -237,10 +238,11 @@ async function promptNextRequiredField(
       const endIndex = Math.min(itemsPerPage, INTERESTS.length);
       const pageItems = INTERESTS.slice(startIndex, endIndex);
       
+      const interestNamesMap = await getInterestNames(userId, BOT_NAME);
       let rowCount = 0;
       for (const interest of pageItems) {
         const isSelected = currentInterests.has(interest);
-        const displayName = INTEREST_NAMES[interest];
+        const displayName = interestNamesMap[interest];
         const prefix = isSelected ? "✅ " : "";
         interestsKeyboard.text(`${prefix}${displayName}`, `profile:toggle:interest:${interest}`);
         rowCount++;
