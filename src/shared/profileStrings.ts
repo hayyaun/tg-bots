@@ -1,5 +1,9 @@
 import { Language } from "./types";
-import { getProfileStrings, getProfileStringsSync, type IProfileStrings } from "./i18n";
+import {
+  getProfileStrings,
+  getProfileStringsSync,
+  type IProfileStrings,
+} from "./i18n/profileStrings";
 
 export { getProfileStrings, getProfileStringsSync };
 export type { IProfileStrings };
