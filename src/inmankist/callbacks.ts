@@ -71,6 +71,15 @@ function extractQuizResult(
       return null;
 
     case QuizType.MBTI:
+      if (
+        typeof result === "object" &&
+        result !== null &&
+        "type" in result
+      ) {
+        // result is object with type and distribution - store just type
+        return (result as { type: string }).type.toUpperCase();
+      }
+      // Fallback for old format (string)
       if (typeof result === "string") {
         return result.toUpperCase();
       }

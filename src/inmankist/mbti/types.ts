@@ -28,3 +28,8 @@ export enum Dimension {
   P = "P", // Perceiving
 }
 
+export interface MBTIResult {
+  type: MBTIType;
+  distribution: { dimension: string; percentage: number }[];
+}
+

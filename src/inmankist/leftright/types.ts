@@ -11,3 +11,9 @@ export enum ResultType {
   StrongRight = "strong_right",
 }
 
+export interface LeftRightResult {
+  resultType: ResultType;
+  leftPercentage: number;
+  rightPercentage: number;
+}
+

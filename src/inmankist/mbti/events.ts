@@ -7,7 +7,7 @@ import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IUserData, QuizType } from "../types";
 import personalities from "./personalities";
-import { Dimension, MBTIType } from "./types";
+import { Dimension, MBTIType, MBTIResult } from "./types";
 
 export function setCustomCommands(bot: Bot) {
   // No custom commands needed for MBTI
@@ -97,7 +97,7 @@ function getDimensionPercentages(
   });
 }
 
-export function calculateResult(user: IUserData): MBTIType {
+export function calculateResult(user: IUserData): MBTIResult {
   // Calculate scores for each dimension
   const dimensionScores = new Map<Dimension, number>();
 
@@ -112,17 +112,23 @@ export function calculateResult(user: IUserData): MBTIType {
 
   // Determine MBTI type
   const mbtiType = calculateMBTIType(dimensionScores);
-  return mbtiType;
+  
+  // Calculate distribution percentages
+  const totalQuestions = user.order.length;
+  const distribution = getDimensionPercentages(dimensionScores, totalQuestions);
+  
+  return { type: mbtiType, distribution };
 }
 
-export async function replyResult(ctx: Context, language: Language, mbtiType: MBTIType) {
+export async function replyResult(ctx: Context, language: Language, result: MBTIResult) {
+  const { type: mbtiType, distribution } = result;
   const personality = personalities[mbtiType];
 
   const labels = {
-    [Language.Persian]: { type: "تیپ شخصیتی شما" },
-    [Language.English]: { type: "Your Personality Type" },
-    [Language.Russian]: { type: "Ваш тип личности" },
-    [Language.Arabic]: { type: "نوع شخصيتك" },
+    [Language.Persian]: { type: "تیپ شخصیتی شما", distribution: "توزیع ابعاد شخصیتی" },
+    [Language.English]: { type: "Your Personality Type", distribution: "Personality Dimension Distribution" },
+    [Language.Russian]: { type: "Ваш тип личности", distribution: "Распределение измерений личности" },
+    [Language.Arabic]: { type: "نوع شخصيتك", distribution: "توزيع أبعاد الشخصية" },
   };
 
   // Create message
@@ -132,6 +138,9 @@ export async function replyResult(ctx: Context, language: Language, mbtiType: MB
     `*${personality.nickname[language]}*`,
     ``,
     personality.description[language],
+    ``,
+    `📊 ${labels[language].distribution}:`,
+    ...distribution.map((p) => `${p.dimension}: ${p.percentage}%`),
   ].join("\n");
 
   // Add buttons for detailed view

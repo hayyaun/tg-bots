@@ -6,7 +6,7 @@ import { EnneagramType } from "./enneagram/types";
 import * as leftright from "./leftright";
 import { ResultType } from "./leftright/types";
 import * as mbti from "./mbti";
-import { MBTIType } from "./mbti/types";
+import { MBTIType, MBTIResult } from "./mbti/types";
 import * as politicalcompass from "./politicalcompass";
 import { Quadrant, PoliticalCompassResult } from "./politicalcompass/types";
 import * as bigfive from "./bigfive";
@@ -114,7 +114,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
     case QuizType.MBTI: {
       result = mbti.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await mbti.replyResult(ctx, language, result as MBTIType);
+      await mbti.replyResult(ctx, language, result as MBTIResult);
       return result;
     }
     case QuizType.LeftRight: {
@@ -195,7 +195,7 @@ export async function displaySavedResult(
         return true;
       }
       case QuizType.MBTI: {
-        const savedResult = await getQuizResult<MBTIType>(userId, quizType);
+        const savedResult = await getQuizResult<MBTIResult>(userId, quizType);
         if (!savedResult) return false;
         await mbti.replyResult(ctx, language, savedResult);
         return true;
