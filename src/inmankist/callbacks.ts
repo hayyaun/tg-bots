@@ -27,12 +27,11 @@ import {
   selectQuizQuestion,
   displaySavedResult,
 } from "./reducer";
-import { Language } from "../shared/types";
+import { Language, QuizType } from "../shared/types";
 import {
   Gender,
   IUserData,
   QuizMode,
-  QuizType,
   Value,
 } from "./types";
 import {

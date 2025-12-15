@@ -1,13 +1,4 @@
-import { Language } from "../shared/types";
-
-export enum QuizType {
-  Archetype = "archetype",
-  MBTI = "mbti",
-  LeftRight = "leftright",
-  PoliticalCompass = "politicalcompass",
-  Enneagram = "enneagram",
-  BigFive = "bigfive",
-}
+import { Language, QuizType } from "../shared/types";
 
 export enum QuizMode {
   SM,

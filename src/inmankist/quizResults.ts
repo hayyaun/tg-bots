@@ -1,5 +1,5 @@
 import { getWithPrefix, setWithPrefix } from "../redis";
-import { QuizType } from "./types";
+import { QuizType } from "../shared/types";
 
 const REDIS_PREFIX = "inmankist";
 const QUIZ_RESULT_TTL = 48 * 60 * 60; // 48 hours in seconds

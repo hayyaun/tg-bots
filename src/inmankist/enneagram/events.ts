@@ -4,7 +4,8 @@ import { getQuestion } from ".";
 import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
-import { IUserData, QuizType } from "../types";
+import { QuizType } from "../../shared/types";
+import { IUserData } from "../types";
 import descriptions from "./descriptions";
 import { EnneagramType } from "./types";
 

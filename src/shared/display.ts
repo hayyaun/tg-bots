@@ -7,6 +7,7 @@ import {
 import { UserProfile } from "./types";
 import { calculateAge } from "./utils";
 import { getSharedStrings, getInterestNames, getProvinceNames } from "./i18n";
+import { getQuizTypeEmoji, getQuizTypeFromFieldName } from "./quizUtils";
 
 // Helper function to format BigFive result
 async function formatBigFiveResult(
@@ -38,35 +39,45 @@ async function buildProfileQuizResultsSection(
   const sections: string[] = [];
 
   // Required quizzes - always show with instructions if missing
+  const archetypeQuizType = getQuizTypeFromFieldName("archetype_result");
+  const archetypeEmoji = archetypeQuizType ? getQuizTypeEmoji(archetypeQuizType) : "❓";
   if (profile.archetype_result) {
-    sections.push(`${strings.archetype}: ${profile.archetype_result}`);
+    sections.push(`${archetypeEmoji} ${strings.archetype}: ${profile.archetype_result}`);
   } else {
     sections.push(
-      `${strings.archetype}: ${strings.archetypeNotSet}`
+      `${archetypeEmoji} ${strings.archetype}: ${strings.archetypeNotSet}`
     );
   }
 
+  const mbtiQuizType = getQuizTypeFromFieldName("mbti_result");
+  const mbtiEmoji = mbtiQuizType ? getQuizTypeEmoji(mbtiQuizType) : "❓";
   if (profile.mbti_result) {
-    sections.push(`${strings.mbti}: ${profile.mbti_result.toUpperCase()}`);
+    sections.push(`${mbtiEmoji} ${strings.mbti}: ${profile.mbti_result.toUpperCase()}`);
   } else {
     sections.push(
-      `${strings.mbti}: ${strings.mbtiNotSet}`
+      `${mbtiEmoji} ${strings.mbti}: ${strings.mbtiNotSet}`
     );
   }
 
   // Optional quizzes - only show if present
   if (profile.leftright_result) {
-    sections.push(`${strings.leftright}: ${profile.leftright_result}`);
+    const quizType = getQuizTypeFromFieldName("leftright_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${strings.leftright}: ${profile.leftright_result}`);
   }
   if (profile.politicalcompass_result) {
+    const quizType = getQuizTypeFromFieldName("politicalcompass_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
     sections.push(
-      `${strings.politicalcompass}: ${profile.politicalcompass_result}`
+      `${emoji} ${strings.politicalcompass}: ${profile.politicalcompass_result}`
     );
   }
   if (profile.enneagram_result) {
     // Keep Persian formatting for enneagram type (type -> تیپ)
     const enneagramText = profile.enneagram_result.replace("type", "تیپ ");
-    sections.push(`${strings.enneagram}: ${enneagramText}`);
+    const quizType = getQuizTypeFromFieldName("enneagram_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${strings.enneagram}: ${enneagramText}`);
   }
   if (profile.bigfive_result) {
     const formatted = await formatBigFiveResult(
@@ -75,7 +86,9 @@ async function buildProfileQuizResultsSection(
       userId
     );
     if (formatted) {
-      sections.push(`${strings.bigfive}: ${formatted}`);
+      const quizType = getQuizTypeFromFieldName("bigfive_result");
+      const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+      sections.push(`${emoji} ${strings.bigfive}: ${formatted}`);
     }
   }
 

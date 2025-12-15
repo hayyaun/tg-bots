@@ -13,7 +13,8 @@ import * as bigfive from "./bigfive";
 import { BigFiveAspect, BigFiveTrait, BigFiveResult } from "./bigfive/types";
 import { quizModes } from "./config";
 import { Language } from "../shared/types";
-import { IQuest, IUserData, QuizType, QuizMode } from "./types";
+import { QuizType } from "../shared/types";
+import { IQuest, IUserData, QuizMode } from "./types";
 import { storeQuizResult, getQuizResult } from "./quizResults";
 
 // Optional customization for each quiz

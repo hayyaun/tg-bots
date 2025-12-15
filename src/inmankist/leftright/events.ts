@@ -5,7 +5,8 @@ import { quizModes } from "../config";
 import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
-import { IUserData, QuizType } from "../types";
+import { QuizType } from "../../shared/types";
+import { IUserData } from "../types";
 import styles from "./styles";
 import { CognitiveStyle, ResultType, LeftRightResult } from "./types";
 

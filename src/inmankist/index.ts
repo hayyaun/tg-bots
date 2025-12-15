@@ -6,10 +6,10 @@ import {
   setupBotErrorHandling,
   initializeBot,
 } from "../utils/bot";
-import { getQuizTypeName, quizTypes, getQuizTypeEmoji } from "./config";
+import { getQuizTypeName, quizTypes } from "./config";
+import { getQuizTypeEmoji } from "../shared/quizUtils";
 import { getStrings } from "./i18n";
-import { Language } from "../shared/types";
-import { QuizType } from "./types";
+import { Language, QuizType } from "../shared/types";
 import { setCustomCommands } from "./reducer";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";

@@ -5,6 +5,15 @@ export enum Language {
   Arabic = "ar",
 }
 
+export enum QuizType {
+  Archetype = "archetype",
+  MBTI = "mbti",
+  LeftRight = "leftright",
+  PoliticalCompass = "politicalcompass",
+  Enneagram = "enneagram",
+  BigFive = "bigfive",
+}
+
 export type ProfileEditingField = 
   | "name" 
   | "bio" 

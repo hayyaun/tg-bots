@@ -22,6 +22,7 @@ import { UserProfile } from "../shared/types";
 import { MatchUser, SessionData } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
+import { getQuizTypeFromFieldName, getQuizTypeEmoji } from "../shared/quizUtils";
 
 type DisplayMode = "match" | "liked";
 
@@ -54,24 +55,36 @@ function buildQuizResultsSection(user: MatchUser): string {
   const sections: string[] = [];
   
   if (user.archetype_result) {
-    sections.push(`🔮 ${formatQuizResultText(user.archetype_result, "کهن الگو")}`);
+    const quizType = getQuizTypeFromFieldName("archetype_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${formatQuizResultText(user.archetype_result, "کهن الگو")}`);
   }
   if (user.mbti_result) {
-    sections.push(`🧠 ${formatQuizResultText(user.mbti_result, "تست MBTI", (v) => v.toUpperCase())}`);
+    const quizType = getQuizTypeFromFieldName("mbti_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${formatQuizResultText(user.mbti_result, "تست MBTI", (v) => v.toUpperCase())}`);
   }
   if (user.leftright_result) {
-    sections.push(`⚖️ ${formatQuizResultText(user.leftright_result, "سبک شناختی")}`);
+    const quizType = getQuizTypeFromFieldName("leftright_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${formatQuizResultText(user.leftright_result, "سبک شناختی")}`);
   }
   if (user.politicalcompass_result) {
-    sections.push(`🧭 ${formatQuizResultText(user.politicalcompass_result, "قطب‌نمای سیاسی")}`);
+    const quizType = getQuizTypeFromFieldName("politicalcompass_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${formatQuizResultText(user.politicalcompass_result, "قطب‌نمای سیاسی")}`);
   }
   if (user.enneagram_result) {
-    sections.push(`🎯 ${formatQuizResultText(user.enneagram_result, "انیاگرام", (v) => v.replace("type", "تیپ "))}`);
+    const quizType = getQuizTypeFromFieldName("enneagram_result");
+    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    sections.push(`${emoji} ${formatQuizResultText(user.enneagram_result, "انیاگرام", (v) => v.replace("type", "تیپ "))}`);
   }
   if (user.bigfive_result) {
     const formatted = formatBigFiveResult(user.bigfive_result);
     if (formatted) {
-      sections.push(`📊 پنج عامل بزرگ: ${formatted}`);
+      const quizType = getQuizTypeFromFieldName("bigfive_result");
+      const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+      sections.push(`${emoji} پنج عامل بزرگ: ${formatted}`);
     }
   }
   

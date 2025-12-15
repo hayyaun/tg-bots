@@ -12,7 +12,7 @@ import {
 } from "../shared/i18n";
 import { replyAbout } from "./reducer";
 import { Language } from "../shared/types";
-import { QuizType } from "./types";
+import { QuizType } from "../shared/types";
 import { getUserData } from "./userData";
 import { setupProfileCommand } from "../shared/profileCommand";
 

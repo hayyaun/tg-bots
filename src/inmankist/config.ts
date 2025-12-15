@@ -1,5 +1,5 @@
-import { Language } from "../shared/types";
-import { QuizMode, QuizType } from "./types";
+import { Language, QuizType } from "../shared/types";
+import { QuizMode } from "./types";
 
 export const quizTypes: { [k: string]: { [key in Language]: string } } = {
   [QuizType.Archetype]: {
@@ -87,34 +87,6 @@ export function quizNeedsGender(quizType: QuizType): boolean {
   return quizType === QuizType.Archetype;
 }
 
-// Quiz type emojis - reusable across the codebase
-export const QUIZ_TYPE_EMOJIS: Record<QuizType, string> = {
-  [QuizType.Archetype]: "🔮",
-  [QuizType.MBTI]: "🧠",
-  [QuizType.LeftRight]: "⚖️",
-  [QuizType.PoliticalCompass]: "🧭",
-  [QuizType.Enneagram]: "🎯",
-  [QuizType.BigFive]: "📊",
-};
-
-// Helper function to get quiz emoji by type
-export function getQuizTypeEmoji(quizType: QuizType): string {
-  return QUIZ_TYPE_EMOJIS[quizType] || "❓";
-}
-
-// Helper function to get quiz emoji by result field name (for matchfound compatibility)
-export function getQuizEmojiByFieldName(fieldName: string): string {
-  const fieldToQuizType: Record<string, QuizType> = {
-    archetype_result: QuizType.Archetype,
-    mbti_result: QuizType.MBTI,
-    leftright_result: QuizType.LeftRight,
-    politicalcompass_result: QuizType.PoliticalCompass,
-    enneagram_result: QuizType.Enneagram,
-    bigfive_result: QuizType.BigFive,
-  };
-  const quizType = fieldToQuizType[fieldName];
-  return quizType ? getQuizTypeEmoji(quizType) : "❓";
-}
 
 // Matchfound bot username (for redirect after quiz completion)
 export const MATCHFOUND_BOT_USERNAME = process.env.MATCHFOUND_BOT_USERNAME || "match_found_bot";
