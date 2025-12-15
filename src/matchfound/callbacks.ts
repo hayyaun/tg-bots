@@ -8,8 +8,9 @@ import {
   removeProfileImage,
   deleteUserData,
   getUserIdFromTelegramId,
-} from "./database";
-import { displayUser, displayProfile } from "./display";
+} from "../shared/database";
+import { displayUser } from "./display";
+import { displayProfile } from "../shared/display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { UserProfile, MatchUser } from "./types";

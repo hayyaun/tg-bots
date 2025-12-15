@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import { UserProfile } from "./types";
+import { UserProfile } from "../matchfound/types";
 import { getDisplayName } from "../utils/string";
 
 // Get user profile by id (new primary key)
@@ -215,3 +215,4 @@ export async function deleteUserData(telegramUserId: number): Promise<void> {
     where: { id: user.id },
   });
 }
+

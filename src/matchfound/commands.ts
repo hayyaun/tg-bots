@@ -1,13 +1,13 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
-import { getUserProfile, ensureUserExists, getUserIdFromTelegramId } from "./database";
+import { getUserProfile, ensureUserExists, getUserIdFromTelegramId, updateUserField } from "../shared/database";
 import { findMatches } from "./matching";
 import { displayUser } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "./utils";
 import { MatchUser, UserProfile } from "./types";
 import log from "../log";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE } from "./constants";
+import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE, INTERESTS, INTEREST_NAMES } from "./constants";
 import {
   getWelcomeMessage,
   errors,
@@ -161,7 +161,6 @@ async function promptNextRequiredField(
       const currentUsername = ctx.from?.username;
       if (currentUsername) {
         // Auto-update username and continue
-        const { updateUserField } = await import("./database");
         await updateUserField(userId, "username", currentUsername);
         await ctx.reply(success.usernameUpdated(currentUsername));
         if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
@@ -206,7 +205,6 @@ async function promptNextRequiredField(
       const profile = await getUserProfile(userId);
       if (profile?.birth_date) {
         // Birthdate already exists, skip this field
-        const { calculateAge } = await import("./utils");
         const age = calculateAge(profile.birth_date);
         await ctx.reply(success.birthdateUpdated(age || 0));
         if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
@@ -232,7 +230,6 @@ async function promptNextRequiredField(
       session.interestsPage = 0;
       
       // Build interests keyboard inline
-      const { INTERESTS, INTEREST_NAMES } = await import("./constants");
       const interestsKeyboard = new InlineKeyboard();
       const itemsPerPage = ITEMS_PER_PAGE;
       const totalPages = Math.ceil(INTERESTS.length / itemsPerPage);

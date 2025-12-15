@@ -17,9 +17,9 @@ import {
 } from "./constants";
 import { MatchUser } from "./types";
 import { calculateAge } from "./utils";
+import { getUserProfile, getUserProfileById } from "../shared/database";
 
 export async function findMatches(userId: number | bigint): Promise<MatchUser[]> {
-  const { getUserProfile, getUserProfileById } = await import("./database");
   
   // userId can be either telegram_id (number) or id (bigint)
   // First, find the user to get their id

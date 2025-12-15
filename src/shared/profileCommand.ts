@@ -1,8 +1,8 @@
 import { Bot } from "grammy";
 import log from "../log";
-import { getUserProfile, updateCompletionScore } from "../matchfound/database";
-import { displayProfile } from "../matchfound/display";
-import { errors } from "../matchfound/strings";
+import { getUserProfile, updateCompletionScore } from "./database";
+import { displayProfile } from "./display";
+import { errors } from "./errors";
 
 export interface ProfileCommandDependencies {
   botName: string;

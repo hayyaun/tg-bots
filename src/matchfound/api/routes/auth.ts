@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
-import { generateToken } from "../middleware/auth";
+import { generateToken, verifyToken } from "../middleware/auth";
+import { prisma } from "../../../db";
 import log from "../../../log";
 
 const router = express.Router();
@@ -47,13 +48,11 @@ router.get("/me", async (req, res) => {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const { verifyToken } = await import("../middleware/auth");
     const decoded = verifyToken(token);
     if (!decoded) {
       return res.status(403).json({ error: "Invalid or expired token" });
     }
 
-    const { prisma } = await import("../../../db");
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {

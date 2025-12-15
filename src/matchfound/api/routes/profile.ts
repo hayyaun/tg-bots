@@ -1,6 +1,6 @@
 import express from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
-import { updateCompletionScoreById } from "../../database";
+import { updateCompletionScoreById } from "../../../shared/database";
 import { prisma } from "../../../db";
 import log from "../../../log";
 
