@@ -2,12 +2,11 @@ import { Context, InlineKeyboard } from "grammy";
 import {
   INMANKIST_BOT_USERNAME,
   MOODS,
-  PROVINCE_NAMES,
   MAX_COMPLETION_SCORE,
 } from "./constants";
 import { UserProfile } from "./types";
 import { calculateAge } from "./utils";
-import { getSharedStrings, getInterestNames } from "./i18n";
+import { getSharedStrings, getInterestNames, getProvinceNames } from "./i18n";
 
 // Helper function to format BigFive result
 async function formatBigFiveResult(
@@ -116,7 +115,8 @@ export async function displayProfile(
   }
   
   if (profile.location) {
-    message += `${strings.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+    const provinceNamesMap = await getProvinceNames(userId, botName);
+    message += `${strings.location}: ${provinceNamesMap[profile.location as keyof typeof provinceNamesMap] || profile.location}\n`;
   } else {
     message += `${strings.location}: ${strings.notSet}\n`;
   }

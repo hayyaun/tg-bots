@@ -16,13 +16,12 @@ import { calculateAge } from "../shared/utils";
 import { UserProfile } from "../shared/types";
 import { MatchUser } from "./types";
 import log from "../log";
-import { getInterestNames } from "../shared/i18n";
+import { getInterestNames, getProvinceNames } from "../shared/i18n";
 import {
   INMANKIST_BOT_USERNAME,
   MOODS,
   INTERESTS,
   IRAN_PROVINCES,
-  PROVINCE_NAMES,
   MAX_COMPLETION_SCORE,
 } from "../shared/constants";
 import {
@@ -99,11 +98,12 @@ async function buildInterestsKeyboard(
 }
 
 // Helper function to build location keyboard with pagination
-function buildLocationKeyboard(
+async function buildLocationKeyboard(
+  userId: number,
   selectedLocation: string | null,
   currentPage: number,
   itemsPerPage: number = ITEMS_PER_PAGE
-): InlineKeyboard {
+): Promise<InlineKeyboard> {
   const keyboard = new InlineKeyboard();
   const totalItems = IRAN_PROVINCES.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -112,10 +112,11 @@ function buildLocationKeyboard(
   const pageItems = IRAN_PROVINCES.slice(startIndex, endIndex);
 
   // Add province buttons (2 per row)
+  const provinceNamesMap = await getProvinceNames(userId, BOT_NAME);
   let rowCount = 0;
   for (const province of pageItems) {
     const isSelected = selectedLocation === province;
-    const displayName = PROVINCE_NAMES[province];
+    const displayName = provinceNamesMap[province];
     const prefix = isSelected ? "✅ " : "";
     keyboard.text(`${prefix}${displayName}`, `profile:set:location:${province}`);
     rowCount++;
@@ -737,7 +738,7 @@ export function setupCallbacks(
         const currentLocation = profileForLocation?.location || null;
         session.locationPage = 0; // Start at first page
         
-        const locationKeyboard = buildLocationKeyboard(currentLocation, session.locationPage);
+        const locationKeyboard = await buildLocationKeyboard(userId, currentLocation, session.locationPage);
         const totalLocationPages = Math.ceil(IRAN_PROVINCES.length / 20);
         await ctx.reply(
           editPrompts.location(1, totalLocationPages),
@@ -948,9 +949,10 @@ export function setupCallbacks(
     const currentPage = session.locationPage ?? 0;
     
     // Update the keyboard to reflect the new selection (stay on same page)
-    const locationKeyboard = buildLocationKeyboard(location, currentPage);
+    const locationKeyboard = await buildLocationKeyboard(userId, location, currentPage);
     const totalPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
-    const provinceName = PROVINCE_NAMES[location as keyof typeof PROVINCE_NAMES] || location;
+    const provinceNamesMap = await getProvinceNames(userId, BOT_NAME);
+    const provinceName = provinceNamesMap[location as keyof typeof provinceNamesMap] || location;
     
     try {
       await ctx.editMessageText(
@@ -983,7 +985,7 @@ export function setupCallbacks(
     
     session.locationPage = page;
     
-    const locationKeyboard = buildLocationKeyboard(currentLocation, page);
+    const locationKeyboard = await buildLocationKeyboard(userId, currentLocation, page);
     const totalPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
     
     try {
