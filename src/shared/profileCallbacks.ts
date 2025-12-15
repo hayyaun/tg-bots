@@ -5,17 +5,12 @@ import { INTERESTS, IRAN_PROVINCES, MOODS } from "./constants";
 import { MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "../matchfound/constants";
 import { editPrompts, errors, buttons, success, profileValues } from "../matchfound/strings";
 import { calculateAge } from "./utils";
-import { ProfileEditingField } from "./types";
+import { BaseSessionData } from "./session";
 import log from "../log";
 
 export interface ProfileCallbacksConfig {
   botName: string;
-  getSession: (userId: number) => {
-    editingField?: ProfileEditingField;
-    interestsPage?: number;
-    locationPage?: number;
-    completingProfile?: boolean;
-  };
+  getSession: (userId: number) => BaseSessionData;
   onContinueProfileCompletion?: (ctx: Context, bot: Bot, userId: number) => Promise<void>;
   notifyAdmin?: (message: string) => Promise<void>;
 }

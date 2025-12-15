@@ -1,4 +1,5 @@
-import { UserProfile, ProfileEditingField } from "../shared/types";
+import { UserProfile } from "../shared/types";
+import { BaseSessionData } from "../shared/session";
 
 export interface MatchUser extends UserProfile {
   age: number | null;
@@ -6,16 +7,12 @@ export interface MatchUser extends UserProfile {
   compatibility_score?: number; // Compatibility percentage (0-100)
 }
 
-export interface SessionData {
+export interface SessionData extends BaseSessionData {
   matches?: MatchUser[];
   currentMatchIndex?: number;
   likedUsers?: MatchUser[];
   currentLikedIndex?: number;
   reportingUserId?: number;
-  editingField?: ProfileEditingField;
-  interestsPage?: number; // Current page for interests pagination (0-indexed)
-  locationPage?: number; // Current page for location pagination (0-indexed)
-  completingProfile?: boolean; // Whether user is in profile completion flow
   profileCompletionFieldIndex?: number; // Index of current field being completed
 }
 

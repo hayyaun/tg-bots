@@ -1,11 +1,5 @@
 import { SessionData } from "./types";
+import { createSessionManager } from "../shared/session";
 
-const sessions = new Map<number, SessionData>();
-
-export function getSession(userId: number): SessionData {
-  if (!sessions.has(userId)) {
-    sessions.set(userId, {});
-  }
-  return sessions.get(userId)!;
-}
+export const getSession = createSessionManager<SessionData>();
 

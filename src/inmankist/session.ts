@@ -1,21 +1,9 @@
 // Simple session storage for inmankist bot
 // Used for profile editing state
 
-import { ProfileEditingField } from "../shared/types";
+import { BaseSessionData, createSessionManager } from "../shared/session";
 
-interface SessionData {
-  editingField?: ProfileEditingField;
-  interestsPage?: number;
-  locationPage?: number;
-  completingProfile?: boolean;
-}
+export type SessionData = BaseSessionData;
 
-const sessions = new Map<number, SessionData>();
-
-export function getSession(userId: number): SessionData {
-  if (!sessions.has(userId)) {
-    sessions.set(userId, {});
-  }
-  return sessions.get(userId)!;
-}
+export const getSession = createSessionManager<SessionData>();
 
