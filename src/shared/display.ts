@@ -29,6 +29,23 @@ async function formatBigFiveResult(
   }
 }
 
+// Reusable gender formatter for user gender and "looking for" labels
+function formatGenderValue(
+  value: string | null | undefined,
+  strings: Awaited<ReturnType<typeof getSharedStrings>>
+): string {
+  switch (value) {
+    case "male":
+      return strings.male;
+    case "female":
+      return strings.female;
+    case "both":
+      return strings.both;
+    default:
+      return strings.notSet;
+  }
+}
+
 // Helper function to build quiz results section
 // showNotSet: if true, shows "not set" messages for required quizzes even when missing
 export async function buildQuizResultsSection(
@@ -109,20 +126,8 @@ export async function displayProfile(
   const ageText = profile.birth_date
     ? `${calculateAge(profile.birth_date)} ${strings.year}`
     : strings.notSet;
-  const genderText =
-    profile.gender === "male"
-      ? strings.male
-      : profile.gender === "female"
-        ? strings.female
-        : strings.notSet;
-  const lookingForText =
-    profile.looking_for_gender === "male"
-      ? strings.male
-      : profile.looking_for_gender === "female"
-        ? strings.female
-        : profile.looking_for_gender === "both"
-          ? strings.both
-          : strings.notSet;
+  const genderText = formatGenderValue(profile.gender, strings);
+  const lookingForText = formatGenderValue(profile.looking_for_gender, strings);
 
   let message = `${strings.profileTitle}\n\n`;
   // Show mood emoji after display name if available

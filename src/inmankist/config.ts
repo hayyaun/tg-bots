@@ -44,7 +44,9 @@ const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;
 const SAMPLE_SIZE_MD = 15;
 const SAMPLE_SIZE_LG = 25;
 
-export const quizModes: { [k: number]: { name: { [key in Language]: string }; size: number } } = {
+export const quizModes: {
+  [k: number]: { name: { [key in Language]: string }; size: number };
+} = {
   [QuizMode.SM]: {
     name: {
       [Language.Persian]: "سریع",
@@ -80,13 +82,15 @@ export function getQuizTypeName(type: QuizType, language: Language): string {
 }
 
 export function getQuizModeName(mode: QuizMode, language: Language): string {
-  return quizModes[mode]?.name[language] || quizModes[mode].name[Language.Persian];
+  return (
+    quizModes[mode]?.name[language] || quizModes[mode].name[Language.Persian]
+  );
 }
 
 export function quizNeedsGender(quizType: QuizType): boolean {
   return quizType === QuizType.Archetype;
 }
 
-
 // Matchfound bot username (for redirect after quiz completion)
-export const MATCHFOUND_BOT_USERNAME = process.env.MATCHFOUND_BOT_USERNAME || "match_found_bot";
+export const MATCHFOUND_BOT_USERNAME =
+  process.env.MATCHFOUND_BOT_USERNAME || "match_found_bot";
