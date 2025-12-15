@@ -41,6 +41,8 @@ import {
   updateUserDataCache,
   deleteUserData,
 } from "./userData";
+import { setupProfileCallbacks } from "../shared/profileCallbacks";
+import { getSession } from "./session";
 
 const BOT_NAME = "Inmankist";
 
@@ -606,5 +608,11 @@ export function setupCallbacks(
         `❌ <b>Error in Detail</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
       );
     }
+  });
+
+  // Setup shared profile callbacks (interests and location)
+  setupProfileCallbacks(bot, {
+    botName: BOT_NAME,
+    getSession,
   });
 }
