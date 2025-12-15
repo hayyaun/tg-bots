@@ -1,6 +1,7 @@
 import { getWithPrefix, setWithPrefix } from "../redis";
-import { MATCHFOUND_BOT_NAME, INTERESTS, type Interest } from "./constants";
+import { INTERESTS, type Interest } from "./constants";
 import { Language } from "./types";
+import { BOT_NAME as MATCHFOUND_BOT_NAME } from "../matchfound/constants";
 
 // Default language
 export const DEFAULT_LANGUAGE = Language.Persian;

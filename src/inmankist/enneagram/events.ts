@@ -1,7 +1,8 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
-import { getUserLanguage, getStringsForUser } from "../i18n";
+import { getStringsForUser } from "../i18n";
+import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IUserData, QuizType } from "../types";
 import descriptions from "./descriptions";
@@ -34,7 +35,7 @@ export async function replyAbout(ctx: Context) {
   });
 
   const userId = ctx.from?.id;
-  const language = getUserLanguage(userId);
+  const language = await getUserLanguage(userId);
 
   const aboutText = {
     [Language.Persian]: [

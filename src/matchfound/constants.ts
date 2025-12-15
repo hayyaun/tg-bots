@@ -42,19 +42,6 @@ export const mbtiCompatibility: Record<string, string[]> = {
 
 export const BOT_NAME = "MatchFound";
 
-// Re-export shared constants for backward compatibility
-export {
-  INMANKIST_BOT_USERNAME,
-  MAX_COMPLETION_SCORE,
-  MOODS,
-  INTERESTS,
-  INTEREST_NAMES,
-  IRAN_PROVINCES,
-  PROVINCE_NAMES,
-  type Interest,
-  type IranProvince,
-} from "../shared/constants";
-
 // Interests limits
 export const MIN_INTERESTS = 5;
 export const MAX_INTERESTS = 15;

@@ -1,17 +1,11 @@
 import {
   DEFAULT_LANGUAGE,
   getUserLanguage,
-  setUserLanguage,
-  hasUserLanguage,
-  refreshUserLanguageTTL,
 } from "../shared/i18n";
 import { Language } from "../shared/types";
 
 // Answer values (language-independent emojis)
 export const ANSWER_VALUES = ["👎👎", "👎", "👍", "👍👍"] as const;
-
-// Re-export shared functions and constants for backward compatibility
-export { DEFAULT_LANGUAGE, getUserLanguage, setUserLanguage, hasUserLanguage, refreshUserLanguageTTL };
 
 // Translation strings
 export interface IStrings {

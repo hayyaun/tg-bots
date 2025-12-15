@@ -5,10 +5,16 @@ import { findMatches } from "./matching";
 import { displayUser } from "./display";
 import { getSession } from "./session";
 import { calculateAge } from "../shared/utils";
-import { MatchUser, UserProfile } from "./types";
+import { UserProfile } from "../shared/types";
+import { MatchUser } from "./types";
 import log from "../log";
 import { getInterestNames } from "../shared/i18n";
-import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE, INTERESTS } from "./constants";
+import {
+  INMANKIST_BOT_USERNAME,
+  MAX_COMPLETION_SCORE,
+  INTERESTS,
+} from "../shared/constants";
+import { BOT_NAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE } from "./constants";
 import {
   getWelcomeMessage,
   errors,

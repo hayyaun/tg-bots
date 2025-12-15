@@ -1,11 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
+import { MAX_COMPLETION_SCORE } from "../shared/constants";
 import {
   archetypeCompatibility,
   mbtiCompatibility,
   MIN_INTERESTS,
   MAX_INTERESTS,
-  MAX_COMPLETION_SCORE,
   MIN_COMPLETION_THRESHOLD,
   MAX_AGE_DIFFERENCE,
   ARCHETYPE_MATCH_SCORE,

@@ -4,10 +4,12 @@ import { getUserName } from "../utils/string";
 import { getQuizTypeName, quizTypes } from "./config";
 import {
   getStringsForUser,
+} from "./i18n";
+import {
   getUserLanguage,
   hasUserLanguage,
   refreshUserLanguageTTL,
-} from "./i18n";
+} from "../shared/i18n";
 import { replyAbout } from "./reducer";
 import { Language } from "../shared/types";
 import { QuizType } from "./types";

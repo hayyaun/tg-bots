@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { getUserLanguage } from "../i18n";
+import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IQuest, IUserData } from "../types";
 import { BigFiveAspect } from "./types";

@@ -1,12 +1,14 @@
 import { Context, InlineKeyboard } from "grammy";
 import log from "../log";
 import {
-  BOT_NAME,
   INMANKIST_BOT_USERNAME,
   MOODS,
   PROVINCE_NAMES,
-  MAX_INTERESTS,
   MAX_COMPLETION_SCORE,
+} from "../shared/constants";
+import {
+  BOT_NAME,
+  MAX_INTERESTS,
   ARCHETYPE_MATCH_SCORE,
   MBTI_MATCH_SCORE,
   MAX_INTERESTS_SCORE,
@@ -18,7 +20,8 @@ import {
   mbtiCompatibility,
 } from "./constants";
 import { buttons, display, fields, profileValues } from "./strings";
-import { MatchUser, SessionData, UserProfile } from "./types";
+import { UserProfile } from "../shared/types";
+import { MatchUser, SessionData } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
 

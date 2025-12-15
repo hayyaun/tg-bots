@@ -1,6 +1,3 @@
-// Bot name constants - imported from respective bot modules
-export { BOT_NAME as MATCHFOUND_BOT_NAME } from "../matchfound/constants";
-
 // Inmankist bot username (for quiz completion links)
 export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inmankist_bot";
 
@@ -61,14 +58,11 @@ export const INTERESTS = [
 
 export type Interest = typeof INTERESTS[number];
 
-// Re-export interest names from i18n (Persian default for backward compatibility)
-// Use getInterestNames() from i18n for language-aware interest names
-export { getInterestName } from "./i18n";
+// Interest display names (Persian) - kept for backward compatibility
+// Prefer using getInterestNames() from i18n for i18n support
 import { getInterestName } from "./i18n";
 import { Language } from "./types";
 
-// Interest display names (Persian) - kept for backward compatibility
-// Prefer using getInterestNames() for i18n support
 export const INTEREST_NAMES: Record<Interest, string> = Object.fromEntries(
   INTERESTS.map((interest) => [interest, getInterestName(interest, Language.Persian)])
 ) as Record<Interest, string>;

@@ -13,11 +13,13 @@ import {
 import {
   getStrings,
   getStringsForUser,
+  ANSWER_VALUES,
+} from "./i18n";
+import {
   getUserLanguage,
   setUserLanguage,
   DEFAULT_LANGUAGE,
-  ANSWER_VALUES,
-} from "./i18n";
+} from "../shared/i18n";
 import {
   replyResult,
   replyDetial,

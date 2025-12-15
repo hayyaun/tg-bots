@@ -1,6 +1,4 @@
-// Import and re-export UserProfile from shared for backward compatibility
 import { UserProfile } from "../shared/types";
-export { UserProfile };
 
 export interface MatchUser extends UserProfile {
   age: number | null;
