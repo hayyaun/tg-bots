@@ -12,7 +12,8 @@ import { Quadrant } from "./politicalcompass/types";
 import * as bigfive from "./bigfive";
 import { BigFiveAspect } from "./bigfive/types";
 import { quizModes } from "./config";
-import { IQuest, IUserData, Language, QuizType } from "./types";
+import { Language } from "../shared/types";
+import { IQuest, IUserData, QuizType } from "./types";
 
 // Optional customization for each quiz
 

@@ -1,52 +1,17 @@
-import { getWithPrefix, setWithPrefix } from "../redis";
-import { Language } from "./types";
-
-// Default language
-export const DEFAULT_LANGUAGE = Language.Persian;
-const REDIS_PREFIX = "inmankist";
-const USER_LANG_TTL = 14 * 24 * 60 * 60; // 2 weeks in seconds
+import {
+  DEFAULT_LANGUAGE,
+  getUserLanguage,
+  setUserLanguage,
+  hasUserLanguage,
+  refreshUserLanguageTTL,
+} from "../shared/i18n";
+import { Language } from "../shared/types";
 
 // Answer values (language-independent emojis)
 export const ANSWER_VALUES = ["👎👎", "👎", "👍", "👍👍"] as const;
 
-// Get user language or default (no cache here - userData cache handles active sessions)
-export async function getUserLanguage(userId?: number): Promise<Language> {
-  if (!userId) return DEFAULT_LANGUAGE;
-  const lang = await getWithPrefix(REDIS_PREFIX, `user:${userId}:lang`);
-  return (lang as Language) || DEFAULT_LANGUAGE;
-}
-
-// Set user language
-export async function setUserLanguage(
-  userId: number,
-  language: Language
-): Promise<void> {
-  await setWithPrefix(
-    REDIS_PREFIX,
-    `user:${userId}:lang`,
-    language,
-    USER_LANG_TTL
-  );
-}
-
-// Check if user has set a language (vs using default)
-export async function hasUserLanguage(userId: number): Promise<boolean> {
-  const lang = await getWithPrefix(REDIS_PREFIX, `user:${userId}:lang`);
-  return lang !== null;
-}
-
-// Refresh language TTL (call when user interacts with bot)
-export async function refreshUserLanguageTTL(userId: number): Promise<void> {
-  const lang = await getUserLanguage(userId);
-  if (lang !== DEFAULT_LANGUAGE) {
-    await setWithPrefix(
-      REDIS_PREFIX,
-      `user:${userId}:lang`,
-      lang,
-      USER_LANG_TTL
-    );
-  }
-}
+// Re-export shared functions and constants for backward compatibility
+export { DEFAULT_LANGUAGE, getUserLanguage, setUserLanguage, hasUserLanguage, refreshUserLanguageTTL };
 
 // Translation strings
 export interface IStrings {

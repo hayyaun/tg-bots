@@ -3,7 +3,8 @@ import _ from "lodash";
 import { getQuestion } from ".";
 import { quizModes } from "../config";
 import { getUserLanguage, getStringsForUser } from "../i18n";
-import { IUserData, Language, QuizType } from "../types";
+import { Language } from "../../shared/types";
+import { IUserData, QuizType } from "../types";
 import personalities from "./personalities";
 import { Dimension, MBTIType } from "./types";
 

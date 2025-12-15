@@ -1,5 +1,6 @@
 import _ from "lodash";
-import { Gender, IQuest, IUserData, Language } from "../types";
+import { Language } from "../../shared/types";
+import { Gender, IQuest, IUserData } from "../types";
 import { Deity } from "./types";
 
 // Load questions by language

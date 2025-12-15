@@ -3,7 +3,8 @@ import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
 import { quizModes } from "../config";
 import { getUserLanguage, getStringsForUser } from "../i18n";
-import { IUserData, Language, QuizType } from "../types";
+import { Language } from "../../shared/types";
+import { IUserData, QuizType } from "../types";
 import styles from "./styles";
 import { CognitiveStyle, ResultType } from "./types";
 

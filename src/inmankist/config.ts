@@ -1,4 +1,5 @@
-import { Language, QuizMode, QuizType } from "./types";
+import { Language } from "../shared/types";
+import { QuizMode, QuizType } from "./types";
 
 export const quizTypes: { [k: string]: { [key in Language]: string } } = {
   [QuizType.Archetype]: {

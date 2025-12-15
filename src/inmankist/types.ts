@@ -1,3 +1,5 @@
+import { Language } from "../shared/types";
+
 export enum QuizType {
   Archetype = "archetype",
   MBTI = "mbti",
@@ -39,13 +41,6 @@ export interface IQuest<T> {
 export enum Gender {
   male = "male",
   female = "female",
-}
-
-export enum Language {
-  Persian = "fa",
-  English = "en",
-  Russian = "ru",
-  Arabic = "ar",
 }
 
 export interface IScore<T> {

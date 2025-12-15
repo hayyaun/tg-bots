@@ -2,7 +2,8 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
 import { getUserLanguage, getStringsForUser } from "../i18n";
-import { IUserData, Language, QuizType } from "../types";
+import { Language } from "../../shared/types";
+import { IUserData, QuizType } from "../types";
 import descriptions from "./descriptions";
 import { EnneagramType } from "./types";
 

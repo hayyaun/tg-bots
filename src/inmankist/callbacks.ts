@@ -24,10 +24,10 @@ import {
   selectOrder,
   selectQuizQuestion,
 } from "./reducer";
+import { Language } from "../shared/types";
 import {
   Gender,
   IUserData,
-  Language,
   QuizMode,
   QuizType,
   Value,

@@ -1,5 +1,6 @@
 import _ from "lodash";
-import { IQuest, IUserData, Language } from "../types";
+import { Language } from "../../shared/types";
+import { IQuest, IUserData } from "../types";
 import { CognitiveStyle } from "./types";
 
 // Load questions by language

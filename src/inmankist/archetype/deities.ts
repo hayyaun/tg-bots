@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { escapeMarkdownV2 } from "../../utils/string";
-import { Language } from "../types";
+import { Language } from "../../shared/types";
 import { Deity } from "./types";
 
 interface IDeity {

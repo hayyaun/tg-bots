@@ -1,4 +1,4 @@
-import { Language } from "../types";
+import { Language } from "../../shared/types";
 import { MBTIType } from "./types";
 
 interface IPersonality {

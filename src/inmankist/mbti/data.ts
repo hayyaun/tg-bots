@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { getUserLanguage } from "../i18n";
-import { IQuest, IUserData, Language } from "../types";
+import { Language } from "../../shared/types";
+import { IQuest, IUserData } from "../types";
 import { Dimension } from "./types";
 
 // Load questions by language

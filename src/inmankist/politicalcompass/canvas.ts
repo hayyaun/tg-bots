@@ -1,6 +1,6 @@
 import { createCanvas } from "canvas";
 import { getStrings } from "../i18n";
-import { Language } from "../types";
+import { Language } from "../../shared/types";
 
 const width = 800;
 const height = 800;

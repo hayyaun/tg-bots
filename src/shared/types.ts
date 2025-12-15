@@ -1,3 +1,10 @@
+export enum Language {
+  Persian = "fa",
+  English = "en",
+  Russian = "ru",
+  Arabic = "ar",
+}
+
 export interface UserProfile {
   telegram_id: number | null;
   username: string | null;

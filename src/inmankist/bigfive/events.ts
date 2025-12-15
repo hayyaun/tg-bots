@@ -1,7 +1,8 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { getQuestion } from ".";
 import { getUserLanguage, getStringsForUser } from "../i18n";
-import { IUserData, Language, QuizType } from "../types";
+import { Language } from "../../shared/types";
+import { IUserData, QuizType } from "../types";
 import { aspectToTrait, BigFiveAspect, BigFiveTrait } from "./types";
 
 export function setCustomCommands(bot: Bot) {

@@ -1,4 +1,4 @@
-import { Language } from "../types";
+import { Language } from "../../shared/types";
 import { EnneagramType } from "./types";
 
 interface IEnneagramDescription {

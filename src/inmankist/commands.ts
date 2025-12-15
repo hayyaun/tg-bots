@@ -10,7 +10,8 @@ import {
   refreshUserLanguageTTL,
 } from "./i18n";
 import { replyAbout, replyDetial } from "./reducer";
-import { Language, QuizType } from "./types";
+import { Language } from "../shared/types";
+import { QuizType } from "./types";
 import { getUserData } from "./userData";
 import { setupProfileCommand } from "../shared/profileCommand";
 
