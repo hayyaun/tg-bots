@@ -1,36 +1,31 @@
-import { Bot, Context } from "grammy";
+import { Bot } from "grammy";
 import { prisma } from "../db";
-import {
-  getUserProfile,
-  updateCompletionScore,
-  deleteUserData,
-  getUserIdFromTelegramId,
-} from "../shared/database";
-import { displayUser } from "./display";
-import { displayProfile } from "../shared/display";
-import { getSession } from "./session";
-import { calculateAge } from "../shared/utils";
-import { MatchUser } from "./types";
 import log from "../log";
 import {
-  BOT_NAME,
-  MIN_INTERESTS,
-  MIN_COMPLETION_THRESHOLD,
-} from "./constants";
-import {
-  errors,
-  success,
-  fields,
-  buttons,
-  report,
-  callbacks,
-  display,
-  notifications,
-  deleteData,
-} from "./strings";
-import { continueProfileCompletion } from "./commands";
-import { findMatches } from "./matching";
+  deleteUserData,
+  getUserIdFromTelegramId,
+  getUserProfile,
+  updateCompletionScore,
+} from "../shared/database";
+import { displayProfile } from "../shared/display";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
+import { calculateAge } from "../shared/utils";
+import { continueProfileCompletion } from "./commands";
+import { BOT_NAME, MIN_COMPLETION_THRESHOLD, MIN_INTERESTS } from "./constants";
+import { displayUser } from "./display";
+import { findMatches } from "./matching";
+import { getSession } from "./session";
+import {
+  callbacks,
+  deleteData,
+  display,
+  errors,
+  fields,
+  notifications,
+  report,
+  success,
+} from "./strings";
+import { MatchUser } from "./types";
 
 export function setupCallbacks(
   bot: Bot,
@@ -52,7 +47,7 @@ export function setupCallbacks(
       // Get user ids from telegram_ids
       const userIdBigInt = await getUserIdFromTelegramId(userId);
       const likedUserIdBigInt = await getUserIdFromTelegramId(likedUserId);
-      
+
       if (!userIdBigInt || !likedUserIdBigInt) {
         await ctx.answerCallbackQuery(errors.userNotFound);
         return;
@@ -89,13 +84,14 @@ export function setupCallbacks(
         await ctx.reply(success.mutualLike);
       } else {
         await ctx.answerCallbackQuery(callbacks.likeRegistered);
-        
+
         // Send notification to the liked user
         try {
           const likerProfile = await getUserProfile(userId);
-          const likerName = likerProfile?.display_name 
-            || (likerProfile?.username ? `@${likerProfile.username}` : "یک نفر");
-          
+          const likerName =
+            likerProfile?.display_name ||
+            (likerProfile?.username ? `@${likerProfile.username}` : "یک نفر");
+
           await bot.api.sendMessage(
             likedUserId,
             notifications.newLike(likerName),
@@ -104,10 +100,14 @@ export function setupCallbacks(
         } catch (notifErr) {
           // Silently fail if user blocked the bot or other errors
           // Don't log as error since this is expected in some cases
-          log.info(BOT_NAME + " > Like notification failed (user may have blocked bot)", { 
-            likedUserId, 
-            error: notifErr 
-          });
+          log.info(
+            BOT_NAME +
+              " > Like notification failed (user may have blocked bot)",
+            {
+              likedUserId,
+              error: notifErr,
+            }
+          );
         }
       }
 
@@ -117,16 +117,35 @@ export function setupCallbacks(
         session.currentMatchIndex++;
         if (session.currentMatchIndex < session.matches.length) {
           const profile = await getUserProfile(userId);
-          await displayUser(ctx, session.matches[session.currentMatchIndex], "match", false, session, profile?.interests || [], profile || undefined);
+          await displayUser(
+            ctx,
+            session.matches[session.currentMatchIndex],
+            "match",
+            false,
+            session,
+            profile?.interests || [],
+            profile || undefined
+          );
         } else {
           await ctx.reply(errors.noMatches);
         }
-      } else if (session.likedUsers && session.currentLikedIndex !== undefined) {
+      } else if (
+        session.likedUsers &&
+        session.currentLikedIndex !== undefined
+      ) {
         // Handle navigation for liked users list
         session.currentLikedIndex++;
         if (session.currentLikedIndex < session.likedUsers.length) {
           const profile = await getUserProfile(userId);
-          await displayUser(ctx, session.likedUsers[session.currentLikedIndex], "liked", false, undefined, profile?.interests || [], profile || undefined);
+          await displayUser(
+            ctx,
+            session.likedUsers[session.currentLikedIndex],
+            "liked",
+            false,
+            undefined,
+            profile?.interests || [],
+            profile || undefined
+          );
         } else {
           await ctx.reply(display.allLikedSeen);
         }
@@ -144,16 +163,24 @@ export function setupCallbacks(
   bot.callbackQuery(/dislike:(\d+)/, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
-    
+
     await ctx.answerCallbackQuery(callbacks.disliked);
-    
+
     // Show next match
     const session = getSession(userId);
     if (session.matches && session.currentMatchIndex !== undefined) {
       session.currentMatchIndex++;
       if (session.currentMatchIndex < session.matches.length) {
         const profile = await getUserProfile(userId);
-        await displayUser(ctx, session.matches[session.currentMatchIndex], "match", false, session, profile?.interests || [], profile || undefined);
+        await displayUser(
+          ctx,
+          session.matches[session.currentMatchIndex],
+          "match",
+          false,
+          session,
+          profile?.interests || [],
+          profile || undefined
+        );
       } else {
         await ctx.reply(errors.noMatches);
       }
@@ -166,20 +193,28 @@ export function setupCallbacks(
     if (!userId) return;
 
     await ctx.answerCallbackQuery();
-    
-      // Show next match
-      const session = getSession(userId);
-      if (session.matches && session.currentMatchIndex !== undefined) {
-        session.currentMatchIndex++;
-        if (session.currentMatchIndex < session.matches.length) {
-          const profile = await getUserProfile(userId);
-          // Check if this is admin view (preserve showUsername setting)
-          const isAdminView = (session as any).isAdminView === true;
-          await displayUser(ctx, session.matches[session.currentMatchIndex], "match", isAdminView, session, profile?.interests || [], profile || undefined);
-        } else {
-          await ctx.reply(errors.noMatches);
-        }
+
+    // Show next match
+    const session = getSession(userId);
+    if (session.matches && session.currentMatchIndex !== undefined) {
+      session.currentMatchIndex++;
+      if (session.currentMatchIndex < session.matches.length) {
+        const profile = await getUserProfile(userId);
+        // Check if this is admin view (preserve showUsername setting)
+        const isAdminView = (session as any).isAdminView === true;
+        await displayUser(
+          ctx,
+          session.matches[session.currentMatchIndex],
+          "match",
+          isAdminView,
+          session,
+          profile?.interests || [],
+          profile || undefined
+        );
+      } else {
+        await ctx.reply(errors.noMatches);
       }
+    }
   });
 
   // Delete liked user (add to ignored)
@@ -192,7 +227,7 @@ export function setupCallbacks(
       // Get user ids from telegram_ids
       const userIdBigInt = await getUserIdFromTelegramId(userId);
       const likedUserIdBigInt = await getUserIdFromTelegramId(likedUserId);
-      
+
       if (!userIdBigInt || !likedUserIdBigInt) {
         await ctx.answerCallbackQuery(errors.userNotFound);
         return;
@@ -220,7 +255,15 @@ export function setupCallbacks(
         session.currentLikedIndex++;
         if (session.currentLikedIndex < session.likedUsers.length) {
           const profile = await getUserProfile(userId);
-          await displayUser(ctx, session.likedUsers[session.currentLikedIndex], "liked", false, undefined, profile?.interests || [], profile || undefined);
+          await displayUser(
+            ctx,
+            session.likedUsers[session.currentLikedIndex],
+            "liked",
+            false,
+            undefined,
+            profile?.interests || [],
+            profile || undefined
+          );
         } else {
           await ctx.reply(display.allLikedSeen);
         }
@@ -272,8 +315,9 @@ export function setupCallbacks(
       try {
         // Get user ids from telegram_ids
         const userIdBigInt = await getUserIdFromTelegramId(userId);
-        const reportedUserIdBigInt = await getUserIdFromTelegramId(reportedUserId);
-        
+        const reportedUserIdBigInt =
+          await getUserIdFromTelegramId(reportedUserId);
+
         if (!userIdBigInt || !reportedUserIdBigInt) {
           await ctx.reply(errors.userNotFound);
           delete session.reportingUserId;
@@ -301,11 +345,11 @@ export function setupCallbacks(
         // Notify admin immediately
         notifyAdmin(
           `🚨 <b>New Report</b>\n\n` +
-          `Reporter: ${reporter?.username ? `@${reporter.username}` : reporter?.display_name || userId}\n` +
-          `Reporter ID: <code>${userId}</code>\n\n` +
-          `Reported: ${reported?.username ? `@${reported.username}` : reported?.display_name || reportedUserId}\n` +
-          `Reported ID: <code>${reportedUserId}</code>\n\n` +
-          `Reason: ${reason}`
+            `Reporter: ${reporter?.username ? `@${reporter.username}` : reporter?.display_name || userId}\n` +
+            `Reporter ID: <code>${userId}</code>\n\n` +
+            `Reported: ${reported?.username ? `@${reported.username}` : reported?.display_name || reportedUserId}\n` +
+            `Reported ID: <code>${reportedUserId}</code>\n\n` +
+            `Reason: ${reason}`
         );
 
         delete session.reportingUserId;
@@ -324,7 +368,6 @@ export function setupCallbacks(
     // Profile editing is now handled by setupProfileCallbacks
     await next();
   });
-
 
   // Callback: profile:edit (from /start command) - shows profile with completion status
   bot.callbackQuery("profile:edit", async (ctx) => {
@@ -362,12 +405,15 @@ export function setupCallbacks(
       if (!profile.username) missingRequiredFields.push(fields.username);
       if (!profile.display_name) missingRequiredFields.push(fields.displayName);
       if (!profile.gender) missingRequiredFields.push(fields.gender);
-      if (!profile.looking_for_gender) missingRequiredFields.push(fields.lookingForGender);
+      if (!profile.looking_for_gender)
+        missingRequiredFields.push(fields.lookingForGender);
       if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
-      
+
       // Check interests separately to show specific count
       if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
-        await ctx.reply(errors.minInterestsNotMet(profile.interests?.length || 0));
+        await ctx.reply(
+          errors.minInterestsNotMet(profile.interests?.length || 0)
+        );
         return;
       }
 
@@ -384,7 +430,7 @@ export function setupCallbacks(
 
       // Note: Rate limiting is skipped for button clicks to improve UX
       // Users can still use /find command which has rate limiting
-      
+
       const matches = await findMatches(userId);
       if (matches.length === 0) {
         await ctx.reply(errors.noMatches);
@@ -400,7 +446,15 @@ export function setupCallbacks(
       await ctx.reply(success.matchesFound(matches.length));
 
       // Show first match
-      await displayUser(ctx, matches[0], "match", false, session, profile.interests || [], profile);
+      await displayUser(
+        ctx,
+        matches[0],
+        "match",
+        false,
+        session,
+        profile.interests || [],
+        profile
+      );
     } catch (err) {
       log.error(BOT_NAME + " > Find callback failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
@@ -419,16 +473,18 @@ export function setupCallbacks(
     if (!userId) return;
 
     await ctx.answerCallbackQuery();
-    
+
     try {
       await deleteUserData(userId);
-      
+
       // Clear session data
       const session = getSession(userId);
-      Object.keys(session).forEach(key => delete (session as Record<string, unknown>)[key]);
-      
+      Object.keys(session).forEach(
+        (key) => delete (session as Record<string, unknown>)[key]
+      );
+
       await ctx.editMessageText(success.dataDeleted);
-      
+
       // Notify admin
       await notifyAdmin(
         `🗑️ <b>User Data Deleted</b>\nUser: <code>${userId}</code>\nAll data has been permanently deleted.`
@@ -447,7 +503,7 @@ export function setupCallbacks(
     if (!userId) return;
 
     await ctx.answerCallbackQuery();
-    
+
     await ctx.editMessageText(deleteData.cancelled);
   });
 
@@ -494,11 +550,17 @@ export function setupCallbacks(
 
         let message = `📋 <b>Reports (${reports.length})</b>\n\n`;
         for (const report of reports) {
-          const reporterName = report.reporter.display_name || report.reporter.username || `User ${report.reporter.telegram_id}`;
-          const reportedName = report.reportedUser.display_name || report.reportedUser.username || `User ${report.reportedUser.telegram_id}`;
+          const reporterName =
+            report.reporter.display_name ||
+            report.reporter.username ||
+            `User ${report.reporter.telegram_id}`;
+          const reportedName =
+            report.reportedUser.display_name ||
+            report.reportedUser.username ||
+            `User ${report.reportedUser.telegram_id}`;
           const reason = report.reason || "بدون دلیل";
           const date = report.created_at.toLocaleDateString("fa-IR");
-          
+
           message += `👤 <b>Reporter:</b> ${reporterName} (<code>${report.reporter.telegram_id}</code>)\n`;
           message += `🚫 <b>Reported:</b> ${reportedName} (<code>${report.reported_user_id}</code>)\n`;
           message += `📝 <b>Reason:</b> ${reason}\n`;
@@ -553,7 +615,9 @@ export function setupCallbacks(
         // Mark as admin view so navigation preserves showUsername
         (session as any).isAdminView = true;
 
-        await ctx.reply(`👥 <b>All Users (${users.length})</b>`, { parse_mode: "HTML" });
+        await ctx.reply(`👥 <b>All Users (${users.length})</b>`, {
+          parse_mode: "HTML",
+        });
 
         // Show first user
         if (users.length > 0) {

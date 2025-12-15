@@ -431,7 +431,14 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    const { editPrompts, errors, buttons, success, profileValues } =
+    const {
+      editPrompts,
+      errors,
+      buttons,
+      success,
+      profileValues,
+      moodOptions,
+    } =
       await loadProfileStrings(userId);
 
     const action = ctx.match[1];
@@ -511,20 +518,32 @@ export function setupProfileCallbacks(
       case "mood":
         session.editingField = "mood";
         const moodKeyboard = new InlineKeyboard()
-          .text(`${MOODS.happy} خوشحال`, "profile:set:mood:happy")
-          .text(`${MOODS.sad} غمگین`, "profile:set:mood:sad")
+          .text(`${MOODS.happy} ${moodOptions.happy}`, "profile:set:mood:happy")
+          .text(`${MOODS.sad} ${moodOptions.sad}`, "profile:set:mood:sad")
           .row()
-          .text(`${MOODS.tired} خسته`, "profile:set:mood:tired")
-          .text(`${MOODS.cool} باحال`, "profile:set:mood:cool")
+          .text(`${MOODS.tired} ${moodOptions.tired}`, "profile:set:mood:tired")
+          .text(`${MOODS.cool} ${moodOptions.cool}`, "profile:set:mood:cool")
           .row()
-          .text(`${MOODS.thinking} در حال فکر`, "profile:set:mood:thinking")
-          .text(`${MOODS.excited} هیجان‌زده`, "profile:set:mood:excited")
+          .text(
+            `${MOODS.thinking} ${moodOptions.thinking}`,
+            "profile:set:mood:thinking"
+          )
+          .text(
+            `${MOODS.excited} ${moodOptions.excited}`,
+            "profile:set:mood:excited"
+          )
           .row()
-          .text(`${MOODS.calm} آرام`, "profile:set:mood:calm")
-          .text(`${MOODS.angry} عصبانی`, "profile:set:mood:angry")
+          .text(`${MOODS.calm} ${moodOptions.calm}`, "profile:set:mood:calm")
+          .text(`${MOODS.angry} ${moodOptions.angry}`, "profile:set:mood:angry")
           .row()
-          .text(`${MOODS.neutral} خنثی`, "profile:set:mood:neutral")
-          .text(`${MOODS.playful} بازیگوش`, "profile:set:mood:playful");
+          .text(
+            `${MOODS.neutral} ${moodOptions.neutral}`,
+            "profile:set:mood:neutral"
+          )
+          .text(
+            `${MOODS.playful} ${moodOptions.playful}`,
+            "profile:set:mood:playful"
+          );
         await ctx.reply(editPrompts.mood, { reply_markup: moodKeyboard });
         break;
 

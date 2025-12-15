@@ -44,6 +44,18 @@ export interface IProfileStrings {
     both: string;
     year: string;
   };
+  moodOptions: {
+    happy: string;
+    sad: string;
+    tired: string;
+    cool: string;
+    thinking: string;
+    excited: string;
+    calm: string;
+    angry: string;
+    neutral: string;
+    playful: string;
+  };
   buttons: {
     editProfile: string;
     completionStatus: string;
@@ -138,6 +150,18 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       female: "زن",
       both: "هر دو",
       year: "سال",
+    },
+    moodOptions: {
+      happy: "خوشحال",
+      sad: "غمگین",
+      tired: "خسته",
+      cool: "باحال",
+      thinking: "در حال فکر",
+      excited: "هیجان‌زده",
+      calm: "آرام",
+      angry: "عصبانی",
+      neutral: "خنثی",
+      playful: "بازیگوش",
     },
     buttons: {
       editProfile: "📝 ویرایش پروفایل",
@@ -236,6 +260,18 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       female: "Female",
       both: "Both",
       year: "years",
+    },
+    moodOptions: {
+      happy: "Happy",
+      sad: "Sad",
+      tired: "Tired",
+      cool: "Cool",
+      thinking: "Thinking",
+      excited: "Excited",
+      calm: "Calm",
+      angry: "Angry",
+      neutral: "Neutral",
+      playful: "Playful",
     },
     buttons: {
       editProfile: "📝 Edit Profile",
@@ -337,6 +373,18 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       both: "Оба",
       year: "лет",
     },
+    moodOptions: {
+      happy: "Счастлив",
+      sad: "Грустно",
+      tired: "Устал",
+      cool: "Круто",
+      thinking: "Думаю",
+      excited: "В восторге",
+      calm: "Спокоен",
+      angry: "Злюсь",
+      neutral: "Нейтрален",
+      playful: "Игривый",
+    },
     buttons: {
       editProfile: "📝 Редактировать профиль",
       completionStatus: "📊 Заполненность профиля",
@@ -434,6 +482,18 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       female: "أنثى",
       both: "كلاهما",
       year: "سنة",
+    },
+    moodOptions: {
+      happy: "سعيد",
+      sad: "حزين",
+      tired: "متعب",
+      cool: "كول",
+      thinking: "أفكر",
+      excited: "متحمس",
+      calm: "هادئ",
+      angry: "غاضب",
+      neutral: "محايد",
+      playful: "لعوب",
     },
     buttons: {
       editProfile: "📝 تعديل الملف",

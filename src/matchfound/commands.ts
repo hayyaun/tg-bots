@@ -1,44 +1,40 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
+import log from "../log";
+import { INMANKIST_BOT_USERNAME, INTERESTS } from "../shared/constants";
 import {
-  getUserProfile,
   ensureUserExists,
   getUserIdFromTelegramId,
+  getUserProfile,
   updateUserField,
 } from "../shared/database";
-import { findMatches } from "./matching";
-import { displayUser } from "./display";
-import { getSession } from "./session";
-import { calculateAge } from "../shared/utils";
-import { UserProfile } from "../shared/types";
-import { MatchUser } from "./types";
-import log from "../log";
 import { getInterestNames } from "../shared/i18n";
-import {
-  INMANKIST_BOT_USERNAME,
-  MAX_COMPLETION_SCORE,
-  INTERESTS,
-} from "../shared/constants";
+import { setupProfileCommand } from "../shared/profileCommand";
+import { UserProfile } from "../shared/types";
+import { calculateAge } from "../shared/utils";
 import {
   BOT_NAME,
-  MIN_INTERESTS,
-  MIN_COMPLETION_THRESHOLD,
   FIND_RATE_LIMIT_MS,
   ITEMS_PER_PAGE,
+  MIN_COMPLETION_THRESHOLD,
+  MIN_INTERESTS,
 } from "./constants";
+import { displayUser } from "./display";
+import { findMatches } from "./matching";
+import { getSession } from "./session";
 import {
-  getWelcomeMessage,
-  errors,
-  success,
-  fields,
   buttons,
-  settings,
-  profileCompletion,
-  editPrompts,
-  profileValues,
   deleteData,
+  editPrompts,
+  errors,
+  fields,
+  getWelcomeMessage,
+  profileCompletion,
+  profileValues,
+  settings,
+  success,
 } from "./strings";
-import { setupProfileCommand } from "../shared/profileCommand";
+import { MatchUser } from "./types";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
