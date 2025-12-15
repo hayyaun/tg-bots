@@ -1,4 +1,4 @@
-import { QuizType } from "./types";
+import { QuizType, UserProfile } from "./types";
 
 // Quiz type emojis - reusable across the codebase
 export const QUIZ_TYPE_EMOJIS: Record<QuizType, string> = {
@@ -10,27 +10,25 @@ export const QUIZ_TYPE_EMOJIS: Record<QuizType, string> = {
   [QuizType.BigFive]: "📊",
 };
 
+// Mapping from QuizType to UserProfile field name
+export const QUIZ_TYPE_TO_FIELD: Record<QuizType, keyof UserProfile> = {
+  [QuizType.Archetype]: "archetype_result",
+  [QuizType.MBTI]: "mbti_result",
+  [QuizType.LeftRight]: "leftright_result",
+  [QuizType.PoliticalCompass]: "politicalcompass_result",
+  [QuizType.Enneagram]: "enneagram_result",
+  [QuizType.BigFive]: "bigfive_result",
+};
+
 // Helper function to get quiz emoji by type
 export function getQuizTypeEmoji(quizType: QuizType): string {
   return QUIZ_TYPE_EMOJIS[quizType] || "❓";
 }
 
-// Helper function to get quiz type from result field name
-export function getQuizTypeFromFieldName(fieldName: string): QuizType | null {
-  const fieldToQuizType: Record<string, QuizType> = {
-    archetype_result: QuizType.Archetype,
-    mbti_result: QuizType.MBTI,
-    leftright_result: QuizType.LeftRight,
-    politicalcompass_result: QuizType.PoliticalCompass,
-    enneagram_result: QuizType.Enneagram,
-    bigfive_result: QuizType.BigFive,
-  };
-  return fieldToQuizType[fieldName] || null;
-}
-
-// Helper function to get quiz emoji by result field name (for matchfound compatibility)
-export function getQuizEmojiByFieldName(fieldName: string): string {
-  const quizType = getQuizTypeFromFieldName(fieldName);
-  return quizType ? getQuizTypeEmoji(quizType) : "❓";
+// Helper function to get quiz result value from profile by quiz type
+export function getQuizResult(profile: UserProfile, quizType: QuizType): string | null {
+  const fieldName = QUIZ_TYPE_TO_FIELD[quizType];
+  const value = profile[fieldName];
+  return typeof value === "string" ? value : null;
 }
 

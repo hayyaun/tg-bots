@@ -22,7 +22,8 @@ import { UserProfile } from "../shared/types";
 import { MatchUser, SessionData } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
-import { getQuizTypeFromFieldName, getQuizTypeEmoji } from "../shared/quizUtils";
+import { QuizType } from "../shared/types";
+import { getQuizTypeEmoji, getQuizResult } from "../shared/quizUtils";
 
 type DisplayMode = "match" | "liked";
 
@@ -54,36 +55,36 @@ function formatQuizResultText(
 function buildQuizResultsSection(user: MatchUser): string {
   const sections: string[] = [];
   
-  if (user.archetype_result) {
-    const quizType = getQuizTypeFromFieldName("archetype_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
-    sections.push(`${emoji} ${formatQuizResultText(user.archetype_result, "کهن الگو")}`);
+  const archetypeResult = getQuizResult(user, QuizType.Archetype);
+  if (archetypeResult) {
+    const emoji = getQuizTypeEmoji(QuizType.Archetype);
+    sections.push(`${emoji} ${formatQuizResultText(archetypeResult, "کهن الگو")}`);
   }
-  if (user.mbti_result) {
-    const quizType = getQuizTypeFromFieldName("mbti_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
-    sections.push(`${emoji} ${formatQuizResultText(user.mbti_result, "تست MBTI", (v) => v.toUpperCase())}`);
+  const mbtiResult = getQuizResult(user, QuizType.MBTI);
+  if (mbtiResult) {
+    const emoji = getQuizTypeEmoji(QuizType.MBTI);
+    sections.push(`${emoji} ${formatQuizResultText(mbtiResult, "تست MBTI", (v) => v.toUpperCase())}`);
   }
-  if (user.leftright_result) {
-    const quizType = getQuizTypeFromFieldName("leftright_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
-    sections.push(`${emoji} ${formatQuizResultText(user.leftright_result, "سبک شناختی")}`);
+  const leftrightResult = getQuizResult(user, QuizType.LeftRight);
+  if (leftrightResult) {
+    const emoji = getQuizTypeEmoji(QuizType.LeftRight);
+    sections.push(`${emoji} ${formatQuizResultText(leftrightResult, "سبک شناختی")}`);
   }
-  if (user.politicalcompass_result) {
-    const quizType = getQuizTypeFromFieldName("politicalcompass_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
-    sections.push(`${emoji} ${formatQuizResultText(user.politicalcompass_result, "قطب‌نمای سیاسی")}`);
+  const politicalcompassResult = getQuizResult(user, QuizType.PoliticalCompass);
+  if (politicalcompassResult) {
+    const emoji = getQuizTypeEmoji(QuizType.PoliticalCompass);
+    sections.push(`${emoji} ${formatQuizResultText(politicalcompassResult, "قطب‌نمای سیاسی")}`);
   }
-  if (user.enneagram_result) {
-    const quizType = getQuizTypeFromFieldName("enneagram_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
-    sections.push(`${emoji} ${formatQuizResultText(user.enneagram_result, "انیاگرام", (v) => v.replace("type", "تیپ "))}`);
+  const enneagramResult = getQuizResult(user, QuizType.Enneagram);
+  if (enneagramResult) {
+    const emoji = getQuizTypeEmoji(QuizType.Enneagram);
+    sections.push(`${emoji} ${formatQuizResultText(enneagramResult, "انیاگرام", (v) => v.replace("type", "تیپ "))}`);
   }
-  if (user.bigfive_result) {
-    const formatted = formatBigFiveResult(user.bigfive_result);
+  const bigfiveResult = getQuizResult(user, QuizType.BigFive);
+  if (bigfiveResult) {
+    const formatted = formatBigFiveResult(bigfiveResult);
     if (formatted) {
-      const quizType = getQuizTypeFromFieldName("bigfive_result");
-      const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+      const emoji = getQuizTypeEmoji(QuizType.BigFive);
       sections.push(`${emoji} پنج عامل بزرگ: ${formatted}`);
     }
   }

@@ -4,10 +4,10 @@ import {
   MOODS,
   MAX_COMPLETION_SCORE,
 } from "./constants";
-import { UserProfile } from "./types";
+import { UserProfile, QuizType } from "./types";
 import { calculateAge } from "./utils";
 import { getSharedStrings, getInterestNames, getProvinceNames } from "./i18n";
-import { getQuizTypeEmoji, getQuizTypeFromFieldName } from "./quizUtils";
+import { getQuizTypeEmoji, getQuizResult } from "./quizUtils";
 
 // Helper function to format BigFive result
 async function formatBigFiveResult(
@@ -39,20 +39,20 @@ async function buildProfileQuizResultsSection(
   const sections: string[] = [];
 
   // Required quizzes - always show with instructions if missing
-  const archetypeQuizType = getQuizTypeFromFieldName("archetype_result");
-  const archetypeEmoji = archetypeQuizType ? getQuizTypeEmoji(archetypeQuizType) : "❓";
-  if (profile.archetype_result) {
-    sections.push(`${archetypeEmoji} ${strings.archetype}: ${profile.archetype_result}`);
+  const archetypeEmoji = getQuizTypeEmoji(QuizType.Archetype);
+  const archetypeResult = getQuizResult(profile, QuizType.Archetype);
+  if (archetypeResult) {
+    sections.push(`${archetypeEmoji} ${strings.archetype}: ${archetypeResult}`);
   } else {
     sections.push(
       `${archetypeEmoji} ${strings.archetype}: ${strings.archetypeNotSet}`
     );
   }
 
-  const mbtiQuizType = getQuizTypeFromFieldName("mbti_result");
-  const mbtiEmoji = mbtiQuizType ? getQuizTypeEmoji(mbtiQuizType) : "❓";
-  if (profile.mbti_result) {
-    sections.push(`${mbtiEmoji} ${strings.mbti}: ${profile.mbti_result.toUpperCase()}`);
+  const mbtiEmoji = getQuizTypeEmoji(QuizType.MBTI);
+  const mbtiResult = getQuizResult(profile, QuizType.MBTI);
+  if (mbtiResult) {
+    sections.push(`${mbtiEmoji} ${strings.mbti}: ${mbtiResult.toUpperCase()}`);
   } else {
     sections.push(
       `${mbtiEmoji} ${strings.mbti}: ${strings.mbtiNotSet}`
@@ -60,34 +60,34 @@ async function buildProfileQuizResultsSection(
   }
 
   // Optional quizzes - only show if present
-  if (profile.leftright_result) {
-    const quizType = getQuizTypeFromFieldName("leftright_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
-    sections.push(`${emoji} ${strings.leftright}: ${profile.leftright_result}`);
+  const leftrightResult = getQuizResult(profile, QuizType.LeftRight);
+  if (leftrightResult) {
+    const emoji = getQuizTypeEmoji(QuizType.LeftRight);
+    sections.push(`${emoji} ${strings.leftright}: ${leftrightResult}`);
   }
-  if (profile.politicalcompass_result) {
-    const quizType = getQuizTypeFromFieldName("politicalcompass_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+  const politicalcompassResult = getQuizResult(profile, QuizType.PoliticalCompass);
+  if (politicalcompassResult) {
+    const emoji = getQuizTypeEmoji(QuizType.PoliticalCompass);
     sections.push(
-      `${emoji} ${strings.politicalcompass}: ${profile.politicalcompass_result}`
+      `${emoji} ${strings.politicalcompass}: ${politicalcompassResult}`
     );
   }
-  if (profile.enneagram_result) {
+  const enneagramResult = getQuizResult(profile, QuizType.Enneagram);
+  if (enneagramResult) {
     // Keep Persian formatting for enneagram type (type -> تیپ)
-    const enneagramText = profile.enneagram_result.replace("type", "تیپ ");
-    const quizType = getQuizTypeFromFieldName("enneagram_result");
-    const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+    const enneagramText = enneagramResult.replace("type", "تیپ ");
+    const emoji = getQuizTypeEmoji(QuizType.Enneagram);
     sections.push(`${emoji} ${strings.enneagram}: ${enneagramText}`);
   }
-  if (profile.bigfive_result) {
+  const bigfiveResult = getQuizResult(profile, QuizType.BigFive);
+  if (bigfiveResult) {
     const formatted = await formatBigFiveResult(
-      profile.bigfive_result,
+      bigfiveResult,
       botName,
       userId
     );
     if (formatted) {
-      const quizType = getQuizTypeFromFieldName("bigfive_result");
-      const emoji = quizType ? getQuizTypeEmoji(quizType) : "❓";
+      const emoji = getQuizTypeEmoji(QuizType.BigFive);
       sections.push(`${emoji} ${strings.bigfive}: ${formatted}`);
     }
   }
