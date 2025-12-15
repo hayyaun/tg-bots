@@ -288,7 +288,7 @@ export async function replyResult(ctx: Context, language: Language, result: BigF
     ``,
     `📈 ${labels[language].aspects}:`,
     ...aspectResults
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => b.percentage - a.percentage)
       .slice(0, 5) // Show top 5 aspects
       .map((r) => `• ${r.description}: ${r.percentage}%`),
   ].join("\n");
