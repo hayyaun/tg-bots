@@ -1,6 +1,7 @@
 import {
   INMANKIST_BOT_USERNAME,
   MAX_COMPLETION_SCORE,
+  MAX_DISPLAY_NAME_LENGTH,
 } from "../shared/constants";
 import {
   MIN_INTERESTS,
