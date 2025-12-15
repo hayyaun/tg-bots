@@ -18,6 +18,14 @@ export const MOODS: Record<string, string> = {
   playful: "😋",
 };
 
+// Shared limits and pagination
+export const MIN_INTERESTS = 5;
+export const MAX_INTERESTS = 15;
+export const MIN_AGE = 18;
+export const MAX_AGE = 120;
+export const MAX_DISPLAY_NAME_LENGTH = 100;
+export const ITEMS_PER_PAGE = 20;
+
 // Available interests keywords (curated list of most common and distinct interests)
 export const INTERESTS = [
   // Animals & Pets

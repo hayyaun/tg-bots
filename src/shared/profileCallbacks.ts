@@ -1,8 +1,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { getUserProfile, updateUserField, addProfileImage } from "./database";
 import { getInterestNames, getProvinceNames } from "./i18n";
-import { INTERESTS, IRAN_PROVINCES, MOODS } from "./constants";
-import { MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "../matchfound/constants";
+import { INTERESTS, IRAN_PROVINCES, MOODS, MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "./constants";
 import { editPrompts, errors, buttons, success, profileValues } from "../matchfound/strings";
 import { calculateAge } from "./utils";
 import { BaseSessionData } from "./session";

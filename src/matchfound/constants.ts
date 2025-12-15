@@ -40,16 +40,19 @@ export const mbtiCompatibility: Record<string, string[]> = {
   ESTJ: ["ISFP", "INFP", "ISTP"],
 };
 
+export {
+  MIN_INTERESTS,
+  MAX_INTERESTS,
+  MIN_AGE,
+  MAX_AGE,
+  MAX_DISPLAY_NAME_LENGTH,
+  ITEMS_PER_PAGE,
+} from "../shared/constants";
+
 export const BOT_NAME = "MatchFound";
 
-// Interests limits
-export const MIN_INTERESTS = 5;
-export const MAX_INTERESTS = 15;
 export const MIN_COMPLETION_THRESHOLD = 7;
 
-// Age limits
-export const MIN_AGE = 18;
-export const MAX_AGE = 120;
 export const MAX_AGE_DIFFERENCE = 8; // Maximum age difference for matching
 
 // Compatibility scoring weights (percentages)
@@ -60,11 +63,6 @@ export const MAX_AGE_BONUS = 10;
 export const MAX_COMPLETION_BONUS = 10;
 export const MAX_COMPATIBILITY_SCORE = 100;
 
-// Field limits
-export const MAX_DISPLAY_NAME_LENGTH = 100;
-
 // Rate limiting
 export const FIND_RATE_LIMIT_MS = 3600000; // 1 hour in milliseconds
 
-// Pagination
-export const ITEMS_PER_PAGE = 20;

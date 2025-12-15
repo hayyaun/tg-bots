@@ -1,9 +1,9 @@
-import { getWithPrefix, setWithPrefix } from "../redis";
-import { INTERESTS, type Interest, IRAN_PROVINCES } from "./constants";
-import { Language } from "./types";
 import { BOT_NAME as MATCHFOUND_BOT_NAME } from "../matchfound/constants";
+import { getWithPrefix, setWithPrefix } from "../redis";
+import { IRAN_PROVINCES, type Interest } from "./constants";
+import { Language } from "./types";
 
-export type IranProvince = typeof IRAN_PROVINCES[number];
+export type IranProvince = (typeof IRAN_PROVINCES)[number];
 
 // Default language
 export const DEFAULT_LANGUAGE = Language.Persian;
@@ -299,7 +299,6 @@ export async function getSharedStrings(
   const language = await getLanguageForUser(userId, botName);
   return translations[language] || translations[Language.Persian];
 }
-
 
 // Interest names translations
 const interestTranslations: { [key in Language]: Record<Interest, string> } = {
@@ -737,11 +736,15 @@ export async function getInterestNames(
   botName: string
 ): Promise<Record<Interest, string>> {
   const language = await getLanguageForUser(userId, botName);
-  return interestTranslations[language] || interestTranslations[Language.Persian];
+  return (
+    interestTranslations[language] || interestTranslations[Language.Persian]
+  );
 }
 
 // Province names translations
-const provinceTranslations: { [key in Language]: Record<IranProvince, string> } = {
+const provinceTranslations: {
+  [key in Language]: Record<IranProvince, string>;
+} = {
   [Language.Persian]: {
     tehran: "تهران",
     isfahan: "اصفهان",
@@ -884,5 +887,7 @@ export async function getProvinceNames(
   botName: string
 ): Promise<Record<IranProvince, string>> {
   const language = await getLanguageForUser(userId, botName);
-  return provinceTranslations[language] || provinceTranslations[Language.Persian];
+  return (
+    provinceTranslations[language] || provinceTranslations[Language.Persian]
+  );
 }
