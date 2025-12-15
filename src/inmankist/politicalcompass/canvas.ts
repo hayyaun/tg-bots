@@ -20,7 +20,7 @@ const libLeftColor = "#aef2cf"; // Light green
 const backgroundColor = "#ffffff"; // White
 const gridLineColor = "#e0e0e0"; // Light gray
 const axisColor = "#333333"; // Dark gray
-const labelColor = "#888888"; // Medium gray
+const labelColor = "#666666"; // Medium gray
 const centerPointColor = "#999999"; // Medium-light gray
 const userPositionColor = "#ff4444"; // Red
 
@@ -150,7 +150,7 @@ export function generateCompassChart(
   const userY = centerY + (socialScore / axisRange) * (chartSize / 2);
 
   // Draw user's position as a dot
-  ctx.fillStyle = userPositionColor;
+  ctx.fillStyle = "#ffffff";
   ctx.beginPath();
   ctx.arc(userX, userY, 8, 0, Math.PI * 2);
   ctx.fill();
@@ -161,17 +161,6 @@ export function generateCompassChart(
   ctx.beginPath();
   ctx.arc(userX, userY, 12, 0, Math.PI * 2);
   ctx.stroke();
-
-  // Draw coordinates text near the dot
-  ctx.fillStyle = userPositionColor;
-  ctx.font = "bold 16px 'DejaVu Sans Mono', monospace";
-  ctx.textAlign = "center";
-  ctx.direction = "ltr";
-  ctx.fillText(
-    `(${Math.round(economicScore)}, ${Math.round(socialScore)})`,
-    userX,
-    userY - 25
-  );
 
   // Return as PNG buffer
   return canvas.toBuffer("image/png");
