@@ -4,7 +4,7 @@ import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IUserData, QuizType } from "../types";
-import { aspectToTrait, BigFiveAspect, BigFiveTrait } from "./types";
+import { aspectToTrait, BigFiveAspect, BigFiveTrait, BigFiveResult } from "./types";
 
 export function setCustomCommands(bot: Bot) {
   // No custom commands needed for BigFive
@@ -196,10 +196,7 @@ function calculatePercentage(score: number, maxPossible: number): number {
   return Math.round((score / maxPossible) * 100);
 }
 
-export function calculateResult(user: IUserData): {
-  traits: { [key in BigFiveTrait]?: number };
-  aspects: { [key in BigFiveAspect]?: number };
-} {
+export function calculateResult(user: IUserData): BigFiveResult {
   const { aspectScores, traitScores } = calculateScores(user);
   const totalQuestions = user.order.length;
   const maxScorePerQuestion = 3; // Value.D = 3
@@ -234,10 +231,7 @@ export function calculateResult(user: IUserData): {
   };
 }
 
-export async function replyResult(ctx: Context, language: Language, result: {
-  traits: { [key in BigFiveTrait]?: number };
-  aspects: { [key in BigFiveAspect]?: number };
-}) {
+export async function replyResult(ctx: Context, language: Language, result: BigFiveResult) {
   // Use the percentages from the result
   const traitResults = Object.entries(result.traits)
     .map(([trait, percentage]) => ({

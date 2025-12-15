@@ -7,7 +7,7 @@ import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IUserData, QuizType } from "../types";
 import styles from "./styles";
-import { CognitiveStyle, ResultType } from "./types";
+import { CognitiveStyle, ResultType, LeftRightResult } from "./types";
 
 export function setCustomCommands(bot: Bot) {
   // No custom commands needed for left/right test
@@ -71,7 +71,7 @@ function determineResultType(
   return ResultType.StrongRight;
 }
 
-export function calculateResult(user: IUserData): { resultType: ResultType; leftPercentage: number; rightPercentage: number } {
+export function calculateResult(user: IUserData): LeftRightResult {
   // Calculate scores for each cognitive style
   let leftScore = 0;
   let rightScore = 0;
@@ -101,7 +101,7 @@ export function calculateResult(user: IUserData): { resultType: ResultType; left
   return { resultType, leftPercentage, rightPercentage };
 }
 
-export async function replyResult(ctx: Context, language: Language, result: { resultType: ResultType; leftPercentage: number; rightPercentage: number }) {
+export async function replyResult(ctx: Context, language: Language, result: LeftRightResult) {
   const { resultType, leftPercentage, rightPercentage } = result;
   const style = styles[resultType];
 

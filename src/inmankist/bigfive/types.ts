@@ -47,3 +47,8 @@ export const aspectToTrait: { [key in BigFiveAspect]: BigFiveTrait } = {
   [BigFiveAspect.Volatility]: BigFiveTrait.Neuroticism,
 };
 
+export interface BigFiveResult {
+  traits: { [key in BigFiveTrait]?: number };
+  aspects: { [key in BigFiveAspect]?: number };
+}
+

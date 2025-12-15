@@ -4,13 +4,13 @@ import { Deity } from "./archetype/types";
 import * as enneagram from "./enneagram";
 import { EnneagramType } from "./enneagram/types";
 import * as leftright from "./leftright";
-import { ResultType } from "./leftright/types";
+import { ResultType, LeftRightResult } from "./leftright/types";
 import * as mbti from "./mbti";
 import { MBTIType, MBTIResult } from "./mbti/types";
 import * as politicalcompass from "./politicalcompass";
 import { Quadrant, PoliticalCompassResult } from "./politicalcompass/types";
 import * as bigfive from "./bigfive";
-import { BigFiveAspect, BigFiveTrait } from "./bigfive/types";
+import { BigFiveAspect, BigFiveTrait, BigFiveResult } from "./bigfive/types";
 import { quizModes } from "./config";
 import { Language } from "../shared/types";
 import { IQuest, IUserData, QuizType, QuizMode } from "./types";
@@ -120,7 +120,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
     case QuizType.LeftRight: {
       result = leftright.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await leftright.replyResult(ctx, language, result as { resultType: ResultType; leftPercentage: number; rightPercentage: number });
+      await leftright.replyResult(ctx, language, result as LeftRightResult);
       return result;
     }
     case QuizType.PoliticalCompass: {
@@ -146,14 +146,7 @@ export async function replyResult(ctx: Context, user: IUserData) {
     case QuizType.BigFive: {
       result = bigfive.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await bigfive.replyResult(
-        ctx,
-        language,
-        result as {
-          traits: { [key in BigFiveTrait]?: number };
-          aspects: { [key in BigFiveAspect]?: number };
-        }
-      );
+      await bigfive.replyResult(ctx, language, result as BigFiveResult);
       return result;
     }
   }
@@ -201,7 +194,7 @@ export async function displaySavedResult(
         return true;
       }
       case QuizType.LeftRight: {
-        const savedResult = await getQuizResult<{ resultType: ResultType; leftPercentage: number; rightPercentage: number }>(userId, quizType);
+        const savedResult = await getQuizResult<LeftRightResult>(userId, quizType);
         if (!savedResult) return false;
         await leftright.replyResult(ctx, language, savedResult);
         return true;
@@ -225,10 +218,7 @@ export async function displaySavedResult(
         return true;
       }
       case QuizType.BigFive: {
-        const savedResult = await getQuizResult<{
-          traits: { [key in BigFiveTrait]?: number };
-          aspects: { [key in BigFiveAspect]?: number };
-        }>(userId, quizType);
+        const savedResult = await getQuizResult<BigFiveResult>(userId, quizType);
         if (!savedResult) return false;
         await bigfive.replyResult(ctx, language, savedResult);
         return true;
