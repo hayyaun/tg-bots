@@ -18,7 +18,7 @@ const libLeftColor = "#CBF3D2"; // Light green
 
 // Chart colors
 const backgroundColor = "#ffffff"; // White
-const gridLineColor = "#e0e0e0"; // Light gray
+const gridLineColor = "#00000022"; // Light gray
 const axisColor = "#999999"; // Dark gray
 const labelColor = "#333333"; // Medium gray
 const userPositionColor = "#33190C"; // Red
