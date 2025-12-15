@@ -52,11 +52,12 @@ import { continueProfileCompletion } from "./commands";
 import { findMatches } from "./matching";
 
 // Helper function to build interests keyboard with pagination
-function buildInterestsKeyboard(
+async function buildInterestsKeyboard(
+  userId: number,
   selectedInterests: Set<string>,
   currentPage: number,
   itemsPerPage: number = ITEMS_PER_PAGE
-): InlineKeyboard {
+): Promise<InlineKeyboard> {
   const keyboard = new InlineKeyboard();
   const totalItems = INTERESTS.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -721,7 +722,7 @@ export function setupCallbacks(
         const currentInterests = new Set(profileForInterests?.interests || []);
         session.interestsPage = 0; // Start at first page
         
-        const interestsKeyboard = buildInterestsKeyboard(currentInterests, session.interestsPage);
+        const interestsKeyboard = await buildInterestsKeyboard(userId, currentInterests, session.interestsPage);
         const selectedCount = currentInterests.size;
         const totalPages = Math.ceil(INTERESTS.length / ITEMS_PER_PAGE);
         await ctx.reply(
@@ -862,7 +863,7 @@ export function setupCallbacks(
     const currentPage = session.interestsPage ?? 0;
     
     // Update the keyboard to reflect the new state (stay on same page)
-    const interestsKeyboard = buildInterestsKeyboard(currentInterests, currentPage);
+    const interestsKeyboard = await buildInterestsKeyboard(userId, currentInterests, currentPage);
     const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / 20);
     
@@ -903,7 +904,7 @@ export function setupCallbacks(
     
     session.interestsPage = page;
     
-    const interestsKeyboard = buildInterestsKeyboard(currentInterests, page);
+    const interestsKeyboard = await buildInterestsKeyboard(userId, currentInterests, page);
     const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / 20);
     
