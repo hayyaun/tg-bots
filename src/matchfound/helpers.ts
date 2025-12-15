@@ -125,26 +125,6 @@ interface RequiredField {
   type: "text" | "select" | "date" | "interests" | "username";
 }
 
-// Field key constants
-const FIELD_KEY = {
-  USERNAME: "username",
-  DISPLAY_NAME: "display_name",
-  GENDER: "gender",
-  LOOKING_FOR_GENDER: "looking_for_gender",
-  BIRTH_DATE: "birth_date",
-  INTERESTS: "interests",
-} as const;
-
-// Editing field constants (used in session.editingField)
-const EDITING_FIELD = {
-  USERNAME: "username" as const,
-  NAME: "name" as const,
-  GENDER: "gender" as const,
-  LOOKING_FOR: "looking_for" as const,
-  BIRTHDATE: "birthdate" as const,
-  INTERESTS: "interests" as const,
-} satisfies Record<string, ProfileEditingField>;
-
 // Field type constants
 const FIELD_TYPE = {
   USERNAME: "username",
@@ -154,14 +134,25 @@ const FIELD_TYPE = {
   INTERESTS: "interests",
 } as const;
 
-// Map field keys to editing field values
+// Field key constants (used directly as both database field names and editingField values)
+const FIELD_KEY = {
+  USERNAME: "username",
+  DISPLAY_NAME: "display_name",
+  GENDER: "gender",
+  LOOKING_FOR_GENDER: "looking_for_gender",
+  BIRTH_DATE: "birth_date",
+  INTERESTS: "interests",
+} as const;
+
+// Map field keys to ProfileEditingField-compatible values
+// Note: Some fields need mapping because ProfileEditingField uses different names
 const FIELD_KEY_TO_EDITING_FIELD: Record<keyof typeof FIELD_KEY, ProfileEditingField> = {
-  USERNAME: EDITING_FIELD.USERNAME,
-  DISPLAY_NAME: EDITING_FIELD.NAME,
-  GENDER: EDITING_FIELD.GENDER,
-  LOOKING_FOR_GENDER: EDITING_FIELD.LOOKING_FOR,
-  BIRTH_DATE: EDITING_FIELD.BIRTHDATE,
-  INTERESTS: EDITING_FIELD.INTERESTS,
+  USERNAME: "username",
+  DISPLAY_NAME: "name", // ProfileEditingField uses "name" not "display_name"
+  GENDER: "gender",
+  LOOKING_FOR_GENDER: "looking_for", // ProfileEditingField uses "looking_for" not "looking_for_gender"
+  BIRTH_DATE: "birthdate", // ProfileEditingField uses "birthdate" not "birth_date"
+  INTERESTS: "interests",
 };
 
 const REQUIRED_FIELDS: RequiredField[] = [
@@ -230,7 +221,9 @@ export async function promptNextRequiredField(
   const session = getSession(userId);
   session.completingProfile = true;
   session.profileCompletionFieldIndex = fieldIndex;
-  session.editingField = FIELD_KEY_TO_EDITING_FIELD[field.key as keyof typeof FIELD_KEY] || undefined;
+  // Map field key to editingField (ProfileEditingField uses different names for some fields)
+  const fieldKey = field.key as keyof typeof FIELD_KEY_TO_EDITING_FIELD;
+  session.editingField = FIELD_KEY_TO_EDITING_FIELD[fieldKey] || undefined;
 
   const remaining = missingFields.length - fieldIndex - 1;
 
