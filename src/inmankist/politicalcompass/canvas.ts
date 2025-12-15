@@ -19,8 +19,8 @@ const libLeftColor = "#CBF3D2"; // Light green
 // Chart colors
 const backgroundColor = "#ffffff"; // White
 const gridLineColor = "#00000022"; // Light gray
-const axisColor = "#999999"; // Dark gray
-const labelColor = "#333333"; // Medium gray
+const axisColor = "#000000"; // Dark gray
+const labelColor = "#5e5e5e"; // Medium gray
 const userPositionColor = "#33190C"; // Red
 
 export function generateCompassChart(
