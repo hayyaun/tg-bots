@@ -56,8 +56,7 @@ export function calculateResult(user: IUserData): Array<[Deity, number]> {
   return sortedResults;
 }
 
-export async function replyResult(ctx: Context, user: IUserData, sortedResults: Array<[Deity, number]>) {
-  const language = user.language || Language.Persian;
+export async function replyResult(ctx: Context, language: Language, sortedResults: Array<[Deity, number]>) {
 
   // Calculate total of all scores for weighted percentage
   const totalScores = sortedResults.reduce((sum, [, value]) => sum + value, 0);

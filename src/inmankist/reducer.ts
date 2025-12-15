@@ -13,8 +13,8 @@ import * as bigfive from "./bigfive";
 import { BigFiveAspect, BigFiveTrait } from "./bigfive/types";
 import { quizModes } from "./config";
 import { Language } from "../shared/types";
-import { IQuest, IUserData, QuizType } from "./types";
-import { storeQuizResult } from "./quizResults";
+import { IQuest, IUserData, QuizType, QuizMode } from "./types";
+import { storeQuizResult, getQuizResult } from "./quizResults";
 
 // Optional customization for each quiz
 
@@ -32,7 +32,7 @@ export async function setCustomCommands(bot: Bot) {
 export function selectOrder(user: IUserData) {
   const size = quizModes[user.mode].size;
   const language = user.language || Language.Persian;
-  
+
   switch (user.quiz) {
     case QuizType.Archetype:
       if (!user.gender) {
@@ -100,6 +100,7 @@ export async function replyAbout(ctx: Context, type: QuizType) {
 export async function replyResult(ctx: Context, user: IUserData) {
   const userId = ctx.from?.id;
   if (!userId) throw new Error("User ID not found");
+  const language = user.language || Language.Persian;
 
   let result: unknown;
 
@@ -107,40 +108,52 @@ export async function replyResult(ctx: Context, user: IUserData) {
     case QuizType.Archetype: {
       result = archetype.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await archetype.replyResult(ctx, user, result as Array<[Deity, number]>);
+      await archetype.replyResult(ctx, language, result as Array<[Deity, number]>);
       return result;
     }
     case QuizType.MBTI: {
       result = mbti.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await mbti.replyResult(ctx, user, result as MBTIType);
+      await mbti.replyResult(ctx, language, result as MBTIType);
       return result;
     }
     case QuizType.LeftRight: {
       result = leftright.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await leftright.replyResult(ctx, user, result as ResultType);
+      await leftright.replyResult(ctx, language, result as { resultType: ResultType; leftPercentage: number; rightPercentage: number });
       return result;
     }
     case QuizType.PoliticalCompass: {
       result = politicalcompass.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await politicalcompass.replyResult(ctx, user, result as PoliticalCompassResult);
+      await politicalcompass.replyResult(
+        ctx,
+        language,
+        result as PoliticalCompassResult
+      );
       return result;
     }
     case QuizType.Enneagram: {
       result = enneagram.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await enneagram.replyResult(ctx, user, result as Array<[EnneagramType, number]>);
+      await enneagram.replyResult(
+        ctx,
+        language,
+        result as Array<[EnneagramType, number]>
+      );
       return result;
     }
     case QuizType.BigFive: {
       result = bigfive.calculateResult(user);
       await storeQuizResult(userId, user.quiz, result);
-      await bigfive.replyResult(ctx, user, result as {
-        traits: { [key in BigFiveTrait]?: number };
-        aspects: { [key in BigFiveAspect]?: number };
-      });
+      await bigfive.replyResult(
+        ctx,
+        language,
+        result as {
+          traits: { [key in BigFiveTrait]?: number };
+          aspects: { [key in BigFiveAspect]?: number };
+        }
+      );
       return result;
     }
   }
@@ -160,5 +173,68 @@ export async function replyDetial(ctx: Context, type: QuizType, item: string) {
       return enneagram.replyDetail(ctx, item as EnneagramType);
     case QuizType.BigFive:
       return bigfive.replyDetail(ctx, item as BigFiveAspect);
+  }
+}
+
+// Display saved quiz result if available
+export async function displaySavedResult(
+  ctx: Context,
+  userId: number,
+  quizType: QuizType,
+  language: Language
+): Promise<boolean> {
+  try {
+    switch (quizType) {
+      case QuizType.Archetype: {
+        const savedResult = await getQuizResult<Array<[Deity, number]>>(
+          userId,
+          quizType
+        );
+        if (!savedResult) return false;
+        await archetype.replyResult(ctx, language, savedResult);
+        return true;
+      }
+      case QuizType.MBTI: {
+        const savedResult = await getQuizResult<MBTIType>(userId, quizType);
+        if (!savedResult) return false;
+        await mbti.replyResult(ctx, language, savedResult);
+        return true;
+      }
+      case QuizType.LeftRight: {
+        const savedResult = await getQuizResult<{ resultType: ResultType; leftPercentage: number; rightPercentage: number }>(userId, quizType);
+        if (!savedResult) return false;
+        await leftright.replyResult(ctx, language, savedResult);
+        return true;
+      }
+      case QuizType.PoliticalCompass: {
+        const savedResult = await getQuizResult<PoliticalCompassResult>(
+          userId,
+          quizType
+        );
+        if (!savedResult) return false;
+        await politicalcompass.replyResult(ctx, language, savedResult);
+        return true;
+      }
+      case QuizType.Enneagram: {
+        const savedResult = await getQuizResult<Array<[EnneagramType, number]>>(
+          userId,
+          quizType
+        );
+        if (!savedResult) return false;
+        await enneagram.replyResult(ctx, language, savedResult);
+        return true;
+      }
+      case QuizType.BigFive: {
+        const savedResult = await getQuizResult<{
+          traits: { [key in BigFiveTrait]?: number };
+          aspects: { [key in BigFiveAspect]?: number };
+        }>(userId, quizType);
+        if (!savedResult) return false;
+        await bigfive.replyResult(ctx, language, savedResult);
+        return true;
+      }
+    }
+  } catch (error) {
+    return false;
   }
 }

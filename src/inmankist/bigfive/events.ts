@@ -234,44 +234,27 @@ export function calculateResult(user: IUserData): {
   };
 }
 
-export async function replyResult(ctx: Context, user: IUserData, result: {
+export async function replyResult(ctx: Context, language: Language, result: {
   traits: { [key in BigFiveTrait]?: number };
   aspects: { [key in BigFiveAspect]?: number };
 }) {
-  const { aspectScores, traitScores } = calculateScores(user);
-  const language = user.language || Language.Persian;
-  const totalQuestions = user.order.length;
-  const maxScorePerQuestion = 3; // Value.D = 3
-  const maxPossibleScore = totalQuestions * maxScorePerQuestion;
+  // Use the percentages from the result
+  const traitResults = Object.entries(result.traits)
+    .map(([trait, percentage]) => ({
+      trait: trait as BigFiveTrait,
+      percentage: percentage || 0,
+      description: getTraitDescription(trait as BigFiveTrait, language),
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
 
-  // Calculate trait percentages
-  const traitResults = Array.from(traitScores.entries()).map(([trait, score]) => {
-    // Each trait has 2 aspects, so max score per trait = (totalQuestions / 10 aspects) * 2 aspects * 3
-    const questionsPerAspect = totalQuestions / 10;
-    const maxTraitScore = questionsPerAspect * 2 * maxScorePerQuestion;
-    return {
-      trait,
-      score,
-      percentage: calculatePercentage(score, maxTraitScore),
-      description: getTraitDescription(trait, language),
-    };
-  });
-
-  // Sort traits by score (descending)
-  traitResults.sort((a, b) => b.score - a.score);
-
-  // Calculate aspect percentages
-  const aspectResults = Array.from(aspectScores.entries()).map(([aspect, score]) => {
-    const questionsPerAspect = totalQuestions / 10;
-    const maxAspectScore = questionsPerAspect * maxScorePerQuestion;
-    return {
-      aspect,
-      score,
-      percentage: calculatePercentage(score, maxAspectScore),
-      description: getAspectDescription(aspect, language),
-      trait: aspectToTrait[aspect],
-    };
-  });
+  const aspectResults = Object.entries(result.aspects)
+    .map(([aspect, percentage]) => ({
+      aspect: aspect as BigFiveAspect,
+      percentage: percentage || 0,
+      description: getAspectDescription(aspect as BigFiveAspect, language),
+      trait: aspectToTrait[aspect as BigFiveAspect],
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
 
   const labels = {
     [Language.Persian]: {

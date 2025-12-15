@@ -115,19 +115,14 @@ export function calculateResult(user: IUserData): MBTIType {
   return mbtiType;
 }
 
-export async function replyResult(ctx: Context, user: IUserData, mbtiType: MBTIType) {
+export async function replyResult(ctx: Context, language: Language, mbtiType: MBTIType) {
   const personality = personalities[mbtiType];
-  const language = user.language || Language.Persian;
-
-  // Calculate percentages for display
-  const totalQuestions = user.order.length;
-  const percentages = getDimensionPercentages(dimensionScores, totalQuestions);
 
   const labels = {
-    [Language.Persian]: { type: "تیپ شخصیتی شما", distribution: "توزیع ابعاد شخصیتی" },
-    [Language.English]: { type: "Your Personality Type", distribution: "Personality Dimension Distribution" },
-    [Language.Russian]: { type: "Ваш тип личности", distribution: "Распределение измерений личности" },
-    [Language.Arabic]: { type: "نوع شخصيتك", distribution: "توزيع أبعاد الشخصية" },
+    [Language.Persian]: { type: "تیپ شخصیتی شما" },
+    [Language.English]: { type: "Your Personality Type" },
+    [Language.Russian]: { type: "Ваш тип личности" },
+    [Language.Arabic]: { type: "نوع شخصيتك" },
   };
 
   // Create message
@@ -137,9 +132,6 @@ export async function replyResult(ctx: Context, user: IUserData, mbtiType: MBTIT
     `*${personality.nickname[language]}*`,
     ``,
     personality.description[language],
-    ``,
-    `📊 ${labels[language].distribution}:`,
-    ...percentages.map((p) => `${p.dimension}: ${p.percentage}%`),
   ].join("\n");
 
   // Add buttons for detailed view

@@ -111,7 +111,7 @@ export function calculateResult(user: IUserData): PoliticalCompassResult {
   return { quadrant, economicScore, socialScore };
 }
 
-export async function replyResult(ctx: Context, user: IUserData, result: PoliticalCompassResult) {
+export async function replyResult(ctx: Context, language: Language, result: PoliticalCompassResult) {
   const { quadrant, economicScore, socialScore } = result;
   const quadrantInfo = quadrants[quadrant];
 
@@ -155,7 +155,6 @@ export async function replyResult(ctx: Context, user: IUserData, result: Politic
   ].join("\n");
 
   // Generate chart
-  const language = user.language || Language.Persian;
   const chartBuffer = generateCompassChart(economicScore, socialScore, language);
 
   // Add button for detailed view

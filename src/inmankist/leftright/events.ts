@@ -71,7 +71,7 @@ function determineResultType(
   return ResultType.StrongRight;
 }
 
-export function calculateResult(user: IUserData): ResultType {
+export function calculateResult(user: IUserData): { resultType: ResultType; leftPercentage: number; rightPercentage: number } {
   // Calculate scores for each cognitive style
   let leftScore = 0;
   let rightScore = 0;
@@ -92,32 +92,18 @@ export function calculateResult(user: IUserData): ResultType {
   // Determine result type
   const totalQuestions = user.order.length;
   const resultType = determineResultType(leftScore, rightScore, totalQuestions);
-  return resultType;
-}
-
-export async function replyResult(ctx: Context, user: IUserData, resultType: ResultType) {
-  const style = styles[resultType];
-  const language = user.language || Language.Persian;
   
-  // Recalculate scores for display
-  let leftScore = 0;
-  let rightScore = 0;
-  Object.entries(user.answers).forEach((answer) => {
-    const index = parseInt(answer[0]);
-    const question = getQuestion(user, index);
-    if (!question) throw "Something went wrong!";
-    const value = answer[1];
-    if (question.belong === CognitiveStyle.Left) {
-      leftScore += value;
-    } else {
-      rightScore += value;
-    }
-  });
-
   // Calculate percentages
   const total = leftScore + rightScore;
   const leftPercentage = total > 0 ? Math.round((leftScore / total) * 100) : 50;
   const rightPercentage = total > 0 ? Math.round((rightScore / total) * 100) : 50;
+  
+  return { resultType, leftPercentage, rightPercentage };
+}
+
+export async function replyResult(ctx: Context, language: Language, result: { resultType: ResultType; leftPercentage: number; rightPercentage: number }) {
+  const { resultType, leftPercentage, rightPercentage } = result;
+  const style = styles[resultType];
 
   const labels = {
     [Language.Persian]: { traits: "ویژگی‌های شما", distribution: "توزیع سبک شناختی", analytical: "تحلیلی", creative: "خلاق" },

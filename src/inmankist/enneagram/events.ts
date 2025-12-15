@@ -92,12 +92,11 @@ export function calculateResult(user: IUserData): Array<[EnneagramType, number]>
   return sortedResults;
 }
 
-export async function replyResult(ctx: Context, user: IUserData, sortedResults: Array<[EnneagramType, number]>) {
+export async function replyResult(ctx: Context, language: Language, sortedResults: Array<[EnneagramType, number]>) {
   // Get top 3 types
   const topTypes = sortedResults.slice(0, 3);
   const mainType = topTypes[0][0];
   const mainDesc = descriptions[mainType];
-  const language = user.language || Language.Persian;
 
   // Calculate percentages
   const totalScore = sortedResults.reduce((sum, [, score]) => sum + score, 0);

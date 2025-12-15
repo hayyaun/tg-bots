@@ -25,6 +25,7 @@ import {
   replyDetial,
   selectOrder,
   selectQuizQuestion,
+  displaySavedResult,
 } from "./reducer";
 import { Language } from "../shared/types";
 import {
@@ -76,8 +77,13 @@ function extractQuizResult(
       return null;
 
     case QuizType.LeftRight:
-      if (typeof result === "string") {
-        return result;
+      if (
+        typeof result === "object" &&
+        result !== null &&
+        "resultType" in result
+      ) {
+        // result is object with resultType, leftPercentage, rightPercentage - store just resultType
+        return (result as { resultType: string }).resultType;
       }
       return null;
 
@@ -383,6 +389,10 @@ export function setupCallbacks(
       if (welcomeId) {
         await updateWelcomeMessage(ctx, welcomeId, type, language);
       }
+      
+      // Display saved result if available
+      await displaySavedResult(ctx, userId, type, language);
+      
       await setUser(ctx, type, notifyAdmin);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
