@@ -1,4 +1,4 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
 import { INMANKIST_BOT_USERNAME, INTERESTS } from "../shared/constants";
@@ -35,11 +35,13 @@ import {
   success,
 } from "./strings";
 import { MatchUser } from "./types";
+import { generateDailyActiveUsersChart } from "./charts";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
 
 const formatNumber = (value: number | bigint) => value.toLocaleString("en-US");
+const ADMIN_DAU_DAYS = 14;
 
 // Helper function to get missing required fields
 interface RequiredField {
@@ -665,9 +667,12 @@ export function setupCommands(
 
     ctx.react("👏").catch(() => {});
 
-    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
     try {
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const dauStart = new Date();
+      dauStart.setHours(0, 0, 0, 0);
+      dauStart.setDate(dauStart.getDate() - (ADMIN_DAU_DAYS - 1));
+
       const [
         totalUsers,
         completedProfiles,
@@ -697,6 +702,43 @@ export function setupCommands(
 
       const mutualLikes = Number(mutualLikesRows?.[0]?.count ?? 0);
 
+      const dailyActiveRows =
+        await prisma.$queryRaw<{ day: Date; active_users: bigint }[]>`
+          SELECT
+            date_trunc('day', updated_at) AS day,
+            COUNT(*)::bigint AS active_users
+          FROM users
+          WHERE updated_at >= ${dauStart}
+          GROUP BY 1
+          ORDER BY 1;
+        `;
+
+      const dailyActiveMap = new Map<string, number>();
+      for (const row of dailyActiveRows) {
+        const day =
+          row.day instanceof Date ? row.day : new Date(row.day as unknown as string);
+        const dayKey = day.toISOString().slice(0, 10);
+        dailyActiveMap.set(dayKey, Number(row.active_users ?? 0));
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const dailyActiveSeries = [];
+      for (let i = ADMIN_DAU_DAYS - 1; i >= 0; i--) {
+        const day = new Date(today);
+        day.setDate(today.getDate() - i);
+        const dayKey = day.toISOString().slice(0, 10);
+        dailyActiveSeries.push({
+          date: day,
+          active: dailyActiveMap.get(dayKey) ?? 0,
+        });
+      }
+
+      const chartBuffer = generateDailyActiveUsersChart(dailyActiveSeries, {
+        title: `Daily Active Users (last ${ADMIN_DAU_DAYS} days)`,
+      });
+
       const keyboard = new InlineKeyboard()
         .text("📋 Reports", "admin:reports")
         .row()
@@ -712,7 +754,8 @@ export function setupCommands(
         `🤝 Matches (mutual likes): ${formatNumber(mutualLikes)}\n` +
         `🚫 Reports: ${formatNumber(totalReports)}`;
 
-      await ctx.reply(statsMessage, {
+      await ctx.replyWithPhoto(new InputFile(chartBuffer, "dau.png"), {
+        caption: statsMessage,
         parse_mode: "HTML",
         reply_markup: keyboard,
       });
