@@ -42,7 +42,7 @@ async function buildProfileQuizResultsSection(
     sections.push(`${strings.archetype}: ${profile.archetype_result}`);
   } else {
     sections.push(
-      `${strings.archetype}: ${strings.archetypeNotSet(INMANKIST_BOT_USERNAME)}`
+      `${strings.archetype}: ${strings.archetypeNotSet}`
     );
   }
 
@@ -50,7 +50,7 @@ async function buildProfileQuizResultsSection(
     sections.push(`${strings.mbti}: ${profile.mbti_result.toUpperCase()}`);
   } else {
     sections.push(
-      `${strings.mbti}: ${strings.mbtiNotSet(INMANKIST_BOT_USERNAME)}`
+      `${strings.mbti}: ${strings.mbtiNotSet}`
     );
   }
 

@@ -118,8 +118,6 @@ export const profileValues = {
   female: "زن",
   both: "هر دو",
   year: "سال",
-  archetypeNotSet: (botUsername: string) => `ثبت نشده (در @${botUsername} انجام دهید)`,
-  mbtiNotSet: (botUsername: string) => `ثبت نشده (در @${botUsername} انجام دهید)`,
 };
 
 // Button labels

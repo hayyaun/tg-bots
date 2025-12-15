@@ -86,8 +86,8 @@ export interface ISharedStrings {
   female: string;
   both: string;
   year: string;
-  archetypeNotSet: (botUsername: string) => string;
-  mbtiNotSet: (botUsername: string) => string;
+  archetypeNotSet: string;
+  mbtiNotSet: string;
   // Buttons
   editName: string;
   editBio: string;
@@ -130,8 +130,8 @@ const translations: { [key in Language]: ISharedStrings } = {
     female: "زن",
     both: "هر دو",
     year: "سال",
-    archetypeNotSet: (botUsername: string) => `ثبت نشده (در @${botUsername} انجام دهید)`,
-    mbtiNotSet: (botUsername: string) => `ثبت نشده (در @${botUsername} انجام دهید)`,
+    archetypeNotSet: "ثبت نشده",
+    mbtiNotSet: "ثبت نشده",
     // Buttons
     editName: "✏️ ویرایش نام",
     editBio: "📝 ویرایش بیوگرافی",
@@ -171,8 +171,8 @@ const translations: { [key in Language]: ISharedStrings } = {
     female: "Female",
     both: "Both",
     year: "years",
-    archetypeNotSet: (botUsername: string) => `Not set (take quiz at @${botUsername})`,
-    mbtiNotSet: (botUsername: string) => `Not set (take quiz at @${botUsername})`,
+    archetypeNotSet: "Not set",
+    mbtiNotSet: "Not set",
     // Buttons
     editName: "✏️ Edit Name",
     editBio: "📝 Edit Biography",
@@ -213,8 +213,8 @@ const translations: { [key in Language]: ISharedStrings } = {
     female: "Женский",
     both: "Оба",
     year: "лет",
-    archetypeNotSet: (botUsername: string) => `Не установлено (пройдите тест в @${botUsername})`,
-    mbtiNotSet: (botUsername: string) => `Не установлено (пройдите тест в @${botUsername})`,
+    archetypeNotSet: "Не установлено",
+    mbtiNotSet: "Не установлено",
     // Buttons
     editName: "✏️ Редактировать имя",
     editBio: "📝 Редактировать биографию",
@@ -254,8 +254,8 @@ const translations: { [key in Language]: ISharedStrings } = {
     female: "أنثى",
     both: "كلاهما",
     year: "سنة",
-    archetypeNotSet: (botUsername: string) => `غير محدد (قم بإجراء الاختبار في @${botUsername})`,
-    mbtiNotSet: (botUsername: string) => `غير محدد (قم بإجراء الاختبار في @${botUsername})`,
+    archetypeNotSet: "غير محدد",
+    mbtiNotSet: "غير محدد",
     // Buttons
     editName: "✏️ تعديل الاسم",
     editBio: "📝 تعديل السيرة الذاتية",
