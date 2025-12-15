@@ -9,22 +9,33 @@ import {
 import { buttons, fields, profileValues } from "../matchfound/strings";
 import { UserProfile } from "../matchfound/types";
 import { calculateAge } from "../matchfound/utils";
+import { getSharedStrings } from "./i18n";
 
 // Helper function to format BigFive result
-function formatBigFiveResult(bigfiveResult: string | null): string | null {
+async function formatBigFiveResult(
+  bigfiveResult: string | null,
+  botName: string,
+  userId: number | undefined
+): Promise<string | null> {
   if (!bigfiveResult) return null;
   try {
     const data = JSON.parse(bigfiveResult);
     const topTrait = Object.entries(data.traits || {})
       .sort(([, a], [, b]) => (b as number) - (a as number))[0];
-    return topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : "ثبت شده";
+    const strings = await getSharedStrings(userId, botName);
+    return topTrait ? `${topTrait[0]}: ${topTrait[1]}%` : strings.registered;
   } catch {
-    return "ثبت شده";
+    const strings = await getSharedStrings(userId, botName);
+    return strings.registered;
   }
 }
 
 // Helper function to build quiz results section for displayProfile
-function buildProfileQuizResultsSection(profile: UserProfile): string {
+async function buildProfileQuizResultsSection(
+  profile: UserProfile,
+  botName: string,
+  userId: number | undefined
+): Promise<string> {
   const sections: string[] = [];
   
   // Required quizzes - always show with instructions if missing
@@ -51,7 +62,7 @@ function buildProfileQuizResultsSection(profile: UserProfile): string {
     sections.push(`${fields.enneagram}: ${profile.enneagram_result.replace("type", "تیپ ")}`);
   }
   if (profile.bigfive_result) {
-    const formatted = formatBigFiveResult(profile.bigfive_result);
+    const formatted = await formatBigFiveResult(profile.bigfive_result, botName, userId);
     if (formatted) {
       sections.push(`${fields.bigfive}: ${formatted}`);
     }
@@ -61,7 +72,12 @@ function buildProfileQuizResultsSection(profile: UserProfile): string {
 }
 
 // Reusable function to format and display user profile
-export async function displayProfile(ctx: Context, profile: UserProfile) {
+export async function displayProfile(
+  ctx: Context,
+  profile: UserProfile,
+  botName: string,
+  userId?: number
+) {
   const ageText = profile.birth_date
     ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
     : fields.notSet;
@@ -102,7 +118,7 @@ export async function displayProfile(ctx: Context, profile: UserProfile) {
   }
   
   // Show quiz results with instructions if missing
-  const quizResultsSection = buildProfileQuizResultsSection(profile);
+  const quizResultsSection = await buildProfileQuizResultsSection(profile, botName, userId);
   if (quizResultsSection) {
     message += `\n${quizResultsSection}\n`;
   }

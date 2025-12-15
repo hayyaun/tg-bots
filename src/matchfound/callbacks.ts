@@ -542,7 +542,7 @@ export function setupCallbacks(
       return;
     }
 
-    await displayProfile(ctx, profile);
+    await displayProfile(ctx, profile, BOT_NAME, userId);
   });
 
   // Callback: find:start - triggers find functionality (same as /find command)

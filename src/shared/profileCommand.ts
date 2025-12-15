@@ -2,7 +2,7 @@ import { Bot } from "grammy";
 import log from "../log";
 import { getUserProfile, updateCompletionScore } from "./database";
 import { displayProfile } from "./display";
-import { errors } from "./errors";
+import { getSharedStrings } from "./i18n";
 
 export interface ProfileCommandDependencies {
   botName: string;
@@ -27,14 +27,16 @@ export function setupProfileCommand(
       await updateCompletionScore(userId);
       const profile = await getUserProfile(userId);
       if (!profile) {
-        await ctx.reply(errors.startFirst);
+        const strings = await getSharedStrings(userId, deps.botName);
+        await ctx.reply(strings.startFirst);
         return;
       }
 
-      await displayProfile(ctx, profile);
+      await displayProfile(ctx, profile, deps.botName, userId);
     } catch (err) {
       log.error(deps.botName + " > Profile command failed", err);
-      await ctx.reply("❌ خطا در نمایش پروفایل. لطفا دوباره تلاش کنید.");
+      const strings = await getSharedStrings(userId, deps.botName);
+      await ctx.reply(strings.profileError);
       if (deps.notifyAdmin) {
         await deps.notifyAdmin(
           `❌ <b>Profile Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
