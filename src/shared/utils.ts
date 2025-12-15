@@ -1,9 +1,3 @@
-import { Context } from "grammy";
-import { getUserName } from "../utils/string";
-
-// Re-export for backward compatibility
-export { getUserName };
-
 export function calculateAge(birthDate: Date | null): number | null {
   if (!birthDate) return null;
   const today = new Date();

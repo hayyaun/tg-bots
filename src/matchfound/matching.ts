@@ -16,7 +16,7 @@ import {
   MAX_COMPATIBILITY_SCORE,
 } from "./constants";
 import { MatchUser } from "./types";
-import { calculateAge } from "./utils";
+import { calculateAge } from "../shared/utils";
 import { getUserProfile, getUserProfileById } from "../shared/database";
 
 export async function findMatches(userId: number | bigint): Promise<MatchUser[]> {

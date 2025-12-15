@@ -4,7 +4,7 @@ import { getUserProfile, ensureUserExists, getUserIdFromTelegramId, updateUserFi
 import { findMatches } from "./matching";
 import { displayUser } from "./display";
 import { getSession } from "./session";
-import { calculateAge } from "./utils";
+import { calculateAge } from "../shared/utils";
 import { MatchUser, UserProfile } from "./types";
 import log from "../log";
 import { BOT_NAME, INMANKIST_BOT_USERNAME, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_COMPLETION_SCORE, FIND_RATE_LIMIT_MS, ITEMS_PER_PAGE, INTERESTS, INTEREST_NAMES } from "./constants";

@@ -12,7 +12,7 @@ import {
 import { displayUser } from "./display";
 import { displayProfile } from "../shared/display";
 import { getSession } from "./session";
-import { calculateAge } from "./utils";
+import { calculateAge } from "../shared/utils";
 import { UserProfile, MatchUser } from "./types";
 import log from "../log";
 import {

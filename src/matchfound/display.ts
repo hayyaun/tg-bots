@@ -20,7 +20,7 @@ import {
 } from "./constants";
 import { buttons, display, fields, profileValues } from "./strings";
 import { MatchUser, SessionData, UserProfile } from "./types";
-import { calculateAge } from "./utils";
+import { calculateAge } from "../shared/utils";
 
 type DisplayMode = "match" | "liked";
 

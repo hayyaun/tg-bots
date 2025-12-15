@@ -6,9 +6,8 @@ import {
   PROVINCE_NAMES,
   MAX_COMPLETION_SCORE,
 } from "../matchfound/constants";
-import { buttons, fields, profileValues } from "../matchfound/strings";
 import { UserProfile } from "./types";
-import { calculateAge } from "../matchfound/utils";
+import { calculateAge } from "./utils";
 import { getSharedStrings } from "./i18n";
 
 // Helper function to format BigFive result
@@ -36,35 +35,38 @@ async function buildProfileQuizResultsSection(
   botName: string,
   userId: number | undefined
 ): Promise<string> {
+  const strings = await getSharedStrings(userId, botName);
   const sections: string[] = [];
   
   // Required quizzes - always show with instructions if missing
   if (profile.archetype_result) {
-    sections.push(`${fields.archetype}: ${profile.archetype_result}`);
+    sections.push(`${strings.archetype}: ${profile.archetype_result}`);
   } else {
-    sections.push(`${fields.archetype}: ${profileValues.archetypeNotSet(INMANKIST_BOT_USERNAME)}`);
+    sections.push(`${strings.archetype}: ${strings.archetypeNotSet(INMANKIST_BOT_USERNAME)}`);
   }
   
   if (profile.mbti_result) {
-    sections.push(`${fields.mbti}: ${profile.mbti_result.toUpperCase()}`);
+    sections.push(`${strings.mbti}: ${profile.mbti_result.toUpperCase()}`);
   } else {
-    sections.push(`${fields.mbti}: ${profileValues.mbtiNotSet(INMANKIST_BOT_USERNAME)}`);
+    sections.push(`${strings.mbti}: ${strings.mbtiNotSet(INMANKIST_BOT_USERNAME)}`);
   }
   
   // Optional quizzes - only show if present
   if (profile.leftright_result) {
-    sections.push(`${fields.leftright}: ${profile.leftright_result}`);
+    sections.push(`${strings.leftright}: ${profile.leftright_result}`);
   }
   if (profile.politicalcompass_result) {
-    sections.push(`${fields.politicalcompass}: ${profile.politicalcompass_result}`);
+    sections.push(`${strings.politicalcompass}: ${profile.politicalcompass_result}`);
   }
   if (profile.enneagram_result) {
-    sections.push(`${fields.enneagram}: ${profile.enneagram_result.replace("type", "تیپ ")}`);
+    // Keep Persian formatting for enneagram type (type -> تیپ)
+    const enneagramText = profile.enneagram_result.replace("type", "تیپ ");
+    sections.push(`${strings.enneagram}: ${enneagramText}`);
   }
   if (profile.bigfive_result) {
     const formatted = await formatBigFiveResult(profile.bigfive_result, botName, userId);
     if (formatted) {
-      sections.push(`${fields.bigfive}: ${formatted}`);
+      sections.push(`${strings.bigfive}: ${formatted}`);
     }
   }
   
@@ -78,27 +80,29 @@ export async function displayProfile(
   botName: string,
   userId?: number
 ) {
+  const strings = await getSharedStrings(userId, botName);
+  
   const ageText = profile.birth_date
-    ? `${calculateAge(profile.birth_date)} ${profileValues.year}`
-    : fields.notSet;
-  const genderText = profile.gender === "male" ? profileValues.male : profile.gender === "female" ? profileValues.female : fields.notSet;
+    ? `${calculateAge(profile.birth_date)} ${strings.year}`
+    : strings.notSet;
+  const genderText = profile.gender === "male" ? strings.male : profile.gender === "female" ? strings.female : strings.notSet;
   const lookingForText =
     profile.looking_for_gender === "male"
-      ? profileValues.male
+      ? strings.male
       : profile.looking_for_gender === "female"
-      ? profileValues.female
+      ? strings.female
       : profile.looking_for_gender === "both"
-      ? profileValues.both
-      : fields.notSet;
+      ? strings.both
+      : strings.notSet;
 
-  let message = `${fields.profileTitle}\n\n`;
+  let message = `${strings.profileTitle}\n\n`;
   // Show mood emoji after display name if available
   const moodEmoji = profile.mood ? " " + (MOODS[profile.mood] || profile.mood) : "";
-  message += `${fields.name}: ${profile.display_name || fields.notSet}${moodEmoji}\n`;
-  message += `${fields.age}: ${ageText}\n`;
-  message += `${fields.genderLabel}: ${genderText}\n`;
-  message += `${fields.lookingFor}: ${lookingForText}\n`;
-  message += `${fields.biography}: ${profile.biography || fields.notSet}\n`;
+  message += `${strings.name}: ${profile.display_name || strings.notSet}${moodEmoji}\n`;
+  message += `${strings.age}: ${ageText}\n`;
+  message += `${strings.genderLabel}: ${genderText}\n`;
+  message += `${strings.lookingFor}: ${lookingForText}\n`;
+  message += `${strings.biography}: ${profile.biography || strings.notSet}\n`;
   
   // Show interests and location before quiz results
   
@@ -106,15 +110,15 @@ export async function displayProfile(
     const interestNames = profile.interests
       .map((interest) => INTEREST_NAMES[interest as keyof typeof INTEREST_NAMES] || interest)
       .join(", ");
-    message += `${fields.interests}: ${interestNames}\n`;
+    message += `${strings.interests}: ${interestNames}\n`;
   } else {
-    message += `${fields.interests}: ${fields.notSet}\n`;
+    message += `${strings.interests}: ${strings.notSet}\n`;
   }
   
   if (profile.location) {
-    message += `${fields.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
+    message += `${strings.location}: ${PROVINCE_NAMES[profile.location as keyof typeof PROVINCE_NAMES] || profile.location}\n`;
   } else {
-    message += `${fields.location}: ${fields.notSet}\n`;
+    message += `${strings.location}: ${strings.notSet}\n`;
   }
   
   // Show quiz results with instructions if missing
@@ -123,26 +127,26 @@ export async function displayProfile(
     message += `\n${quizResultsSection}\n`;
   }
   
-  message += `\n${fields.completion}: ${profile.completion_score}/${MAX_COMPLETION_SCORE}`;
+  message += `\n${strings.completion}: ${profile.completion_score}/${MAX_COMPLETION_SCORE}`;
 
   const keyboard = new InlineKeyboard()
-    .text(buttons.editName, "profile:edit:name")
-    .text(buttons.editBio, "profile:edit:bio")
+    .text(strings.editName, "profile:edit:name")
+    .text(strings.editBio, "profile:edit:bio")
     .row()
-    .text(buttons.editBirthdate, "profile:edit:birthdate")
-    .text(buttons.editGender, "profile:edit:gender")
+    .text(strings.editBirthdate, "profile:edit:birthdate")
+    .text(strings.editGender, "profile:edit:gender")
     .row()
-    .text(buttons.editLookingFor, "profile:edit:looking_for")
-    .text(buttons.editImages, "profile:edit:images")
+    .text(strings.editLookingFor, "profile:edit:looking_for")
+    .text(strings.editImages, "profile:edit:images")
     .row()
-    .text(buttons.editUsername, "profile:edit:username")
-    .text(buttons.editMood, "profile:edit:mood")
+    .text(strings.editUsername, "profile:edit:username")
+    .text(strings.editMood, "profile:edit:mood")
     .row()
-    .text(buttons.editInterests, "profile:edit:interests")
-    .text(buttons.editLocation, "profile:edit:location");
+    .text(strings.editInterests, "profile:edit:interests")
+    .text(strings.editLocation, "profile:edit:location");
   
   // Always show quiz button to allow users to take/retake quizzes
-  keyboard.row().url(buttons.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
+  keyboard.row().url(strings.takeQuizzes, `https://t.me/${INMANKIST_BOT_USERNAME}?start=archetype`);
 
   // Send photo if available - attach text as caption
   if (profile.profile_image) {
