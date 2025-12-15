@@ -5,7 +5,7 @@ import {
   updateUserField,
 } from "../shared/database";
 import { getInterestNames } from "../shared/i18n";
-import { UserProfile } from "../shared/types";
+import { ProfileEditingField, UserProfile } from "../shared/types";
 import { calculateAge } from "../shared/utils";
 import {
   BOT_NAME,
@@ -125,13 +125,52 @@ interface RequiredField {
   type: "text" | "select" | "date" | "interests" | "username";
 }
 
+// Field key constants
+const FIELD_KEY = {
+  USERNAME: "username",
+  DISPLAY_NAME: "display_name",
+  GENDER: "gender",
+  LOOKING_FOR_GENDER: "looking_for_gender",
+  BIRTH_DATE: "birth_date",
+  INTERESTS: "interests",
+} as const;
+
+// Editing field constants (used in session.editingField)
+const EDITING_FIELD = {
+  USERNAME: "username" as const,
+  NAME: "name" as const,
+  GENDER: "gender" as const,
+  LOOKING_FOR: "looking_for" as const,
+  BIRTHDATE: "birthdate" as const,
+  INTERESTS: "interests" as const,
+} satisfies Record<string, ProfileEditingField>;
+
+// Field type constants
+const FIELD_TYPE = {
+  USERNAME: "username",
+  TEXT: "text",
+  SELECT: "select",
+  DATE: "date",
+  INTERESTS: "interests",
+} as const;
+
+// Map field keys to editing field values
+const FIELD_KEY_TO_EDITING_FIELD: Record<keyof typeof FIELD_KEY, ProfileEditingField> = {
+  USERNAME: EDITING_FIELD.USERNAME,
+  DISPLAY_NAME: EDITING_FIELD.NAME,
+  GENDER: EDITING_FIELD.GENDER,
+  LOOKING_FOR_GENDER: EDITING_FIELD.LOOKING_FOR,
+  BIRTH_DATE: EDITING_FIELD.BIRTHDATE,
+  INTERESTS: EDITING_FIELD.INTERESTS,
+};
+
 const REQUIRED_FIELDS: RequiredField[] = [
-  { key: "username", name: fields.username, type: "username" },
-  { key: "display_name", name: fields.displayName, type: "text" },
-  { key: "gender", name: fields.gender, type: "select" },
-  { key: "looking_for_gender", name: fields.lookingForGender, type: "select" },
-  { key: "birth_date", name: fields.birthDate, type: "date" },
-  { key: "interests", name: fields.interests, type: "interests" },
+  { key: FIELD_KEY.USERNAME, name: fields.username, type: FIELD_TYPE.USERNAME },
+  { key: FIELD_KEY.DISPLAY_NAME, name: fields.displayName, type: FIELD_TYPE.TEXT },
+  { key: FIELD_KEY.GENDER, name: fields.gender, type: FIELD_TYPE.SELECT },
+  { key: FIELD_KEY.LOOKING_FOR_GENDER, name: fields.lookingForGender, type: FIELD_TYPE.SELECT },
+  { key: FIELD_KEY.BIRTH_DATE, name: fields.birthDate, type: FIELD_TYPE.DATE },
+  { key: FIELD_KEY.INTERESTS, name: fields.interests, type: FIELD_TYPE.INTERESTS },
 ];
 
 // Reusable keyboard for main actions
@@ -155,7 +194,7 @@ export function getMissingRequiredFields(
   const missing: RequiredField[] = [];
 
   for (const field of REQUIRED_FIELDS) {
-    if (field.key === "interests") {
+    if (field.key === FIELD_KEY.INTERESTS) {
       if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
         missing.push(field);
       }
@@ -191,29 +230,16 @@ export async function promptNextRequiredField(
   const session = getSession(userId);
   session.completingProfile = true;
   session.profileCompletionFieldIndex = fieldIndex;
-  session.editingField =
-    field.key === "display_name"
-      ? "name"
-      : field.key === "birth_date"
-        ? "birthdate"
-        : field.key === "gender"
-          ? "gender"
-          : field.key === "looking_for_gender"
-            ? "looking_for"
-            : field.key === "interests"
-              ? "interests"
-              : field.key === "username"
-                ? "username"
-                : undefined;
+  session.editingField = FIELD_KEY_TO_EDITING_FIELD[field.key as keyof typeof FIELD_KEY] || undefined;
 
   const remaining = missingFields.length - fieldIndex - 1;
 
   switch (field.type) {
-    case "username": {
+    case FIELD_TYPE.USERNAME: {
       const currentUsername = ctx.from?.username;
       if (currentUsername) {
         // Auto-update username and continue
-        await updateUserField(userId, "username", currentUsername);
+        await updateUserField(userId, FIELD_KEY.USERNAME, currentUsername);
         await ctx.reply(success.usernameUpdated(currentUsername));
         if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
           await ctx.reply(
@@ -241,25 +267,25 @@ export async function promptNextRequiredField(
       }
       break;
     }
-    case "text": {
+    case FIELD_TYPE.TEXT: {
       if (fieldIndex > 0) {
         await ctx.reply(profileCompletion.nextField(field.name, remaining));
       }
       await ctx.reply(profileCompletion.fieldPrompt.displayName);
       break;
     }
-    case "select": {
+    case FIELD_TYPE.SELECT: {
       if (fieldIndex > 0) {
         await ctx.reply(profileCompletion.nextField(field.name, remaining));
       }
-      if (field.key === "gender") {
+      if (field.key === FIELD_KEY.GENDER) {
         const genderKeyboard = new InlineKeyboard()
           .text(profileValues.male, "profile:set:gender:male")
           .text(profileValues.female, "profile:set:gender:female");
         await ctx.reply(profileCompletion.fieldPrompt.gender, {
           reply_markup: genderKeyboard,
         });
-      } else if (field.key === "looking_for_gender") {
+      } else if (field.key === FIELD_KEY.LOOKING_FOR_GENDER) {
         const lookingForKeyboard = new InlineKeyboard()
           .text(profileValues.male, "profile:set:looking_for:male")
           .text(profileValues.female, "profile:set:looking_for:female")
@@ -271,7 +297,7 @@ export async function promptNextRequiredField(
       }
       break;
     }
-    case "date": {
+    case FIELD_TYPE.DATE: {
       // Check if user already has birthdate (e.g., from Google OAuth)
       const profile = await getUserProfile(userId);
       if (profile?.birth_date) {
@@ -303,7 +329,7 @@ export async function promptNextRequiredField(
       }
       break;
     }
-    case "interests": {
+    case FIELD_TYPE.INTERESTS: {
       if (fieldIndex > 0) {
         await ctx.reply(profileCompletion.nextField(field.name, remaining));
       }
@@ -387,7 +413,7 @@ export async function continueProfileCompletion(
   for (let i = currentFieldIndex + 1; i < REQUIRED_FIELDS.length; i++) {
     const field = REQUIRED_FIELDS[i];
     const isMissing =
-      field.key === "interests"
+      field.key === FIELD_KEY.INTERESTS
         ? !profile.interests || profile.interests.length < MIN_INTERESTS
         : !profile[field.key];
 
