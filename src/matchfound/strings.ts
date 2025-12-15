@@ -203,12 +203,6 @@ export const display = {
   unknownAge: "نامشخص",
   noName: "بدون نام",
   noBio: "بیوگرافی ثبت نشده",
-  archetypeNotSet: "کهن الگو: ثبت نشده",
-  mbtiNotSet: "تست MBTI: ثبت نشده",
-  leftrightNotSet: "سبک شناختی: ثبت نشده",
-  politicalcompassNotSet: "قطب‌نمای سیاسی: ثبت نشده",
-  enneagramNotSet: "انیاگرام: ثبت نشده",
-  bigfiveNotSet: "پنج عامل بزرگ: ثبت نشده",
   usernameNotSet: "نام کاربری ثبت نشده",
   allLikedSeen: "تمام افرادی که شما را لایک کرده‌اند را دیده‌اید.",
 };
@@ -219,7 +213,6 @@ export const callbacks = {
   mutualLike: "🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!",
   disliked: "✅ رد شد",
   deleted: "✅ حذف شد",
-  showUsername: "✅",
 };
 
 // Notification messages

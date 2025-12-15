@@ -1,11 +1,8 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, Context } from "grammy";
 import { prisma } from "../db";
 import {
   getUserProfile,
   updateCompletionScore,
-  updateUserField,
-  addProfileImage,
-  removeProfileImage,
   deleteUserData,
   getUserIdFromTelegramId,
 } from "../shared/database";
@@ -13,31 +10,18 @@ import { displayUser } from "./display";
 import { displayProfile } from "../shared/display";
 import { getSession } from "./session";
 import { calculateAge } from "../shared/utils";
-import { UserProfile } from "../shared/types";
 import { MatchUser } from "./types";
 import log from "../log";
 import {
-  INMANKIST_BOT_USERNAME,
-  MOODS,
-  MAX_COMPLETION_SCORE,
-} from "../shared/constants";
-import {
   BOT_NAME,
   MIN_INTERESTS,
-  MAX_INTERESTS,
   MIN_COMPLETION_THRESHOLD,
-  MIN_AGE,
-  MAX_AGE,
-  MAX_DISPLAY_NAME_LENGTH,
-  ITEMS_PER_PAGE,
 } from "./constants";
 import {
   errors,
   success,
   fields,
-  profileValues,
   buttons,
-  editPrompts,
   report,
   callbacks,
   display,

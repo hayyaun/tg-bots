@@ -1,7 +1,6 @@
 import { configDotenv } from "dotenv";
 import { Bot } from "grammy";
 import { BotCommand } from "grammy/types";
-import log from "../log";
 import { BOT_NAME } from "./constants";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";
