@@ -11,18 +11,17 @@ const centerY = height / 2;
 const axisRange = 100; // -100 to +100
 
 // Quadrant background colors
-const authRightColor = "#cce3ed"; // Light blue
-const libRightColor = "#ddcced"; // Light purple
-const authLeftColor = "#edccd2"; // Light pink
-const libLeftColor = "#cceddf"; // Light green
+const authRightColor = "#B7EBED"; // Light blue
+const libRightColor = "#B7C0EE"; // Light purple
+const authLeftColor = "#E8B7ED"; // Light pink
+const libLeftColor = "#CBF3D2"; // Light green
 
 // Chart colors
 const backgroundColor = "#ffffff"; // White
 const gridLineColor = "#e0e0e0"; // Light gray
 const axisColor = "#999999"; // Dark gray
-const labelColor = "#666666"; // Medium gray
-const centerPointColor = "#999999"; // Medium-light gray
-const userPositionColor = "#f27e02"; // Red
+const labelColor = "#333333"; // Medium gray
+const userPositionColor = "#330C2F"; // Red
 
 export function generateCompassChart(
   economicScore: number,
@@ -135,12 +134,6 @@ export function generateCompassChart(
   ctx.fillText(strings.compass_libLeft, padding + 60, height - padding - 30);
   // Bottom-right (LibRight) - Libertarian at bottom
   ctx.fillText(strings.compass_libRight, width - padding - 60, height - padding - 30);
-
-  // Draw center point
-  ctx.fillStyle = centerPointColor;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
-  ctx.fill();
 
   // Calculate user's position on chart
   // X: economicScore (-100 to +100) maps to (padding to width-padding)
