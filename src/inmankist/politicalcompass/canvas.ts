@@ -21,7 +21,7 @@ const backgroundColor = "#ffffff"; // White
 const gridLineColor = "#00000022"; // Light gray
 const axisColor = "#000000"; // Dark gray
 const labelColor = "#5e5e5e"; // Medium gray
-const userPositionColor = "#33190C"; // Red
+const userPositionColor = "#6E361A"; // Red
 
 export function generateCompassChart(
   economicScore: number,
