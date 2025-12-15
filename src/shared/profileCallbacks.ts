@@ -2,7 +2,7 @@ import { Bot, Context, InlineKeyboard } from "grammy";
 import { getUserProfile, updateUserField, addProfileImage } from "./database";
 import { getInterestNames, getProvinceNames } from "./i18n";
 import { INTERESTS, IRAN_PROVINCES, MOODS, MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "./constants";
-import { editPrompts, errors, buttons, success, profileValues } from "../matchfound/strings";
+import { getProfileStrings } from "./profileStrings";
 import { calculateAge } from "./utils";
 import { BaseSessionData } from "./session";
 import log from "../log";
@@ -19,7 +19,8 @@ async function buildInterestsKeyboard(
   userId: number,
   selectedInterests: Set<string>,
   currentPage: number,
-  botName: string
+  botName: string,
+  buttons: { previous: string; next: string }
 ): Promise<InlineKeyboard> {
   const keyboard = new InlineKeyboard();
   const totalItems = INTERESTS.length;
@@ -66,7 +67,8 @@ async function buildLocationKeyboard(
   userId: number,
   selectedLocation: string | null,
   currentPage: number,
-  botName: string
+  botName: string,
+  buttons: { previous: string; next: string }
 ): Promise<InlineKeyboard> {
   const keyboard = new InlineKeyboard();
   const totalItems = IRAN_PROVINCES.length;
@@ -122,11 +124,15 @@ export function setupProfileCallbacks(
     onContinueProfileCompletion,
     notifyAdmin,
   } = config;
+  const loadProfileStrings = (userId: number | undefined) =>
+    getProfileStrings(userId, botName);
 
   // Handle profile:edit:interests callback
   bot.callbackQuery("profile:edit:interests", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
+    const { editPrompts, buttons } = await loadProfileStrings(userId);
 
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
@@ -140,7 +146,8 @@ export function setupProfileCallbacks(
       userId,
       currentInterests,
       session.interestsPage,
-      botName
+      botName,
+      buttons
     );
     const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / ITEMS_PER_PAGE);
@@ -156,6 +163,8 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    const { editPrompts, buttons } = await loadProfileStrings(userId);
+
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
     session.editingField = "location";
@@ -168,7 +177,8 @@ export function setupProfileCallbacks(
       userId,
       currentLocation,
       session.locationPage,
-      botName
+      botName,
+      buttons
     );
     const totalLocationPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
     
@@ -182,6 +192,8 @@ export function setupProfileCallbacks(
   bot.callbackQuery(/profile:toggle:interest:(.+)/, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
+    const { errors, buttons, editPrompts } = await loadProfileStrings(userId);
 
     // Answer callback query immediately to prevent timeout
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
@@ -222,7 +234,8 @@ export function setupProfileCallbacks(
       userId,
       currentInterests,
       currentPage,
-      botName
+      botName,
+      buttons
     );
     const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / ITEMS_PER_PAGE);
@@ -252,6 +265,8 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    const { editPrompts, buttons } = await loadProfileStrings(userId);
+
     // Answer callback query immediately to prevent timeout
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
 
@@ -268,7 +283,8 @@ export function setupProfileCallbacks(
       userId,
       currentInterests,
       page,
-      botName
+      botName,
+      buttons
     );
     const selectedCount = currentInterests.size;
     const totalPages = Math.ceil(INTERESTS.length / ITEMS_PER_PAGE);
@@ -296,6 +312,8 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    const { errors, editPrompts, buttons } = await loadProfileStrings(userId);
+
     const location = ctx.match[1];
     // Answer callback query immediately to prevent timeout
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
@@ -317,7 +335,8 @@ export function setupProfileCallbacks(
       userId,
       location,
       currentPage,
-      botName
+      botName,
+      buttons
     );
     const totalPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
     const provinceNamesMap = await getProvinceNames(userId, botName);
@@ -342,6 +361,8 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    const { editPrompts, buttons } = await loadProfileStrings(userId);
+
     // Answer callback query immediately to prevent timeout
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
 
@@ -358,7 +379,8 @@ export function setupProfileCallbacks(
       userId,
       currentLocation,
       page,
-      botName
+      botName,
+      buttons
     );
     const totalPages = Math.ceil(IRAN_PROVINCES.length / ITEMS_PER_PAGE);
     
@@ -385,6 +407,8 @@ export function setupProfileCallbacks(
     bot.callbackQuery("profile:completion:continue", async (ctx) => {
       const userId = ctx.from?.id;
       if (!userId) return;
+
+      const { errors } = await loadProfileStrings(userId);
       
       await ctx.answerCallbackQuery();
       const session = getSession(userId);
@@ -406,6 +430,9 @@ export function setupProfileCallbacks(
   bot.callbackQuery(/profile:edit:(.+)/, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
+    const { editPrompts, errors, buttons, success, profileValues } =
+      await loadProfileStrings(userId);
 
     const action = ctx.match[1];
     const session = getSession(userId);
@@ -516,6 +543,8 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    const { errors, success } = await loadProfileStrings(userId);
+
     const mood = ctx.match[1];
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
@@ -536,6 +565,8 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
+    const { success, profileValues } = await loadProfileStrings(userId);
+
     const gender = ctx.match[1];
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
@@ -552,6 +583,8 @@ export function setupProfileCallbacks(
   bot.callbackQuery(/profile:set:looking_for:(.+)/, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
+    const { success, profileValues } = await loadProfileStrings(userId);
 
     const lookingFor = ctx.match[1];
     await ctx.answerCallbackQuery();
@@ -570,12 +603,15 @@ export function setupProfileCallbacks(
   // Handle image management
   bot.callbackQuery("profile:image:add", async (ctx) => {
     await ctx.answerCallbackQuery();
+    const { editPrompts } = await loadProfileStrings(ctx.from?.id);
     await ctx.reply(editPrompts.photo);
   });
 
   bot.callbackQuery("profile:image:clear", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
+    const { success } = await loadProfileStrings(userId);
 
     await ctx.answerCallbackQuery();
     await updateUserField(userId, "profile_image", null);
@@ -589,6 +625,7 @@ export function setupProfileCallbacks(
     if (!userId) return;
 
     const session = getSession(userId);
+    const { errors, success, profileValues } = await loadProfileStrings(userId);
     if (session.editingField) {
       const text = ctx.message.text;
       
@@ -691,6 +728,8 @@ export function setupProfileCallbacks(
   bot.on("message:photo", async (ctx, next) => {
     const userId = ctx.from?.id;
     if (!userId) return;
+
+    const { success, errors } = await loadProfileStrings(userId);
 
     const session = getSession(userId);
     if (session.editingField === "image") {

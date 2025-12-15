@@ -6,10 +6,14 @@ import {
   MIN_INTERESTS,
   MAX_INTERESTS,
   MIN_COMPLETION_THRESHOLD,
-  MIN_AGE,
-  MAX_AGE,
-  MAX_DISPLAY_NAME_LENGTH,
 } from "./constants";
+import {
+  errors as sharedErrors,
+  success as sharedSuccess,
+  profileValues as sharedProfileValues,
+  buttons as sharedButtons,
+  editPrompts as sharedEditPrompts,
+} from "../shared/profileStrings";
 
 // Helper function to format welcome message with dynamic values
 export function getWelcomeMessage(completionScore: number): string {
@@ -30,6 +34,7 @@ export function getWelcomeMessage(completionScore: number): string {
 
 // Error messages
 export const errors = {
+  ...sharedErrors,
   startFirst: "لطفا ابتدا با دستور /start شروع کنید.",
   missingRequiredFields: (fields: string[]) =>
     `برای استفاده از این دستور، باید فیلدهای اجباری زیر را تکمیل کنید:\n\n` +
@@ -41,47 +46,19 @@ export const errors = {
     `⏰ شما می‌توانید هر ساعت یک بار از این دستور استفاده کنید.\nزمان باقی‌مانده: ${minutes} دقیقه`,
   noMatches: "شما تمام افراد موجود را دیده‌اید. لطفا بعدا دوباره تلاش کنید!",
   noLikes: "هنوز کسی شما را لایک نکرده است.",
-  editCancelled: "❌ ویرایش لغو شد.",
-  nameTooLong: `❌ نام نمایشی نمی‌تواند بیشتر از ${MAX_DISPLAY_NAME_LENGTH} کاراکتر باشد.`,
-  bioTooLong: "❌ بیوگرافی نمی‌تواند بیشتر از 500 کاراکتر باشد.",
-  invalidDate: "❌ فرمت تاریخ نامعتبر است. لطفا به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15)",
-  invalidDateValue: "❌ تاریخ نامعتبر است.",
-  futureDate: "❌ تاریخ تولد نمی‌تواند در آینده باشد.",
-  invalidAge: `❌ سن باید بین ${MIN_AGE} تا ${MAX_AGE} سال باشد.`,
-  updateFailed: "❌ خطا در به‌روزرسانی پروفایل.",
-  invalidMood: "❌ مود نامعتبر است.",
-  invalidProvince: "❌ استان نامعتبر است.",
-  invalidOperation: "عملیات نامعتبر است.",
   reportFailed: "❌ خطا در ثبت گزارش. لطفا دوباره تلاش کنید.",
-  addImageFailed: "❌ خطا در افزودن تصویر.",
   cannotLikeSelf: "شما نمی‌توانید خودتان را لایک کنید!",
   cannotReportSelf: "شما نمی‌توانید خودتان را گزارش دهید!",
   userNotFound: "کاربر یافت نشد",
-  noUsername: "❌ شما در حال حاضر نام کاربری تلگرام ندارید.\n\nلطفا در تنظیمات تلگرام یک نام کاربری تنظیم کنید و سپس دوباره این دکمه را بزنید.",
-  maxInterestsReached: `❌ شما نمی‌توانید بیشتر از ${MAX_INTERESTS} علاقه انتخاب کنید. لطفا ابتدا یکی از علایق فعلی را حذف کنید.`,
-  minInterestsRequired: `❌ شما باید حداقل ${MIN_INTERESTS} علاقه داشته باشید. نمی‌توانید کمتر از ${MIN_INTERESTS} علاقه انتخاب کنید.`,
-  minInterestsNotMet: (currentCount: number) =>
-    `❌ برای استفاده از این دستور، باید حداقل ${MIN_INTERESTS} علاقه انتخاب کنید.\n\n` +
-    `وضعیت فعلی: ${currentCount} علاقه\n\n` +
-    `از دستور /profile برای ویرایش علایق استفاده کنید.`,
   deleteFailed: "❌ خطا در حذف اطلاعات. لطفا دوباره تلاش کنید.",
 };
 
 // Success messages
 export const success = {
+  ...sharedSuccess,
   likeRegistered: "✅ لایک ثبت شد!",
   mutualLike: "🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!",
-  nameUpdated: (name: string) => `✅ نام نمایشی به "${name}" تغییر یافت.`,
-  bioUpdated: "✅ بیوگرافی به‌روزرسانی شد.",
-  birthdateUpdated: (age: number) => `✅ تاریخ تولد ثبت شد. سن شما: ${age} سال`,
-  genderUpdated: (gender: string) => `✅ جنسیت به "${gender}" تغییر یافت.`,
-  lookingForUpdated: (text: string) => `✅ تنظیمات به "${text}" تغییر یافت.`,
-  moodUpdated: (mood: string) => `✅ مود به ${mood} تغییر یافت.`,
-  imageCleared: "✅ تصویر حذف شد.",
-  imageAdded: () => `✅ تصویر به‌روزرسانی شد.`,
   reportSubmitted: "✅ گزارش شما ثبت شد و به ادمین ارسال شد.",
-  usernameUpdated: (username: string) =>
-    `✅ نام کاربری به‌روزرسانی شد: @${username}\n\nنام کاربری شما از پروفایل تلگرام شما خوانده می‌شود و به صورت خودکار به‌روزرسانی می‌شود.`,
   matchesFound: (count: number) => `✅ ${count} نفر پیدا شد!`,
   dataDeleted: "✅ تمام اطلاعات شما با موفقیت حذف شد.",
 };
@@ -113,61 +90,13 @@ export const fields = {
 };
 
 // Profile field values
-export const profileValues = {
-  male: "مرد",
-  female: "زن",
-  both: "هر دو",
-  year: "سال",
-};
+export const profileValues = sharedProfileValues;
 
 // Button labels
-export const buttons = {
-  editProfile: "📝 ویرایش پروفایل",
-  completionStatus: "📊 وضعیت تکمیل پروفایل",
-  findPeople: "🔍 پیدا کردن افراد",
-  takeQuizzes: "🧪 انجام تست‌ها",
-  editName: "✏️ ویرایش نام",
-  editBio: "📝 ویرایش بیوگرافی",
-  editBirthdate: "🎂 تاریخ تولد",
-  editGender: "⚧️ جنسیت",
-  editLookingFor: "🤝 پیشنهاد",
-  editImage: "📷 تصویر",
-  editUsername: "🔗 نام کاربری",
-  editMood: "😊 مود",
-  editInterests: "🎯 علایق",
-  editLocation: "📍 استان",
-  like: "❤️ لایک",
-  dislike: "❌ رد",
-  report: "🚫 گزارش",
-  chat: "💬 چت",
-  delete: "🗑️ حذف",
-  previous: "◀️ قبلی",
-  next: "بعدی ▶️",
-  addImage: "➕ افزودن/تغییر تصویر",
-  clearImage: "🗑️ حذف تصویر",
-};
+export const buttons = sharedButtons;
 
 // Profile editing prompts
-export const editPrompts = {
-  name: `لطفا نام نمایشی خود را ارسال کنید (حداکثر ${MAX_DISPLAY_NAME_LENGTH} کاراکتر):\n\nبرای لغو: /cancel`,
-  bio: "لطفا بیوگرافی خود را ارسال کنید (حداکثر 500 کاراکتر):\n\n📝 تعداد کاراکتر: 0/500\n\nبرای لغو: /cancel",
-  birthdate: "لطفا تاریخ تولد خود را به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15):\n\nبرای لغو: /cancel",
-  gender: "جنسیت خود را انتخاب کنید:",
-  lookingFor: "می‌خواهید چه کسی به شما پیشنهاد شود؟",
-  image: {
-    hasImage: () =>
-      `شما یک تصویر دارید.\n\nبرای تغییر تصویر، یک عکس جدید ارسال کنید (تصویر قبلی جایگزین می‌شود).\nبرای حذف تصویر، از دکمه زیر استفاده کنید.`,
-    noImage: "شما هنوز تصویری ندارید.\n\nبرای افزودن تصویر، یک عکس ارسال کنید:\n\n⚠️ فقط می‌توانید 1 تصویر داشته باشید.\n\nبرای لغو: /cancel",
-  },
-  mood: "مود خود را انتخاب کنید:",
-  interests: (selectedCount: number, currentPage: number, totalPages: number) =>
-    `🎯 علایق خود را انتخاب کنید (${selectedCount}/${MAX_INTERESTS} مورد انتخاب شده)\nصفحه ${currentPage}/${totalPages}\n\nبرای انتخاب/لغو انتخاب هر مورد، روی آن کلیک کنید. تغییرات به صورت خودکار ذخیره می‌شوند.\n\n⚠️ باید حداقل ${MIN_INTERESTS} و حداکثر ${MAX_INTERESTS} علاقه انتخاب کنید.`,
-  location: (currentPage: number, totalPages: number) =>
-    `📍 استان خود را انتخاب کنید\nصفحه ${currentPage}/${totalPages}\n\nبرای انتخاب استان، روی آن کلیک کنید.`,
-  locationSelected: (provinceName: string, currentPage: number, totalPages: number) =>
-    `📍 استان خود را انتخاب کنید\n✅ انتخاب شده: ${provinceName}\nصفحه ${currentPage}/${totalPages}\n\nبرای تغییر استان، روی استان دیگری کلیک کنید.`,
-  photo: "لطفا یک عکس ارسال کنید:\n\nبرای لغو: /cancel",
-};
+export const editPrompts = sharedEditPrompts;
 
 // Report messages
 export const report = {
