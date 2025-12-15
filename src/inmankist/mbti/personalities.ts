@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import path from "path";
 import { Language } from "../../shared/types";
 import { MBTIType } from "./types";
 
@@ -5,7 +7,17 @@ interface IPersonality {
   name: { [key in Language]: string };
   nickname: { [key in Language]: string };
   description: { [key in Language]: string };
+  image: Buffer<ArrayBufferLike>;
 }
+
+// Preloading images help decrease fs load
+const getImage = (name: string) => {
+  const filename = `${name}.jpg`;
+  const imageBuffer = readFileSync(
+    path.join(process.cwd(), `assets/mbti/${filename}`)
+  );
+  return imageBuffer;
+};
 
 const personalities: { [k: string]: IPersonality } = {
   [MBTIType.INTJ]: {
@@ -31,6 +43,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المهندسون ذوو التفكير الاستراتيجي والمعرفة الواسعة والثقة العالية بالنفس قادرون على حل أي مشكلة معقدة. هم مستقلون وتحليليون ولديهم رؤية طويلة المدى.",
     },
+    image: getImage(MBTIType.INTJ),
   },
   [MBTIType.INTP]: {
     name: {
@@ -55,6 +68,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المنطقيون فلسفيون ومبتكرون، دائما في بحث عن المعرفة. هم تحليليون وفضوليون ومهتمون باكتشاف الأنماط والمبادئ الخفية وراء الظواهر.",
     },
+    image: getImage(MBTIType.INTP),
   },
   [MBTIType.ENTJ]: {
     name: {
@@ -79,6 +93,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "القادة حازمون ونشيطون ويزدهرون بالتحديات. هم استراتيجيون وحاسمون ولديهم القدرة على تنظيم وقيادة المجموعات.",
     },
+    image: getImage(MBTIType.ENTJ),
   },
   [MBTIType.ENTP]: {
     name: {
@@ -103,6 +118,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المناظرون فضوليون وشغوفون ويستمتعون بالتحديات الفكرية. هم مبدعون ومرنون ولديهم القدرة على رؤية زوايا مختلفة لأي موضوع.",
     },
+    image: getImage(MBTIType.ENTP),
   },
   [MBTIType.INFJ]: {
     name: {
@@ -127,6 +143,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المدافعون مثاليون وأخلاقيون ويسعون لتحسين العالم. هم عميقون ومتعاطفون ولديهم بصيرة قوية تجاه الناس ودوافعهم.",
     },
+    image: getImage(MBTIType.INFJ),
   },
   [MBTIType.INFP]: {
     name: {
@@ -151,6 +168,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "الوسطاء مثاليون ومخلصون لقيمهم. هم مبدعون ومتعاطفون ويبحثون دائما عن طرق لمساعدة الآخرين واكتساب فهم أعمق للحياة.",
     },
+    image: getImage(MBTIType.INFP),
   },
   [MBTIType.ENFJ]: {
     name: {
@@ -175,6 +193,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "الأبطال قادة كاريزميون وملهمون. هم متعاطفون ومقنعون ولديهم القدرة على تحفيز الآخرين لتحقيق الأهداف المشتركة.",
     },
+    image: getImage(MBTIType.ENFJ),
   },
   [MBTIType.ENFP]: {
     name: {
@@ -199,6 +218,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "الناشطون شغوفون ومبدعون واجتماعيون. هم متحمسون وعفويون ولديهم القدرة على تكوين روابط عميقة وذات مغزى مع الآخرين.",
     },
+    image: getImage(MBTIType.ENFP),
   },
   [MBTIType.ISTJ]: {
     name: {
@@ -223,6 +243,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "اللوجستيون منطقيون وعمليون وموثوقون. هم منظمون ودقيقون وملتزمون بأداء واجباتهم بأعلى المعايير.",
     },
+    image: getImage(MBTIType.ISTJ),
   },
   [MBTIType.ISFJ]: {
     name: {
@@ -247,6 +268,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المدافعون مخلصون وصبورون ومستعدون دائما لحماية أحبائهم. هم مسؤولون ودقيقون ولديهم إحساس قوي بالواجب.",
     },
+    image: getImage(MBTIType.ISFJ),
   },
   [MBTIType.ESTJ]: {
     name: {
@@ -271,6 +293,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "التنفيذيون منظمون وعمليون ويتحملون مسؤولية تطبيق النظام والقانون. هم فعالون وصادقون وملتزمون بالقواعد والتقاليد الاجتماعية.",
     },
+    image: getImage(MBTIType.ESTJ),
   },
   [MBTIType.ESFJ]: {
     name: {
@@ -295,6 +318,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "القناصل اجتماعيون ومحبوبون ودائما حريصون على مساعدة الآخرين. هم متعاطفون وملتزمون بالواجب ولديهم القدرة على خلق الانسجام والتعاون في المجموعات.",
     },
+    image: getImage(MBTIType.ESFJ),
   },
   [MBTIType.ISTP]: {
     name: {
@@ -319,6 +343,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المحترفون عمليون وملاحظون ويستمتعون بالتجربة والخبرة. هم منطقيون وهادئون ولديهم القدرة على حل المشاكل العملية بسرعة.",
     },
+    image: getImage(MBTIType.ISTP),
   },
   [MBTIType.ISFP]: {
     name: {
@@ -343,6 +368,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المغامرون مبدعون وفنيون ويستمتعون بالتجارب الجديدة. هم مرنون وحساسون ولديهم حس جمالي قوي.",
     },
+    image: getImage(MBTIType.ISFP),
   },
   [MBTIType.ESTP]: {
     name: {
@@ -367,6 +393,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "رواد الأعمال نشيطون وواقعيون ويستمتعون بالعيش في اللحظة. هم مجازفون وعمليون ولديهم القدرة على التكيف بسرعة مع المواقف الجديدة.",
     },
+    image: getImage(MBTIType.ESTP),
   },
   [MBTIType.ESFP]: {
     name: {
@@ -391,6 +418,7 @@ const personalities: { [k: string]: IPersonality } = {
       [Language.Arabic]:
         "المسلون عفويون وشغوفون ويحبون تسلية الآخرين. هم اجتماعيون ومبتهجون ولديهم القدرة على الاستمتاع باللحظة الحالية.",
     },
+    image: getImage(MBTIType.ESFP),
   },
 };
 

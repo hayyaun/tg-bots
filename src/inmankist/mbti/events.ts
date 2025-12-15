@@ -1,4 +1,4 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
 import { quizModes } from "../config";
@@ -152,7 +152,8 @@ export async function replyResult(ctx: Context, language: Language, result: MBTI
     `detail:${QuizType.MBTI}:${mbtiType}`
   );
 
-  await ctx.reply(resultText, {
+  await ctx.replyWithPhoto(new InputFile(personality.image, `${mbtiType}.jpg`), {
+    caption: resultText,
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
