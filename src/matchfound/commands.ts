@@ -713,6 +713,21 @@ export function setupCommands(
           ORDER BY 1;
         `;
 
+      const dailyNewRows =
+        await prisma.$queryRaw<{ day: Date; new_users: bigint }[]>`
+          SELECT
+            date_trunc('day', created_at) AS day,
+            COUNT(*)::bigint AS new_users
+          FROM users
+          WHERE created_at >= ${dauStart}
+          GROUP BY 1
+          ORDER BY 1;
+        `;
+
+      const totalBeforeWindow = await prisma.user.count({
+        where: { created_at: { lt: dauStart } },
+      });
+
       const dailyActiveMap = new Map<string, number>();
       for (const row of dailyActiveRows) {
         const day =
@@ -721,23 +736,44 @@ export function setupCommands(
         dailyActiveMap.set(dayKey, Number(row.active_users ?? 0));
       }
 
+      const dailyNewMap = new Map<string, number>();
+      for (const row of dailyNewRows) {
+        const day =
+          row.day instanceof Date ? row.day : new Date(row.day as unknown as string);
+        const dayKey = day.toISOString().slice(0, 10);
+        dailyNewMap.set(dayKey, Number(row.new_users ?? 0));
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       const dailyActiveSeries = [];
+      const dailyTotalSeries = [];
+      let runningTotal = totalBeforeWindow;
       for (let i = ADMIN_DAU_DAYS - 1; i >= 0; i--) {
         const day = new Date(today);
         day.setDate(today.getDate() - i);
         const dayKey = day.toISOString().slice(0, 10);
+        runningTotal += dailyNewMap.get(dayKey) ?? 0;
         dailyActiveSeries.push({
           date: day,
           active: dailyActiveMap.get(dayKey) ?? 0,
         });
+        dailyTotalSeries.push({
+          date: day,
+          active: runningTotal,
+        });
       }
 
-      const chartBuffer = generateDailyActiveUsersChart(dailyActiveSeries, {
-        title: `Daily Active Users (last ${ADMIN_DAU_DAYS} days)`,
-      });
+      const chartBuffer = generateDailyActiveUsersChart(
+        dailyActiveSeries,
+        dailyTotalSeries,
+        {
+          title: `Users & DAU (last ${ADMIN_DAU_DAYS} days)`,
+          activeLabel: "Daily Active Users",
+          totalLabel: "Total Users",
+        }
+      );
 
       const keyboard = new InlineKeyboard()
         .text("📋 Reports", "admin:reports")

@@ -7,10 +7,13 @@ type DailyActivePoint = {
 
 type ChartOptions = {
   title?: string;
+  activeLabel?: string;
+  totalLabel?: string;
 };
 
 export function generateDailyActiveUsersChart(
   points: DailyActivePoint[],
+  totalPoints?: DailyActivePoint[],
   options: ChartOptions = {}
 ): Buffer {
   const width = 900;
@@ -39,8 +42,14 @@ export function generateDailyActiveUsersChart(
 
   // Guard against empty data
   const series = points.length > 0 ? points : [{ date: new Date(), active: 0 }];
+  const totals =
+    totalPoints && totalPoints.length > 0 ? totalPoints : undefined;
 
-  const maxValue = Math.max(1, ...series.map((p) => p.active));
+  const maxValue = Math.max(
+    1,
+    ...series.map((p) => p.active),
+    ...(totals ? totals.map((p) => p.active) : [])
+  );
   const gridLines = 5;
   const stepValue = Math.max(1, Math.ceil(maxValue / gridLines));
   const yMax = stepValue * gridLines;
@@ -101,7 +110,7 @@ export function generateDailyActiveUsersChart(
   ctx.fillStyle = gradient;
   ctx.fill();
 
-  // Line
+  // Active line
   ctx.beginPath();
   ctx.strokeStyle = "#2196f3";
   ctx.lineWidth = 2.5;
@@ -116,7 +125,7 @@ export function generateDailyActiveUsersChart(
   });
   ctx.stroke();
 
-  // Points
+  // Active points
   ctx.fillStyle = "#1565c0";
   series.forEach((point, idx) => {
     const x = toX(idx);
@@ -125,6 +134,33 @@ export function generateDailyActiveUsersChart(
     ctx.arc(x, y, 4, 0, Math.PI * 2);
     ctx.fill();
   });
+
+  // Total users line (no area fill)
+  if (totals) {
+    ctx.beginPath();
+    ctx.strokeStyle = "#e91e63";
+    ctx.lineWidth = 2;
+    totals.forEach((point, idx) => {
+      const x = toX(idx);
+      const y = toY(point.active);
+      if (idx === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+
+    // Total points
+    ctx.fillStyle = "#d81b60";
+    totals.forEach((point, idx) => {
+      const x = toX(idx);
+      const y = toY(point.active);
+      ctx.beginPath();
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
 
   // X labels
   const labelEvery = Math.max(1, Math.floor(series.length / 7));
@@ -143,6 +179,30 @@ export function generateDailyActiveUsersChart(
     const label = dateFormatter.format(point.date);
     ctx.fillText(label, x, height - padding.bottom + 16);
   });
+
+  // Legend
+  const legendX = width - padding.right - 150;
+  const legendY = padding.top - 30;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.font = "13px Arial";
+
+  ctx.fillStyle = "#2196f3";
+  ctx.beginPath();
+  ctx.arc(legendX, legendY, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2d3436";
+  ctx.fillText(options.activeLabel ?? "Daily Active Users", legendX + 12, legendY);
+
+  if (totals) {
+    const row2Y = legendY + 18;
+    ctx.fillStyle = "#e91e63";
+    ctx.beginPath();
+    ctx.arc(legendX, row2Y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#2d3436";
+    ctx.fillText(options.totalLabel ?? "Total Users", legendX + 12, row2Y);
+  }
 
   return canvas.toBuffer("image/png");
 }
