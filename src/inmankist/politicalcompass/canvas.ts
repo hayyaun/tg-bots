@@ -11,10 +11,10 @@ const centerY = height / 2;
 const axisRange = 100; // -100 to +100
 
 // Quadrant background colors
-const authRightColor = "#aedef2"; // Light blue
-const libRightColor = "#caaef2"; // Light purple
-const authLeftColor = "#f2aee6"; // Light pink
-const libLeftColor = "#aef2cf"; // Light green
+const authRightColor = "#cce3ed"; // Light blue
+const libRightColor = "#ddcced"; // Light purple
+const authLeftColor = "#edccd2"; // Light pink
+const libLeftColor = "#cceddf"; // Light green
 
 // Chart colors
 const backgroundColor = "#ffffff"; // White
@@ -22,7 +22,7 @@ const gridLineColor = "#e0e0e0"; // Light gray
 const axisColor = "#333333"; // Dark gray
 const labelColor = "#666666"; // Medium gray
 const centerPointColor = "#999999"; // Medium-light gray
-const userPositionColor = "#ff4444"; // Red
+const userPositionColor = "#f27e02"; // Red
 
 export function generateCompassChart(
   economicScore: number,
@@ -150,7 +150,7 @@ export function generateCompassChart(
   const userY = centerY + (socialScore / axisRange) * (chartSize / 2);
 
   // Draw user's position as a dot
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = userPositionColor;
   ctx.beginPath();
   ctx.arc(userX, userY, 8, 0, Math.PI * 2);
   ctx.fill();
