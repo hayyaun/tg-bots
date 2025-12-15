@@ -1,3 +1,10 @@
+/**
+ * IMPORTANT: This is a shared module used by all bots.
+ * NEVER import anything from bot-specific modules (e.g., matchfound, inmankist, etc.) into this file.
+ * Shared modules should only depend on other shared modules or external dependencies.
+ * This ensures proper separation of concerns and prevents circular dependencies.
+ */
+
 // Inmankist bot username (for quiz completion links)
 export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inmankist_bot";
 
@@ -100,3 +107,21 @@ export const IRAN_PROVINCES = [
   "ilam",
   "sistan_baluchestan",
 ] as const;
+
+// Field key constants (used directly as database field names and editingField values)
+// These match the UserProfile interface field names
+export const FIELD_KEY = {
+  USERNAME: "username",
+  DISPLAY_NAME: "display_name",
+  BIOGRAPHY: "biography",
+  BIRTH_DATE: "birth_date",
+  GENDER: "gender",
+  LOOKING_FOR_GENDER: "looking_for_gender",
+  PROFILE_IMAGE: "profile_image",
+  MOOD: "mood",
+  INTERESTS: "interests",
+  LOCATION: "location",
+} as const;
+
+// Type for editing field (now just uses field keys directly)
+export type ProfileFieldKey = typeof FIELD_KEY[keyof typeof FIELD_KEY];

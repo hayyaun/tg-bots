@@ -14,17 +14,9 @@ export enum QuizType {
   BigFive = "bigfive",
 }
 
-export type ProfileEditingField = 
-  | "name" 
-  | "bio" 
-  | "birthdate" 
-  | "gender" 
-  | "looking_for" 
-  | "image" 
-  | "username" 
-  | "mood" 
-  | "interests" 
-  | "location";
+// Re-export ProfileFieldKey from shared constants for backward compatibility
+// ProfileEditingField is now just the field keys from UserProfile
+export type { ProfileFieldKey as ProfileEditingField } from "./constants";
 
 export interface UserProfile {
   telegram_id: number | null;

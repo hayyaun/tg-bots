@@ -1,11 +1,11 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { INMANKIST_BOT_USERNAME, INTERESTS } from "../shared/constants";
+import { FIELD_KEY, type ProfileFieldKey, INMANKIST_BOT_USERNAME, INTERESTS } from "../shared/constants";
 import {
   getUserProfile,
   updateUserField,
 } from "../shared/database";
 import { getInterestNames } from "../shared/i18n";
-import { ProfileEditingField, UserProfile } from "../shared/types";
+import { UserProfile } from "../shared/types";
 import { calculateAge } from "../shared/utils";
 import {
   BOT_NAME,
@@ -134,26 +134,6 @@ const FIELD_TYPE = {
   INTERESTS: "interests",
 } as const;
 
-// Field key constants (used directly as both database field names and editingField values)
-const FIELD_KEY = {
-  USERNAME: "username",
-  DISPLAY_NAME: "display_name",
-  GENDER: "gender",
-  LOOKING_FOR_GENDER: "looking_for_gender",
-  BIRTH_DATE: "birth_date",
-  INTERESTS: "interests",
-} as const;
-
-// Map field keys to ProfileEditingField-compatible values
-// Note: Some fields need mapping because ProfileEditingField uses different names
-const FIELD_KEY_TO_EDITING_FIELD: Record<keyof typeof FIELD_KEY, ProfileEditingField> = {
-  USERNAME: "username",
-  DISPLAY_NAME: "name", // ProfileEditingField uses "name" not "display_name"
-  GENDER: "gender",
-  LOOKING_FOR_GENDER: "looking_for", // ProfileEditingField uses "looking_for" not "looking_for_gender"
-  BIRTH_DATE: "birthdate", // ProfileEditingField uses "birthdate" not "birth_date"
-  INTERESTS: "interests",
-};
 
 const REQUIRED_FIELDS: RequiredField[] = [
   { key: FIELD_KEY.USERNAME, name: fields.username, type: FIELD_TYPE.USERNAME },
@@ -221,9 +201,8 @@ export async function promptNextRequiredField(
   const session = getSession(userId);
   session.completingProfile = true;
   session.profileCompletionFieldIndex = fieldIndex;
-  // Map field key to editingField (ProfileEditingField uses different names for some fields)
-  const fieldKey = field.key as keyof typeof FIELD_KEY_TO_EDITING_FIELD;
-  session.editingField = FIELD_KEY_TO_EDITING_FIELD[fieldKey] || undefined;
+  // Use field key directly as editingField
+  session.editingField = field.key as ProfileFieldKey;
 
   const remaining = missingFields.length - fieldIndex - 1;
 

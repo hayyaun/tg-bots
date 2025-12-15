@@ -1,4 +1,5 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
+import { FIELD_KEY } from "./constants";
 import { getUserProfile, updateUserField, addProfileImage } from "./database";
 import { getInterestNames, getProvinceNames } from "./i18n";
 import { INTERESTS, IRAN_PROVINCES, MOODS, MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "./constants";
@@ -136,7 +137,7 @@ export function setupProfileCallbacks(
 
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
-    session.editingField = "interests";
+    session.editingField = FIELD_KEY.INTERESTS;
     
     const profile = await getUserProfile(userId);
     const currentInterests = new Set(profile?.interests || []);
@@ -167,7 +168,7 @@ export function setupProfileCallbacks(
 
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
-    session.editingField = "location";
+    session.editingField = FIELD_KEY.LOCATION;
     
     const profile = await getUserProfile(userId);
     const currentLocation = profile?.location || null;
@@ -224,7 +225,7 @@ export function setupProfileCallbacks(
     
     // Save to database immediately
     const interestsArray = Array.from(currentInterests);
-    await updateUserField(userId, "interests", interestsArray);
+    await updateUserField(userId, FIELD_KEY.INTERESTS, interestsArray);
     
     // Get current page from session or default to 0
     const currentPage = session.interestsPage ?? 0;
@@ -325,7 +326,7 @@ export function setupProfileCallbacks(
       return;
     }
 
-    await updateUserField(userId, "location", location);
+    await updateUserField(userId, FIELD_KEY.LOCATION, location);
     
     // Get current page from session or default to 0
     const currentPage = session.locationPage ?? 0;
@@ -447,22 +448,22 @@ export function setupProfileCallbacks(
 
     switch (action) {
       case "name":
-        session.editingField = "name";
+        session.editingField = FIELD_KEY.DISPLAY_NAME;
         await ctx.reply(editPrompts.name);
         break;
 
       case "bio":
-        session.editingField = "bio";
+        session.editingField = FIELD_KEY.BIOGRAPHY;
         await ctx.reply(editPrompts.bio);
         break;
 
       case "birthdate":
-        session.editingField = "birthdate";
+        session.editingField = FIELD_KEY.BIRTH_DATE;
         await ctx.reply(editPrompts.birthdate);
         break;
 
       case "gender":
-        session.editingField = "gender";
+        session.editingField = FIELD_KEY.GENDER;
         const genderKeyboard = new InlineKeyboard()
           .text(profileValues.male, "profile:set:gender:male")
           .text(profileValues.female, "profile:set:gender:female");
@@ -470,7 +471,7 @@ export function setupProfileCallbacks(
         break;
 
       case "looking_for":
-        session.editingField = "looking_for";
+        session.editingField = FIELD_KEY.LOOKING_FOR_GENDER;
         const lookingForKeyboard = new InlineKeyboard()
           .text(profileValues.male, "profile:set:looking_for:male")
           .text(profileValues.female, "profile:set:looking_for:female")
@@ -480,7 +481,7 @@ export function setupProfileCallbacks(
         break;
 
       case "image":
-        session.editingField = "image";
+        session.editingField = FIELD_KEY.PROFILE_IMAGE;
         const profile = await getUserProfile(userId);
         if (profile?.profile_image) {
           const imageKeyboard = new InlineKeyboard()
@@ -498,11 +499,11 @@ export function setupProfileCallbacks(
         break;
 
       case "username":
-        session.editingField = "username";
+        session.editingField = FIELD_KEY.USERNAME;
         // Update username from current Telegram profile
         const currentUsername = ctx.from?.username;
         if (currentUsername) {
-          await updateUserField(userId, "username", currentUsername);
+          await updateUserField(userId, FIELD_KEY.USERNAME, currentUsername);
           await ctx.reply(success.usernameUpdated(currentUsername));
           delete session.editingField;
           // Continue profile completion if in progress
@@ -516,7 +517,7 @@ export function setupProfileCallbacks(
         break;
 
       case "mood":
-        session.editingField = "mood";
+        session.editingField = FIELD_KEY.MOOD;
         const moodKeyboard = new InlineKeyboard()
           .text(`${MOODS.happy} ${moodOptions.happy}`, "profile:set:mood:happy")
           .text(`${MOODS.sad} ${moodOptions.sad}`, "profile:set:mood:sad")
@@ -548,8 +549,12 @@ export function setupProfileCallbacks(
         break;
 
       case "interests":
+        session.editingField = FIELD_KEY.INTERESTS;
+        // Handled by separate handler above
+        break;
       case "location":
-        // These are handled by separate handlers above
+        session.editingField = FIELD_KEY.LOCATION;
+        // Handled by separate handler above
         break;
 
       default:
@@ -574,7 +579,7 @@ export function setupProfileCallbacks(
       return;
     }
 
-    await updateUserField(userId, "mood", mood);
+    await updateUserField(userId, FIELD_KEY.MOOD, mood);
     delete session.editingField;
     await ctx.reply(success.moodUpdated(MOODS[mood]));
   });
@@ -589,7 +594,7 @@ export function setupProfileCallbacks(
     const gender = ctx.match[1];
     await ctx.answerCallbackQuery();
     const session = getSession(userId);
-    await updateUserField(userId, "gender", gender);
+    await updateUserField(userId, FIELD_KEY.GENDER, gender);
     delete session.editingField;
     await ctx.reply(success.genderUpdated(gender === "male" ? profileValues.male : profileValues.female));
     // Continue profile completion if in progress
@@ -610,7 +615,7 @@ export function setupProfileCallbacks(
     const session = getSession(userId);
     const text =
       lookingFor === "male" ? profileValues.male : lookingFor === "female" ? profileValues.female : profileValues.both;
-    await updateUserField(userId, "looking_for_gender", lookingFor);
+    await updateUserField(userId, FIELD_KEY.LOOKING_FOR_GENDER, lookingFor);
     delete session.editingField;
     await ctx.reply(success.lookingForUpdated(text));
     // Continue profile completion if in progress
@@ -633,7 +638,7 @@ export function setupProfileCallbacks(
     const { success } = await loadProfileStrings(userId);
 
     await ctx.answerCallbackQuery();
-    await updateUserField(userId, "profile_image", null);
+    await updateUserField(userId, FIELD_KEY.PROFILE_IMAGE, null);
     delete getSession(userId).editingField;
     await ctx.reply(success.imageCleared);
   });
@@ -663,12 +668,12 @@ export function setupProfileCallbacks(
 
       try {
         switch (session.editingField) {
-          case "name":
+          case FIELD_KEY.DISPLAY_NAME:
             if (text.length > MAX_DISPLAY_NAME_LENGTH) {
               await ctx.reply(errors.nameTooLong);
               return;
             }
-            await updateUserField(userId, "display_name", text);
+            await updateUserField(userId, FIELD_KEY.DISPLAY_NAME, text);
             delete session.editingField;
             await ctx.reply(success.nameUpdated(text));
             // Continue profile completion if in progress
@@ -677,17 +682,17 @@ export function setupProfileCallbacks(
             }
             break;
 
-          case "bio":
+          case FIELD_KEY.BIOGRAPHY:
             if (text.length > 500) {
               await ctx.reply(errors.bioTooLong + `\n\n📝 تعداد کاراکتر فعلی: ${text.length}/500`);
               return;
             }
-            await updateUserField(userId, "biography", text);
+            await updateUserField(userId, FIELD_KEY.BIOGRAPHY, text);
             delete session.editingField;
             await ctx.reply(success.bioUpdated + `\n\n📝 تعداد کاراکتر: ${text.length}/500`);
             break;
 
-          case "birthdate":
+          case FIELD_KEY.BIRTH_DATE:
             // Validate date format YYYY-MM-DD
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (!dateRegex.test(text)) {
@@ -713,7 +718,7 @@ export function setupProfileCallbacks(
               return;
             }
             // Pass Date object to Prisma, not the string
-            await updateUserField(userId, "birth_date", birthDate);
+            await updateUserField(userId, FIELD_KEY.BIRTH_DATE, birthDate);
             delete session.editingField;
             await ctx.reply(success.birthdateUpdated(age));
             // Continue profile completion if in progress
@@ -751,7 +756,7 @@ export function setupProfileCallbacks(
     const { success, errors } = await loadProfileStrings(userId);
 
     const session = getSession(userId);
-    if (session.editingField === "image") {
+    if (session.editingField === FIELD_KEY.PROFILE_IMAGE) {
       const photo = ctx.message.photo;
       if (photo && photo.length > 0) {
         // Get the largest photo
