@@ -10,6 +10,7 @@ export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inm
 
 // Profile completion
 export const MAX_COMPLETION_SCORE = 12;
+export const MIN_COMPLETION_THRESHOLD = 7;
 
 // Mood emojis for profile mood feature
 export const MOODS: Record<string, string> = {
@@ -125,3 +126,14 @@ export const FIELD_KEY = {
 
 // Type for editing field (now just uses field keys directly)
 export type ProfileFieldKey = typeof FIELD_KEY[keyof typeof FIELD_KEY];
+
+// Matching and compatibility scoring constants
+export const MAX_AGE_DIFFERENCE = 8; // Maximum age difference for matching
+
+// Compatibility scoring weights (percentages)
+export const ARCHETYPE_MATCH_SCORE = 40;
+export const MBTI_MATCH_SCORE = 40;
+export const MAX_INTERESTS_SCORE = 20;
+export const MAX_AGE_BONUS = 10;
+export const MAX_COMPLETION_BONUS = 10;
+export const MAX_COMPATIBILITY_SCORE = 100;

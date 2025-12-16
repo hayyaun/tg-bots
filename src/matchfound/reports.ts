@@ -1,8 +1,8 @@
 import { prisma } from "../db";
 import { Bot } from "grammy";
 import log from "../log";
-import { MAX_COMPLETION_SCORE } from "../shared/constants";
-import { BOT_NAME, MIN_COMPLETION_THRESHOLD } from "./constants";
+import { MAX_COMPLETION_SCORE, MIN_COMPLETION_THRESHOLD } from "../shared/constants";
+import { BOT_NAME } from "./constants";
 import { notifications } from "./strings";
 
 export async function generateDailyReport(): Promise<string> {

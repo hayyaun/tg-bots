@@ -1,19 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import { MAX_COMPLETION_SCORE } from "../shared/constants";
+import { MAX_COMPLETION_SCORE, MIN_INTERESTS, MAX_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_AGE_DIFFERENCE, ARCHETYPE_MATCH_SCORE, MBTI_MATCH_SCORE, MAX_INTERESTS_SCORE, MAX_AGE_BONUS, MAX_COMPLETION_BONUS, MAX_COMPATIBILITY_SCORE } from "../shared/constants";
 import {
   archetypeCompatibility,
   mbtiCompatibility,
-  MIN_INTERESTS,
-  MAX_INTERESTS,
-  MIN_COMPLETION_THRESHOLD,
-  MAX_AGE_DIFFERENCE,
-  ARCHETYPE_MATCH_SCORE,
-  MBTI_MATCH_SCORE,
-  MAX_INTERESTS_SCORE,
-  MAX_AGE_BONUS,
-  MAX_COMPLETION_BONUS,
-  MAX_COMPATIBILITY_SCORE,
 } from "./constants";
 import { MatchUser } from "./types";
 import { calculateAge } from "../shared/utils";

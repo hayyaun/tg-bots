@@ -1,5 +1,5 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { FIELD_KEY, type ProfileFieldKey, INMANKIST_BOT_USERNAME, INTERESTS } from "../shared/constants";
+import { FIELD_KEY, type ProfileFieldKey, INMANKIST_BOT_USERNAME, INTERESTS, ITEMS_PER_PAGE, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD } from "../shared/constants";
 import {
   getUserProfile,
   updateUserField,
@@ -10,9 +10,6 @@ import { calculateAge } from "../shared/utils";
 import {
   BOT_NAME,
   FIND_RATE_LIMIT_MS,
-  ITEMS_PER_PAGE,
-  MIN_COMPLETION_THRESHOLD,
-  MIN_INTERESTS,
 } from "./constants";
 import { displayUser } from "./display";
 import { findMatches } from "./matching";

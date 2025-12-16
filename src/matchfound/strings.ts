@@ -2,10 +2,11 @@ import {
   INMANKIST_BOT_USERNAME,
   MAX_COMPLETION_SCORE,
   MAX_DISPLAY_NAME_LENGTH,
+  MIN_INTERESTS,
+  MIN_COMPLETION_THRESHOLD,
 } from "../shared/constants";
 import { getProfileStringsSync } from "../shared/i18n/profileStrings";
 import { Language } from "../shared/types";
-import { MIN_COMPLETION_THRESHOLD, MIN_INTERESTS } from "./constants";
 
 const defaultProfileStrings = getProfileStringsSync(Language.Persian);
 const {

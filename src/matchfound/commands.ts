@@ -6,13 +6,13 @@ import {
   getUserIdFromTelegramId,
   getUserProfile,
 } from "../shared/database";
+import { MIN_COMPLETION_THRESHOLD } from "../shared/constants";
 import { setupProfileCommand } from "../shared/profileCommand";
 import { UserProfile } from "../shared/types";
 import { calculateAge } from "../shared/utils";
 import {
   BOT_NAME,
   FIND_RATE_LIMIT_MS,
-  MIN_COMPLETION_THRESHOLD,
 } from "./constants";
 import { displayUser } from "./display";
 import {

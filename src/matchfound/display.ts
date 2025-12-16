@@ -3,9 +3,6 @@ import log from "../log";
 import {
   MOODS,
   MAX_COMPLETION_SCORE,
-} from "../shared/constants";
-import {
-  BOT_NAME,
   MAX_INTERESTS,
   ARCHETYPE_MATCH_SCORE,
   MBTI_MATCH_SCORE,
@@ -14,6 +11,9 @@ import {
   MAX_COMPLETION_BONUS,
   MAX_COMPATIBILITY_SCORE,
   MAX_AGE_DIFFERENCE,
+} from "../shared/constants";
+import {
+  BOT_NAME,
   archetypeCompatibility,
   mbtiCompatibility,
 } from "./constants";
