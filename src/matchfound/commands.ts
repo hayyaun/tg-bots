@@ -227,9 +227,6 @@ export function setupCommands(
     try {
       await ctx.reply(
         settings.title +
-          settings.profile +
-          settings.find +
-          settings.liked +
           settings.deleteData
       );
     } catch (err) {
