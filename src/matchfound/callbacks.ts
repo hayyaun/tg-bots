@@ -11,7 +11,7 @@ import { handleDisplayProfile } from "../shared/profileCommand";
 import { calculateAge } from "../shared/utils";
 import { BOT_NAME } from "./constants";
 import { displayUser } from "./display";
-import { continueProfileCompletion, handleFind, showNextUser } from "./helpers";
+import { continueProfileCompletion, handleFind, showNextUser, storeMatchesInSession } from "./helpers";
 import { getSession } from "./session";
 import {
   admin,
@@ -112,11 +112,11 @@ export function setupCallbacks(
       }
 
       // Show next match or next liked user
-      const session = getSession(userId);
-      if (session.matches && session.currentMatchIndex !== undefined) {
+      const session = await getSession(userId);
+      if (session.matchIds && session.currentMatchIndex !== undefined) {
         await showNextUser(ctx, userId, "match");
       } else if (
-        session.likedUsers &&
+        session.likedUserIds &&
         session.currentLikedIndex !== undefined
       ) {
         await showNextUser(ctx, userId, "liked");
@@ -201,7 +201,7 @@ export function setupCallbacks(
     }
 
     // Store in session for reason collection
-    const session = getSession(userId);
+    const session = await getSession(userId);
     session.reportingUserId = reportedUserId;
 
     await ctx.answerCallbackQuery();
@@ -213,7 +213,7 @@ export function setupCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    const session = getSession(userId);
+    const session = await getSession(userId);
     if (session.reportingUserId) {
       const reportedUserId = session.reportingUserId;
       const reason = ctx.message.text;
@@ -324,7 +324,7 @@ export function setupCallbacks(
       await deleteUserData(userId);
 
       // Clear session data
-      const session = getSession(userId);
+      const session = await getSession(userId);
       Object.keys(session).forEach(
         (key) => delete (session as Record<string, unknown>)[key]
       );
@@ -486,12 +486,12 @@ export function setupCallbacks(
           } as MatchUser;
         });
 
-        // Store in session for pagination
-        const session = getSession(userId);
-        session.matches = users;
+        // Store in optimized format (IDs + metadata)
+        const session = await getSession(userId);
+        storeMatchesInSession(users, session);
         session.currentMatchIndex = 0;
         // Mark as admin view so navigation preserves showUsername
-        (session as any).isAdminView = true;
+        session.isAdminView = true;
 
         await ctx.reply(admin.allUsersTitle(users.length), {
           parse_mode: "HTML",

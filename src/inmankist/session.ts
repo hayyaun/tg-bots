@@ -5,5 +5,6 @@ import { BaseSessionData, createSessionManager } from "../shared/session";
 
 export type SessionData = BaseSessionData;
 
-export const getSession = createSessionManager<SessionData>();
+const BOT_PREFIX = "inmankist";
+export const getSession = createSessionManager<SessionData>(BOT_PREFIX);
 

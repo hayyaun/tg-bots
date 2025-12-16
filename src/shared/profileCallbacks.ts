@@ -10,7 +10,7 @@ import log from "../log";
 
 export interface ProfileCallbacksConfig {
   botName: string;
-  getSession: (userId: number) => BaseSessionData;
+  getSession: (userId: number) => Promise<BaseSessionData>;
   onContinueProfileCompletion?: (ctx: Context, bot: Bot, userId: number) => Promise<void>;
   notifyAdmin?: (message: string) => Promise<void>;
 }
@@ -136,7 +136,7 @@ export function setupProfileCallbacks(
     const { editPrompts, buttons } = await loadProfileStrings(userId);
 
     await ctx.answerCallbackQuery();
-    const session = getSession(userId);
+    const session = await getSession(userId);
     session.editingField = FIELD_KEY.INTERESTS;
     
     const profile = await getUserProfile(userId);
@@ -167,7 +167,7 @@ export function setupProfileCallbacks(
     const { editPrompts, buttons } = await loadProfileStrings(userId);
 
     await ctx.answerCallbackQuery();
-    const session = getSession(userId);
+    const session = await getSession(userId);
     session.editingField = FIELD_KEY.LOCATION;
     
     const profile = await getUserProfile(userId);
@@ -200,7 +200,7 @@ export function setupProfileCallbacks(
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
 
     const interest = ctx.match[1];
-    const session = getSession(userId);
+    const session = await getSession(userId);
     
     // Get current interests from database
     const profile = await getUserProfile(userId);
@@ -272,7 +272,7 @@ export function setupProfileCallbacks(
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
 
     const page = parseInt(ctx.match[1]);
-    const session = getSession(userId);
+    const session = await getSession(userId);
     
     // Get current interests from database
     const profile = await getUserProfile(userId);
@@ -318,7 +318,7 @@ export function setupProfileCallbacks(
     const location = ctx.match[1];
     // Answer callback query immediately to prevent timeout
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
-    const session = getSession(userId);
+    const session = await getSession(userId);
 
     if (!IRAN_PROVINCES.includes(location as any)) {
       await ctx.reply(errors.invalidProvince);
@@ -368,7 +368,7 @@ export function setupProfileCallbacks(
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
 
     const page = parseInt(ctx.match[1]);
-    const session = getSession(userId);
+    const session = await getSession(userId);
     
     // Get current location from database
     const profile = await getUserProfile(userId);
@@ -412,7 +412,7 @@ export function setupProfileCallbacks(
       const { errors } = await loadProfileStrings(userId);
       
       await ctx.answerCallbackQuery();
-      const session = getSession(userId);
+      const session = await getSession(userId);
       
       // Verify minimum interests are met
       const profile = await getUserProfile(userId);
@@ -443,7 +443,7 @@ export function setupProfileCallbacks(
       await loadProfileStrings(userId);
 
     const action = ctx.match[1];
-    const session = getSession(userId);
+    const session = await getSession(userId);
     await ctx.answerCallbackQuery();
 
     switch (action) {
@@ -571,7 +571,7 @@ export function setupProfileCallbacks(
 
     const mood = ctx.match[1];
     await ctx.answerCallbackQuery();
-    const session = getSession(userId);
+    const session = await getSession(userId);
 
     if (!Object.keys(MOODS).includes(mood)) {
       await ctx.reply(errors.invalidMood);
@@ -593,7 +593,7 @@ export function setupProfileCallbacks(
 
     const gender = ctx.match[1];
     await ctx.answerCallbackQuery();
-    const session = getSession(userId);
+    const session = await getSession(userId);
     await updateUserField(userId, FIELD_KEY.GENDER, gender);
     delete session.editingField;
     await ctx.reply(success.genderUpdated(gender === "male" ? profileValues.male : profileValues.female));
@@ -612,7 +612,7 @@ export function setupProfileCallbacks(
 
     const lookingFor = ctx.match[1];
     await ctx.answerCallbackQuery();
-    const session = getSession(userId);
+    const session = await getSession(userId);
     const text =
       lookingFor === "male" ? profileValues.male : lookingFor === "female" ? profileValues.female : profileValues.both;
     await updateUserField(userId, FIELD_KEY.LOOKING_FOR_GENDER, lookingFor);
@@ -639,7 +639,8 @@ export function setupProfileCallbacks(
 
     await ctx.answerCallbackQuery();
     await updateUserField(userId, FIELD_KEY.PROFILE_IMAGE, null);
-    delete getSession(userId).editingField;
+    const session = await getSession(userId);
+    delete session.editingField;
     await ctx.reply(success.imageCleared);
   });
 
@@ -648,7 +649,7 @@ export function setupProfileCallbacks(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    const session = getSession(userId);
+    const session = await getSession(userId);
     const { errors, success, profileValues } = await loadProfileStrings(userId);
     if (session.editingField) {
       const text = ctx.message.text;
@@ -755,7 +756,7 @@ export function setupProfileCallbacks(
 
     const { success, errors } = await loadProfileStrings(userId);
 
-    const session = getSession(userId);
+    const session = await getSession(userId);
     if (session.editingField === FIELD_KEY.PROFILE_IMAGE) {
       const photo = ctx.message.photo;
       if (photo && photo.length > 0) {

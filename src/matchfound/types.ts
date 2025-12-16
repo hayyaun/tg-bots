@@ -7,12 +7,22 @@ export interface MatchUser extends UserProfile {
   compatibility_score?: number; // Compatibility percentage (0-100)
 }
 
+// Lightweight metadata stored in session (instead of full MatchUser objects)
+export interface MatchMetadata {
+  match_priority: number;
+  compatibility_score?: number;
+}
+
 export interface SessionData extends BaseSessionData {
-  matches?: MatchUser[];
+  // Store only IDs and metadata instead of full MatchUser arrays
+  // This reduces memory usage by ~90% for large match lists
+  matchIds?: number[]; // Array of telegram_ids in display order
+  matchMetadata?: Record<number, MatchMetadata>; // Metadata by telegram_id
   currentMatchIndex?: number;
-  likedUsers?: MatchUser[];
+  likedUserIds?: number[]; // Array of telegram_ids in display order
   currentLikedIndex?: number;
   reportingUserId?: number;
   profileCompletionFieldIndex?: number; // Index of current field being completed
+  isAdminView?: boolean; // Flag for admin view mode
 }
 

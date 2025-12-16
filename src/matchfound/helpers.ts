@@ -26,10 +26,66 @@ import {
   profileValues,
   success,
 } from "./strings";
-import { MatchUser } from "./types";
+import { MatchUser, MatchMetadata } from "./types";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
+
+// Helper to convert MatchUser[] to optimized session format (IDs + metadata)
+export function storeMatchesInSession(
+  matches: MatchUser[],
+  session: { matchIds?: number[]; matchMetadata?: Record<number, MatchMetadata> }
+): void {
+  session.matchIds = matches.map((m) => m.telegram_id || 0);
+  session.matchMetadata = {};
+  for (const match of matches) {
+    if (match.telegram_id) {
+      session.matchMetadata[match.telegram_id] = {
+        match_priority: match.match_priority,
+        compatibility_score: match.compatibility_score,
+      };
+    }
+  }
+}
+
+// Helper to fetch a MatchUser by telegram_id with metadata
+async function getMatchUserById(
+  telegramId: number,
+  metadata?: MatchMetadata
+): Promise<MatchUser | null> {
+  const profile = await getUserProfile(telegramId);
+  if (!profile) return null;
+
+  const age = calculateAge(profile.birth_date);
+  return {
+    ...profile,
+    age,
+    match_priority: metadata?.match_priority ?? 999,
+    compatibility_score: metadata?.compatibility_score,
+  };
+}
+
+// Helper to get current match from session
+async function getCurrentMatch(
+  session: {
+    matchIds?: number[];
+    matchMetadata?: Record<number, MatchMetadata>;
+    currentMatchIndex?: number;
+  }
+): Promise<MatchUser | null> {
+  if (
+    !session.matchIds ||
+    session.currentMatchIndex === undefined ||
+    session.currentMatchIndex < 0 ||
+    session.currentMatchIndex >= session.matchIds.length
+  ) {
+    return null;
+  }
+
+  const telegramId = session.matchIds[session.currentMatchIndex];
+  const metadata = session.matchMetadata?.[telegramId];
+  return await getMatchUserById(telegramId, metadata);
+}
 
 // Validate profile for find command (shared between /find and find:start callback)
 export async function validateProfileForFind(
@@ -113,18 +169,19 @@ export async function executeFindAndDisplay(
     return;
   }
 
-  // Store matches in session for pagination
-  const session = getSession(userId);
-  session.matches = matches;
+  // Store matches in optimized format (IDs + metadata only)
+  const session = await getSession(userId);
+  storeMatchesInSession(matches, session);
   session.currentMatchIndex = 0;
 
   // Show match count
   await ctx.reply(success.matchesFound(matches.length));
 
   // Show first match
+  const firstMatch = matches[0];
   await displayUser(
     ctx,
-    matches[0],
+    firstMatch,
     "match",
     false,
     session,
@@ -139,45 +196,56 @@ export async function showNextUser(
   userId: number,
   type: "match" | "liked"
 ): Promise<void> {
-  const session = getSession(userId);
+  const session = await getSession(userId);
   const profile = await getUserProfile(userId);
 
   if (
     type === "match" &&
-    session.matches &&
+    session.matchIds &&
     session.currentMatchIndex !== undefined
   ) {
     session.currentMatchIndex++;
-    if (session.currentMatchIndex < session.matches.length) {
-      const isAdminView = (session as any).isAdminView === true;
-      await displayUser(
-        ctx,
-        session.matches[session.currentMatchIndex],
-        "match",
-        isAdminView,
-        session,
-        profile?.interests || [],
-        profile || undefined
-      );
+    if (session.currentMatchIndex < session.matchIds.length) {
+      const match = await getCurrentMatch(session);
+      if (match) {
+        const isAdminView = session.isAdminView === true;
+        await displayUser(
+          ctx,
+          match,
+          "match",
+          isAdminView,
+          session,
+          profile?.interests || [],
+          profile || undefined
+        );
+      } else {
+        await ctx.reply(errors.noMatches);
+      }
     } else {
       await ctx.reply(errors.noMatches);
     }
   } else if (
     type === "liked" &&
-    session.likedUsers &&
+    session.likedUserIds &&
     session.currentLikedIndex !== undefined
   ) {
     session.currentLikedIndex++;
-    if (session.currentLikedIndex < session.likedUsers.length) {
-      await displayUser(
-        ctx,
-        session.likedUsers[session.currentLikedIndex],
-        "liked",
-        false,
-        undefined,
-        profile?.interests || [],
-        profile || undefined
-      );
+    if (session.currentLikedIndex < session.likedUserIds.length) {
+      const telegramId = session.likedUserIds[session.currentLikedIndex];
+      const likedUser = await getMatchUserById(telegramId);
+      if (likedUser) {
+        await displayUser(
+          ctx,
+          likedUser,
+          "liked",
+          false,
+          undefined,
+          profile?.interests || [],
+          profile || undefined
+        );
+      } else {
+        await ctx.reply(display.allLikedSeen);
+      }
     } else {
       await ctx.reply(display.allLikedSeen);
     }
@@ -233,27 +301,20 @@ export async function handleLiked(
     return;
   }
 
-  // Store in session for pagination
-  const session = getSession(userId);
-  session.likedUsers = filteredLikes.map(
-    (like: (typeof filteredLikes)[0]) => {
-      const user = like.user;
-      return {
-        ...user,
-        telegram_id: Number(user.telegram_id),
-        birth_date: user.birth_date || null,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        age: calculateAge(user.birth_date),
-        match_priority: 0,
-      } as MatchUser;
-    }
+  // Store in optimized format (IDs only)
+  const session = await getSession(userId);
+  session.likedUserIds = filteredLikes.map(
+    (like: (typeof filteredLikes)[0]) => Number(like.user.telegram_id)
   );
   session.currentLikedIndex = 0;
 
   // Show first person
-  const firstUser = session.likedUsers![0];
-  firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
+  const firstTelegramId = session.likedUserIds[0];
+  const firstUser = await getMatchUserById(firstTelegramId);
+  if (!firstUser) {
+    await ctx.reply(errors.noLikes);
+    return;
+  }
   const profile = await getUserProfile(userId);
   await displayUser(
     ctx,
@@ -335,7 +396,7 @@ export async function promptNextRequiredField(
 ): Promise<void> {
   if (fieldIndex >= missingFields.length) {
     // All required fields completed
-    const session = getSession(userId);
+    const session = await getSession(userId);
     session.completingProfile = false;
     session.profileCompletionFieldIndex = undefined;
 
@@ -346,7 +407,7 @@ export async function promptNextRequiredField(
   }
 
   const field = missingFields[fieldIndex];
-  const session = getSession(userId);
+  const session = await getSession(userId);
   session.completingProfile = true;
   session.profileCompletionFieldIndex = fieldIndex;
   // Use field key directly as editingField
@@ -506,7 +567,7 @@ export async function continueProfileCompletion(
   bot: Bot,
   userId: number
 ): Promise<void> {
-  const session = getSession(userId);
+  const session = await getSession(userId);
   if (!session.completingProfile) return;
 
   const profile = await getUserProfile(userId);

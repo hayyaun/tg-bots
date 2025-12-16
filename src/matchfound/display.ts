@@ -197,11 +197,11 @@ export async function displayUser(
   if (
     mode === "match" &&
     session &&
-    session.matches &&
+    session.matchIds &&
     session.currentMatchIndex !== undefined
   ) {
     const currentIndex = session.currentMatchIndex;
-    const totalMatches = session.matches.length;
+    const totalMatches = session.matchIds.length;
     if (currentIndex < totalMatches - 1) {
       keyboard.text(buttons.next, `next_match:${user.telegram_id}`);
       keyboard.row();
