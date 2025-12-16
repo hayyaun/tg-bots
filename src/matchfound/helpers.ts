@@ -1,6 +1,8 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
+import { prisma } from "../db";
 import { FIELD_KEY, type ProfileFieldKey, INMANKIST_BOT_USERNAME, INTERESTS, ITEMS_PER_PAGE, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD } from "../shared/constants";
 import {
+  getUserIdFromTelegramId,
   getUserProfile,
   updateUserField,
 } from "../shared/database";
@@ -16,6 +18,7 @@ import { findMatches } from "./matching";
 import { getSession } from "./session";
 import {
   buttons,
+  display,
   editPrompts,
   errors,
   fields,
@@ -23,6 +26,7 @@ import {
   profileValues,
   success,
 } from "./strings";
+import { MatchUser } from "./types";
 
 // Rate limiting for /find command (once per hour)
 const findRateLimit = new Map<number, number>();
@@ -66,6 +70,20 @@ export async function validateProfileForFind(
   }
 
   return true;
+}
+
+// Handle find functionality (shared between /find command and find:start callback)
+export async function handleFind(
+  ctx: Context,
+  userId: number,
+  checkRateLimit: boolean = true
+): Promise<void> {
+  const profile = await getUserProfile(userId);
+  if (!(await validateProfileForFind(profile, ctx))) {
+    return;
+  }
+
+  await executeFindAndDisplay(ctx, userId, profile!, checkRateLimit);
 }
 
 // Execute find matches and display first result (shared logic)
@@ -115,6 +133,139 @@ export async function executeFindAndDisplay(
   );
 }
 
+// Helper to show next user after action (like/dislike/next/delete)
+export async function showNextUser(
+  ctx: Context,
+  userId: number,
+  type: "match" | "liked"
+): Promise<void> {
+  const session = getSession(userId);
+  const profile = await getUserProfile(userId);
+
+  if (
+    type === "match" &&
+    session.matches &&
+    session.currentMatchIndex !== undefined
+  ) {
+    session.currentMatchIndex++;
+    if (session.currentMatchIndex < session.matches.length) {
+      const isAdminView = (session as any).isAdminView === true;
+      await displayUser(
+        ctx,
+        session.matches[session.currentMatchIndex],
+        "match",
+        isAdminView,
+        session,
+        profile?.interests || [],
+        profile || undefined
+      );
+    } else {
+      await ctx.reply(errors.noMatches);
+    }
+  } else if (
+    type === "liked" &&
+    session.likedUsers &&
+    session.currentLikedIndex !== undefined
+  ) {
+    session.currentLikedIndex++;
+    if (session.currentLikedIndex < session.likedUsers.length) {
+      await displayUser(
+        ctx,
+        session.likedUsers[session.currentLikedIndex],
+        "liked",
+        false,
+        undefined,
+        profile?.interests || [],
+        profile || undefined
+      );
+    } else {
+      await ctx.reply(display.allLikedSeen);
+    }
+  }
+}
+
+// Handle liked users functionality (shared between /liked command)
+export async function handleLiked(
+  ctx: Context,
+  userId: number
+): Promise<void> {
+  // Get user id from telegram_id
+  const userIdBigInt = await getUserIdFromTelegramId(userId);
+  if (!userIdBigInt) {
+    await ctx.reply(errors.userNotFound);
+    return;
+  }
+
+  // Get users who liked this user (and not ignored)
+  const likes = await prisma.like.findMany({
+    where: {
+      liked_user_id: userIdBigInt,
+      user: {
+        ignoredReceived: {
+          none: {
+            user_id: userIdBigInt,
+          },
+        },
+      },
+    },
+    include: {
+      user: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  // Filter out users that this user has ignored
+  const ignoredByUser = await prisma.ignored.findMany({
+    where: { user_id: userIdBigInt },
+    select: { ignored_user_id: true },
+  });
+  const ignoredIds = new Set(
+    ignoredByUser.map((i: { ignored_user_id: bigint }) => i.ignored_user_id)
+  );
+  const filteredLikes = likes.filter(
+    (like: (typeof likes)[0]) => !ignoredIds.has(like.user_id)
+  );
+
+  if (filteredLikes.length === 0) {
+    await ctx.reply(errors.noLikes);
+    return;
+  }
+
+  // Store in session for pagination
+  const session = getSession(userId);
+  session.likedUsers = filteredLikes.map(
+    (like: (typeof filteredLikes)[0]) => {
+      const user = like.user;
+      return {
+        ...user,
+        telegram_id: Number(user.telegram_id),
+        birth_date: user.birth_date || null,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        age: calculateAge(user.birth_date),
+        match_priority: 0,
+      } as MatchUser;
+    }
+  );
+  session.currentLikedIndex = 0;
+
+  // Show first person
+  const firstUser = session.likedUsers![0];
+  firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
+  const profile = await getUserProfile(userId);
+  await displayUser(
+    ctx,
+    firstUser,
+    "liked",
+    false,
+    undefined,
+    profile?.interests || [],
+    profile || undefined
+  );
+}
+
 // Profile completion helpers
 interface RequiredField {
   key: keyof UserProfile;
@@ -144,7 +295,7 @@ const REQUIRED_FIELDS: RequiredField[] = [
 // Reusable keyboard for main actions
 export function createMainActionsKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
-    .text(buttons.completionStatus, "profile:edit")
+    .text(buttons.completionStatus, "profile")
     .row()
     .text(buttons.findPeople, "find:start")
     .row()

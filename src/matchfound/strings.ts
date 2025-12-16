@@ -123,11 +123,8 @@ export const deleteData = {
 
 // Settings
 export const settings = {
-  title: "تنظیمات:\n\n",
-  profile: "/profile - مشاهده و ویرایش پروفایل\n",
-  find: "/find - پیدا کردن افراد\n",
-  liked: "/liked - افرادی که من را لایک کردند\n",
-  deleteData: "/wipe_data - حذف کامل اطلاعات",
+  title: "⚙️ تنظیمات:\n\n",
+  wipeDataButton: "🗑️ حذف کامل اطلاعات",
 };
 
 // Display messages

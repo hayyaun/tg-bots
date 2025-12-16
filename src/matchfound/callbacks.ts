@@ -1,19 +1,18 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
 import {
   deleteUserData,
   getUserIdFromTelegramId,
   getUserProfile,
-  updateCompletionScore,
 } from "../shared/database";
-import { displayProfile } from "../shared/display";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
+import { handleDisplayProfile } from "../shared/profileCommand";
 import { calculateAge } from "../shared/utils";
 import {
   continueProfileCompletion,
-  executeFindAndDisplay,
-  validateProfileForFind,
+  handleFind,
+  showNextUser,
 } from "./helpers";
 import { BOT_NAME } from "./constants";
 import { displayUser } from "./display";
@@ -28,57 +27,6 @@ import {
   success,
 } from "./strings";
 import { MatchUser } from "./types";
-
-// Helper to show next user after action (like/dislike/next/delete)
-async function showNextUser(
-  ctx: Context,
-  userId: number,
-  type: "match" | "liked"
-): Promise<void> {
-  const session = getSession(userId);
-  const profile = await getUserProfile(userId);
-
-  if (
-    type === "match" &&
-    session.matches &&
-    session.currentMatchIndex !== undefined
-  ) {
-    session.currentMatchIndex++;
-    if (session.currentMatchIndex < session.matches.length) {
-      const isAdminView = (session as any).isAdminView === true;
-      await displayUser(
-        ctx,
-        session.matches[session.currentMatchIndex],
-        "match",
-        isAdminView,
-        session,
-        profile?.interests || [],
-        profile || undefined
-      );
-    } else {
-      await ctx.reply(errors.noMatches);
-    }
-  } else if (
-    type === "liked" &&
-    session.likedUsers &&
-    session.currentLikedIndex !== undefined
-  ) {
-    session.currentLikedIndex++;
-    if (session.currentLikedIndex < session.likedUsers.length) {
-      await displayUser(
-        ctx,
-        session.likedUsers[session.currentLikedIndex],
-        "liked",
-        false,
-        undefined,
-        profile?.interests || [],
-        profile || undefined
-      );
-    } else {
-      await ctx.reply(display.allLikedSeen);
-    }
-  }
-}
 
 export function setupCallbacks(
   bot: Bot,
@@ -334,21 +282,13 @@ export function setupCallbacks(
     await next();
   });
 
-  // Callback: profile:edit (from /start command) - shows profile with completion status
-  bot.callbackQuery("profile:edit", async (ctx) => {
+  // Callback: profile (from /start command) - shows profile with completion status
+  bot.callbackQuery("profile", async (ctx) => {
     await ctx.answerCallbackQuery();
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    // Recalculate completion score to ensure it's up to date
-    await updateCompletionScore(userId);
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      await ctx.reply(errors.startFirst);
-      return;
-    }
-
-    await displayProfile(ctx, profile, BOT_NAME, userId);
+    await handleDisplayProfile(ctx, userId, BOT_NAME, notifyAdmin);
   });
 
   // Callback: find:start - triggers find functionality (same as /find command)
@@ -359,14 +299,9 @@ export function setupCallbacks(
     if (!userId) return;
 
     try {
-      const profile = await getUserProfile(userId);
-      if (!(await validateProfileForFind(profile, ctx))) {
-        return;
-      }
-
       // Note: Rate limiting is skipped for button clicks to improve UX
       // Users can still use /find command which has rate limiting
-      await executeFindAndDisplay(ctx, userId, profile!, false);
+      await handleFind(ctx, userId, false);
     } catch (err) {
       log.error(BOT_NAME + " > Find callback failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
@@ -417,6 +352,38 @@ export function setupCallbacks(
     await ctx.answerCallbackQuery();
 
     await ctx.editMessageText(deleteData.cancelled);
+  });
+
+  // Settings: wipe_data callback
+  bot.callbackQuery("settings:wipe_data", async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCallbackQuery();
+
+    try {
+      const profile = await getUserProfile(userId);
+      if (!profile) {
+        await ctx.editMessageText(errors.startFirst);
+        return;
+      }
+
+      const keyboard = new InlineKeyboard()
+        .text("✅ بله، حذف کن", "wipe_data:confirm")
+        .row()
+        .text("❌ لغو", "wipe_data:cancel");
+
+      await ctx.editMessageText(deleteData.confirmPrompt, {
+        reply_markup: keyboard,
+        parse_mode: "HTML",
+      });
+    } catch (err) {
+      log.error(BOT_NAME + " > Settings wipe_data callback failed", err);
+      await ctx.editMessageText("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");
+      await notifyAdmin(
+        `❌ <b>Settings Wipe Data Callback Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
   });
 
   // Photo uploads for profile image are now handled by setupProfileCallbacks

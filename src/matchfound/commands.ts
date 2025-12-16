@@ -3,21 +3,17 @@ import { prisma } from "../db";
 import log from "../log";
 import {
   ensureUserExists,
-  getUserIdFromTelegramId,
   getUserProfile,
 } from "../shared/database";
 import { MIN_COMPLETION_THRESHOLD } from "../shared/constants";
 import { setupProfileCommand } from "../shared/profileCommand";
-import { UserProfile } from "../shared/types";
-import { calculateAge } from "../shared/utils";
-import { BOT_NAME, FIND_RATE_LIMIT_MS } from "./constants";
-import { displayUser } from "./display";
+import { BOT_NAME } from "./constants";
 import {
   createMainActionsKeyboard,
-  executeFindAndDisplay,
+  handleFind,
+  handleLiked,
   getMissingRequiredFields,
   promptNextRequiredField,
-  validateProfileForFind,
 } from "./helpers";
 import { findMatches } from "./matching";
 import { getSession } from "./session";
@@ -104,12 +100,7 @@ export function setupCommands(
     if (!userId) return;
 
     try {
-      const profile = await getUserProfile(userId);
-      if (!(await validateProfileForFind(profile, ctx))) {
-        return;
-      }
-
-      await executeFindAndDisplay(ctx, userId, profile!, true);
+      await handleFind(ctx, userId, true);
     } catch (err) {
       log.error(BOT_NAME + " > Find command failed", err);
       await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
@@ -126,82 +117,7 @@ export function setupCommands(
     if (!userId) return;
 
     try {
-      // Get user id from telegram_id
-      const userIdBigInt = await getUserIdFromTelegramId(userId);
-      if (!userIdBigInt) {
-        await ctx.reply(errors.userNotFound);
-        return;
-      }
-
-      // Get users who liked this user (and not ignored)
-      // Get users who liked this user, excluding ignored ones
-      const likes = await prisma.like.findMany({
-        where: {
-          liked_user_id: userIdBigInt,
-          user: {
-            ignoredReceived: {
-              none: {
-                user_id: userIdBigInt,
-              },
-            },
-          },
-        },
-        include: {
-          user: true,
-        },
-        orderBy: {
-          created_at: "desc",
-        },
-      });
-
-      // Filter out users that this user has ignored
-      const ignoredByUser = await prisma.ignored.findMany({
-        where: { user_id: userIdBigInt },
-        select: { ignored_user_id: true },
-      });
-      const ignoredIds = new Set(
-        ignoredByUser.map((i: { ignored_user_id: bigint }) => i.ignored_user_id)
-      );
-      const filteredLikes = likes.filter(
-        (like: (typeof likes)[0]) => !ignoredIds.has(like.user_id)
-      );
-
-      if (filteredLikes.length === 0) {
-        await ctx.reply(errors.noLikes);
-        return;
-      }
-
-      // Store in session for pagination
-      const session = getSession(userId);
-      session.likedUsers = filteredLikes.map(
-        (like: (typeof filteredLikes)[0]) => {
-          const user = like.user;
-          return {
-            ...user,
-            telegram_id: Number(user.telegram_id),
-            birth_date: user.birth_date || null,
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-            age: calculateAge(user.birth_date),
-            match_priority: 0,
-          } as MatchUser;
-        }
-      );
-      session.currentLikedIndex = 0;
-
-      // Show first person
-      const firstUser = session.likedUsers![0];
-      firstUser.age = firstUser.age || calculateAge(firstUser.birth_date);
-      const profile = await getUserProfile(userId);
-      await displayUser(
-        ctx,
-        firstUser,
-        "liked",
-        false,
-        undefined,
-        profile?.interests || [],
-        profile || undefined
-      );
+      await handleLiked(ctx, userId);
     } catch (err) {
       log.error(BOT_NAME + " > Liked command failed", err);
       await ctx.reply("❌ خطا در دریافت لیست لایک‌ها. لطفا دوباره تلاش کنید.");
@@ -222,42 +138,17 @@ export function setupCommands(
     ctx.react("🤔").catch(() => {});
     const userId = ctx.from?.id;
     try {
-      await ctx.reply(settings.title + settings.deleteData);
+      const keyboard = new InlineKeyboard()
+        .text(settings.wipeDataButton, "settings:wipe_data");
+
+      await ctx.reply(settings.title, {
+        reply_markup: keyboard,
+      });
     } catch (err) {
       log.error(BOT_NAME + " > Settings command failed", err);
       await ctx.reply("❌ خطا در نمایش تنظیمات. لطفا دوباره تلاش کنید.");
       notifyAdmin(
         `❌ <b>Settings Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
-      );
-    }
-  });
-
-  // /wipe_data command
-  bot.command("wipe_data", async (ctx) => {
-    ctx.react("😱").catch(() => {});
-    const userId = ctx.from?.id;
-    if (!userId) return;
-    try {
-      const profile = await getUserProfile(userId);
-      if (!profile) {
-        await ctx.reply(errors.startFirst);
-        return;
-      }
-
-      const keyboard = new InlineKeyboard()
-        .text("✅ بله، حذف کن", "wipe_data:confirm")
-        .row()
-        .text("❌ لغو", "wipe_data:cancel");
-
-      await ctx.reply(deleteData.confirmPrompt, {
-        reply_markup: keyboard,
-        parse_mode: "HTML",
-      });
-    } catch (err) {
-      log.error(BOT_NAME + " > Delete data command failed", err);
-      await ctx.reply("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");
-      notifyAdmin(
-        `❌ <b>Delete Data Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
     }
   });

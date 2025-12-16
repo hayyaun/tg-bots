@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, Context } from "grammy";
 import log from "../log";
 import { getUserProfile, updateCompletionScore } from "./database";
 import { displayProfile } from "./display";
@@ -7,6 +7,39 @@ import { getSharedStrings } from "./i18n";
 export interface ProfileCommandDependencies {
   botName: string;
   notifyAdmin?: (message: string) => Promise<void>;
+}
+
+/**
+ * Shared helper function to display user profile
+ * Used by both /profile command and profile callback
+ */
+export async function handleDisplayProfile(
+  ctx: Context,
+  userId: number,
+  botName: string,
+  notifyAdmin?: (message: string) => Promise<void>
+): Promise<void> {
+  try {
+    // Recalculate completion score to ensure it's up to date
+    await updateCompletionScore(userId);
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      const strings = await getSharedStrings(userId, botName);
+      await ctx.reply(strings.startFirst);
+      return;
+    }
+
+    await displayProfile(ctx, profile, botName, userId);
+  } catch (err) {
+    log.error(botName + " > Display profile failed", err);
+    const strings = await getSharedStrings(userId, botName);
+    await ctx.reply(strings.profileError);
+    if (notifyAdmin) {
+      await notifyAdmin(
+        `❌ <b>Display Profile Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
+      );
+    }
+  }
 }
 
 /**
@@ -22,26 +55,6 @@ export function setupProfileCommand(
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    try {
-      // Recalculate completion score to ensure it's up to date
-      await updateCompletionScore(userId);
-      const profile = await getUserProfile(userId);
-      if (!profile) {
-        const strings = await getSharedStrings(userId, deps.botName);
-        await ctx.reply(strings.startFirst);
-        return;
-      }
-
-      await displayProfile(ctx, profile, deps.botName, userId);
-    } catch (err) {
-      log.error(deps.botName + " > Profile command failed", err);
-      const strings = await getSharedStrings(userId, deps.botName);
-      await ctx.reply(strings.profileError);
-      if (deps.notifyAdmin) {
-        await deps.notifyAdmin(
-          `❌ <b>Profile Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
-        );
-      }
-    }
+    await handleDisplayProfile(ctx, userId, deps.botName, deps.notifyAdmin);
   });
 }
