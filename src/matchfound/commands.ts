@@ -10,10 +10,7 @@ import { MIN_COMPLETION_THRESHOLD } from "../shared/constants";
 import { setupProfileCommand } from "../shared/profileCommand";
 import { UserProfile } from "../shared/types";
 import { calculateAge } from "../shared/utils";
-import {
-  BOT_NAME,
-  FIND_RATE_LIMIT_MS,
-} from "./constants";
+import { BOT_NAME, FIND_RATE_LIMIT_MS } from "./constants";
 import { displayUser } from "./display";
 import {
   createMainActionsKeyboard,
@@ -225,10 +222,7 @@ export function setupCommands(
     ctx.react("🤔").catch(() => {});
     const userId = ctx.from?.id;
     try {
-      await ctx.reply(
-        settings.title +
-          settings.deleteData
-      );
+      await ctx.reply(settings.title + settings.deleteData);
     } catch (err) {
       log.error(BOT_NAME + " > Settings command failed", err);
       await ctx.reply("❌ خطا در نمایش تنظیمات. لطفا دوباره تلاش کنید.");
@@ -346,7 +340,8 @@ export function setupCommands(
 
       // Helper to convert date row to day key
       const getDayKey = (day: Date | string): string => {
-        const date = day instanceof Date ? day : new Date(day as unknown as string);
+        const date =
+          day instanceof Date ? day : new Date(day as unknown as string);
         return date.toISOString().slice(0, 10);
       };
 
