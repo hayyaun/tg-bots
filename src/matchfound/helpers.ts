@@ -9,9 +9,12 @@ import {
 import { getInterestNames } from "../shared/i18n";
 import { UserProfile } from "../shared/types";
 import { calculateAge } from "../shared/utils";
+import { getWithPrefix, setWithPrefix } from "../redis";
 import {
   BOT_NAME,
+  BOT_PREFIX,
   FIND_RATE_LIMIT_MS,
+  FIND_RATE_LIMIT_SECONDS,
 } from "./constants";
 import { displayUser } from "./display";
 import { findMatches } from "./matching";
@@ -27,9 +30,6 @@ import {
   success,
 } from "./strings";
 import { MatchUser, MatchMetadata } from "./types";
-
-// Rate limiting for /find command (once per hour)
-const findRateLimit = new Map<number, number>();
 
 // Helper to convert MatchUser[] to optimized session format (IDs + metadata)
 export function storeMatchesInSession(
@@ -151,16 +151,28 @@ export async function executeFindAndDisplay(
 ): Promise<void> {
   // Rate limiting (once per hour) - only for /find command, not button clicks
   if (checkRateLimit) {
-    const now = Date.now();
-    const lastFind = findRateLimit.get(userId);
-    if (lastFind && now - lastFind < FIND_RATE_LIMIT_MS) {
-      const remainingMinutes = Math.ceil(
-        (FIND_RATE_LIMIT_MS - (now - lastFind)) / 60000
-      );
-      await ctx.reply(errors.rateLimit(remainingMinutes));
-      return;
+    const rateLimitKey = `ratelimit:find:${userId}`;
+    const lastFindTimestamp = await getWithPrefix(BOT_PREFIX, rateLimitKey);
+    
+    if (lastFindTimestamp) {
+      const lastFind = parseInt(lastFindTimestamp, 10);
+      const now = Date.now();
+      if (now - lastFind < FIND_RATE_LIMIT_MS) {
+        const remainingMinutes = Math.ceil(
+          (FIND_RATE_LIMIT_MS - (now - lastFind)) / 60000
+        );
+        await ctx.reply(errors.rateLimit(remainingMinutes));
+        return;
+      }
     }
-    findRateLimit.set(userId, now);
+    
+    // Set rate limit with TTL (expires after FIND_RATE_LIMIT_SECONDS)
+    await setWithPrefix(
+      BOT_PREFIX,
+      rateLimitKey,
+      Date.now().toString(),
+      FIND_RATE_LIMIT_SECONDS
+    );
   }
 
   const matches = await findMatches(userId);

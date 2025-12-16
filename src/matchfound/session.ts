@@ -1,6 +1,6 @@
 import { SessionData } from "./types";
 import { createSessionManager } from "../shared/session";
+import { BOT_PREFIX } from "./constants";
 
-const BOT_PREFIX = "matchfound";
 export const getSession = createSessionManager<SessionData>(BOT_PREFIX);
 

@@ -41,7 +41,9 @@ export const mbtiCompatibility: Record<string, string[]> = {
 };
 
 export const BOT_NAME = "MatchFound";
+export const BOT_PREFIX = "matchfound";
 
 // Rate limiting
 export const FIND_RATE_LIMIT_MS = 3600000; // 1 hour in milliseconds
+export const FIND_RATE_LIMIT_SECONDS = Math.floor(FIND_RATE_LIMIT_MS / 1000); // Convert to seconds for Redis TTL
 
