@@ -53,6 +53,19 @@ export const errors = {
   cannotReportSelf: "شما نمی‌توانید خودتان را گزارش دهید!",
   userNotFound: "کاربر یافت نشد",
   deleteFailed: "❌ خطا در حذف اطلاعات. لطفا دوباره تلاش کنید.",
+  // Command errors
+  getProfileFailed: "❌ خطا در دریافت پروفایل. لطفا دوباره تلاش کنید.",
+  commandFailed: "❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.",
+  findFailed: "❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.",
+  likedFailed: "❌ خطا در دریافت لیست لایک‌ها. لطفا دوباره تلاش کنید.",
+  settingsFailed: "❌ خطا در نمایش تنظیمات. لطفا دوباره تلاش کنید.",
+  accessDenied: "❌ دسترسی محدود",
+  statsFailed: "⚠️ خطا در دریافت آمار. لطفا دوباره تلاش کنید.",
+  // Callback errors
+  likeActionFailed: "❌ خطا در ثبت لایک",
+  deleteLikedFailed: "❌ خطا",
+  reportsFailed: "❌ خطا در دریافت گزارش‌ها",
+  usersFailed: "❌ خطا در دریافت کاربران",
 };
 
 // Success messages
@@ -119,6 +132,10 @@ export const deleteData = {
     "• تمام اطلاعات دیگر\n\n" +
     "⚠️ این عمل غیرقابل بازگشت است!",
   cancelled: "❌ حذف اطلاعات لغو شد.",
+  buttons: {
+    confirm: "✅ بله، حذف کن",
+    cancel: "❌ لغو",
+  },
 };
 
 // Settings
@@ -134,6 +151,7 @@ export const display = {
   noBio: "بیوگرافی ثبت نشده",
   usernameNotSet: "نام کاربری ثبت نشده",
   allLikedSeen: "تمام افرادی که شما را لایک کرده‌اند را دیده‌اید.",
+  unknownPerson: "یک نفر",
 };
 
 // Callback query responses
@@ -142,6 +160,54 @@ export const callbacks = {
   mutualLike: "🎉 مچ شدید! هر دو شما یکدیگر را لایک کردید!",
   disliked: "✅ رد شد",
   deleted: "✅ حذف شد",
+};
+
+// General messages
+export const general = {
+  useButtonsBelow: "✨ می‌تونی از دکمه‌های زیر استفاده کنی:",
+};
+
+// Admin messages
+export const admin = {
+  buttons: {
+    reports: "📋 Reports",
+    users: "👥 Users",
+  },
+  panelTitle: "🔐 <b>Admin Panel</b>",
+  statisticsTitle: "📊 <b>Statistics</b>",
+  statsMessage: (
+    totalUsers: number,
+    newUsers: number,
+    completedProfiles: number,
+    totalLikes: number,
+    mutualLikes: number,
+    totalReports: number,
+    minCompletion: number
+  ) =>
+    `${admin.panelTitle}\n\n` +
+    `${admin.statisticsTitle}\n` +
+    `👥 Users: ${totalUsers.toLocaleString("en-US")} (24h: ${newUsers.toLocaleString("en-US")})\n` +
+    `✅ Completed (>=${minCompletion}%): ${completedProfiles.toLocaleString("en-US")}\n` +
+    `❤️ Likes: ${totalLikes.toLocaleString("en-US")}\n` +
+    `🤝 Matches (mutual likes): ${mutualLikes.toLocaleString("en-US")}\n` +
+    `🚫 Reports: ${totalReports.toLocaleString("en-US")}`,
+  chartTitle: (days: number) => `Users & DAU (last ${days} days)`,
+  chartLabels: {
+    activeUsers: "Daily Active Users",
+    totalUsers: "Total Users",
+  },
+  noReports: "📋 هیچ گزارشی ثبت نشده است.",
+  reportsTitle: (count: number) => `📋 <b>Reports (${count})</b>`,
+  noUsers: "👥 هیچ کاربری ثبت نشده است.",
+  allUsersTitle: (count: number) => `👥 <b>All Users (${count})</b>`,
+  reportLabels: {
+    reporter: "👤 <b>Reporter:</b>",
+    reported: "🚫 <b>Reported:</b>",
+    reason: "📝 <b>Reason:</b>",
+    date: "📅 <b>Date:</b>",
+  },
+  noReason: "بدون دلیل",
+  userPrefix: "User",
 };
 
 // Notification messages

@@ -1,34 +1,26 @@
-import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
+import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
-import {
-  ensureUserExists,
-  getUserProfile,
-} from "../shared/database";
 import { MIN_COMPLETION_THRESHOLD } from "../shared/constants";
+import { ensureUserExists, getUserProfile } from "../shared/database";
 import { setupProfileCommand } from "../shared/profileCommand";
+import { generateDailyActiveUsersChart } from "./charts";
 import { BOT_NAME } from "./constants";
 import {
   createMainActionsKeyboard,
+  getMissingRequiredFields,
   handleFind,
   handleLiked,
-  getMissingRequiredFields,
   promptNextRequiredField,
 } from "./helpers";
-import { findMatches } from "./matching";
-import { getSession } from "./session";
 import {
-  buttons,
-  deleteData,
+  admin,
   errors,
-  fields,
+  general,
   getWelcomeMessage,
   profileCompletion,
   settings,
-  success,
 } from "./strings";
-import { MatchUser } from "./types";
-import { generateDailyActiveUsersChart } from "./charts";
 
 const formatNumber = (value: number | bigint) => value.toLocaleString("en-US");
 const ADMIN_DAU_DAYS = 14;
@@ -62,7 +54,7 @@ export function setupCommands(
 
       const profile = await getUserProfile(userId);
       if (!profile) {
-        await ctx.reply("❌ خطا در دریافت پروفایل. لطفا دوباره تلاش کنید.");
+        await ctx.reply(errors.getProfileFailed);
         return;
       }
 
@@ -80,13 +72,13 @@ export function setupCommands(
         await promptNextRequiredField(ctx, bot, userId, missingFields, 0);
       } else {
         // All required fields completed, show action buttons
-        await ctx.reply("✨ می‌تونی از دکمه‌های زیر استفاده کنی:", {
+        await ctx.reply(general.useButtonsBelow, {
           reply_markup: createMainActionsKeyboard(),
         });
       }
     } catch (err) {
       log.error(BOT_NAME + " > Start command failed", err);
-      await ctx.reply("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");
+      await ctx.reply(errors.commandFailed);
       notifyAdmin(
         `❌ <b>Start Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
@@ -103,7 +95,7 @@ export function setupCommands(
       await handleFind(ctx, userId, true);
     } catch (err) {
       log.error(BOT_NAME + " > Find command failed", err);
-      await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
+      await ctx.reply(errors.findFailed);
       notifyAdmin(
         `❌ <b>Find Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
@@ -120,7 +112,7 @@ export function setupCommands(
       await handleLiked(ctx, userId);
     } catch (err) {
       log.error(BOT_NAME + " > Liked command failed", err);
-      await ctx.reply("❌ خطا در دریافت لیست لایک‌ها. لطفا دوباره تلاش کنید.");
+      await ctx.reply(errors.likedFailed);
       notifyAdmin(
         `❌ <b>Liked Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
@@ -138,15 +130,17 @@ export function setupCommands(
     ctx.react("🤔").catch(() => {});
     const userId = ctx.from?.id;
     try {
-      const keyboard = new InlineKeyboard()
-        .text(settings.wipeDataButton, "settings:wipe_data");
+      const keyboard = new InlineKeyboard().text(
+        settings.wipeDataButton,
+        "settings:wipe_data"
+      );
 
       await ctx.reply(settings.title, {
         reply_markup: keyboard,
       });
     } catch (err) {
       log.error(BOT_NAME + " > Settings command failed", err);
-      await ctx.reply("❌ خطا در نمایش تنظیمات. لطفا دوباره تلاش کنید.");
+      await ctx.reply(errors.settingsFailed);
       notifyAdmin(
         `❌ <b>Settings Command Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
@@ -160,7 +154,7 @@ export function setupCommands(
 
     // Check if user is admin
     if (!adminUserId || userId !== adminUserId) {
-      await ctx.reply("❌ دسترسی محدود");
+      await ctx.reply(errors.accessDenied);
       return;
     }
 
@@ -273,26 +267,27 @@ export function setupCommands(
         dailyActiveSeries,
         dailyTotalSeries,
         {
-          title: `Users & DAU (last ${ADMIN_DAU_DAYS} days)`,
-          activeLabel: "Daily Active Users",
-          totalLabel: "Total Users",
+          title: admin.chartTitle(ADMIN_DAU_DAYS),
+          activeLabel: admin.chartLabels.activeUsers,
+          totalLabel: admin.chartLabels.totalUsers,
         }
       );
 
       const keyboard = new InlineKeyboard()
-        .text("📋 Reports", "admin:reports")
+        .text(admin.buttons.reports, "admin:reports")
         .row()
-        .text("👥 Users", "admin:all_users")
+        .text(admin.buttons.users, "admin:all_users")
         .row();
 
-      const statsMessage =
-        "🔐 <b>Admin Panel</b>\n\n" +
-        "📊 <b>Statistics</b>\n" +
-        `👥 Users: ${formatNumber(totalUsers)} (24h: ${formatNumber(newUsers)})\n` +
-        `✅ Completed (>=${MIN_COMPLETION_THRESHOLD}%): ${formatNumber(completedProfiles)}\n` +
-        `❤️ Likes: ${formatNumber(totalLikes)}\n` +
-        `🤝 Matches (mutual likes): ${formatNumber(mutualLikes)}\n` +
-        `🚫 Reports: ${formatNumber(totalReports)}`;
+      const statsMessage = admin.statsMessage(
+        totalUsers,
+        newUsers,
+        completedProfiles,
+        totalLikes,
+        mutualLikes,
+        totalReports,
+        MIN_COMPLETION_THRESHOLD
+      );
 
       await ctx.replyWithPhoto(new InputFile(chartBuffer, "dau.png"), {
         caption: statsMessage,
@@ -301,7 +296,7 @@ export function setupCommands(
       });
     } catch (err) {
       log.error(BOT_NAME + " > Admin stats failed", err);
-      await ctx.reply("⚠️ خطا در دریافت آمار. لطفا دوباره تلاش کنید.");
+      await ctx.reply(errors.statsFailed);
     }
   });
 }

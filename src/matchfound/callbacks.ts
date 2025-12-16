@@ -1,4 +1,4 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
 import {
@@ -9,15 +9,12 @@ import {
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
 import { handleDisplayProfile } from "../shared/profileCommand";
 import { calculateAge } from "../shared/utils";
-import {
-  continueProfileCompletion,
-  handleFind,
-  showNextUser,
-} from "./helpers";
 import { BOT_NAME } from "./constants";
 import { displayUser } from "./display";
+import { continueProfileCompletion, handleFind, showNextUser } from "./helpers";
 import { getSession } from "./session";
 import {
+  admin,
   callbacks,
   deleteData,
   display,
@@ -91,7 +88,9 @@ export function setupCallbacks(
           const likerProfile = await getUserProfile(userId);
           const likerName =
             likerProfile?.display_name ||
-            (likerProfile?.username ? `@${likerProfile.username}` : "یک نفر");
+            (likerProfile?.username
+              ? `@${likerProfile.username}`
+              : display.unknownPerson);
 
           await bot.api.sendMessage(
             likedUserId,
@@ -124,7 +123,7 @@ export function setupCallbacks(
       }
     } catch (err) {
       log.error(BOT_NAME + " > Like action failed", err);
-      await ctx.answerCallbackQuery("❌ خطا در ثبت لایک"); // TODO: Add to strings
+      await ctx.answerCallbackQuery(errors.likeActionFailed);
       notifyAdmin(
         `❌ <b>Like Action Failed</b>\nUser: <code>${userId}</code>\nLiked User: <code>${likedUserId}</code>\nError: ${err}`
       );
@@ -183,7 +182,7 @@ export function setupCallbacks(
       await showNextUser(ctx, userId, "liked");
     } catch (err) {
       log.error(BOT_NAME + " > Delete liked failed", err);
-      await ctx.answerCallbackQuery("❌ خطا"); // TODO: Add to strings
+      await ctx.answerCallbackQuery(errors.deleteLikedFailed);
       notifyAdmin(
         `❌ <b>Delete Liked User Failed</b>\nUser: <code>${userId}</code>\nLiked User: <code>${likedUserId}</code>\nError: ${err}`
       );
@@ -304,7 +303,7 @@ export function setupCallbacks(
       await handleFind(ctx, userId, false);
     } catch (err) {
       log.error(BOT_NAME + " > Find callback failed", err);
-      await ctx.reply("❌ خطا در پیدا کردن افراد. لطفا دوباره تلاش کنید.");
+      await ctx.reply(errors.findFailed);
       notifyAdmin(
         `❌ <b>Find Callback Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
@@ -369,9 +368,9 @@ export function setupCallbacks(
       }
 
       const keyboard = new InlineKeyboard()
-        .text("✅ بله، حذف کن", "wipe_data:confirm")
+        .text(deleteData.buttons.confirm, "wipe_data:confirm")
         .row()
-        .text("❌ لغو", "wipe_data:cancel");
+        .text(deleteData.buttons.cancel, "wipe_data:cancel");
 
       await ctx.editMessageText(deleteData.confirmPrompt, {
         reply_markup: keyboard,
@@ -379,7 +378,7 @@ export function setupCallbacks(
       });
     } catch (err) {
       log.error(BOT_NAME + " > Settings wipe_data callback failed", err);
-      await ctx.editMessageText("❌ خطا در اجرای دستور. لطفا دوباره تلاش کنید.");
+      await ctx.editMessageText(errors.commandFailed);
       await notifyAdmin(
         `❌ <b>Settings Wipe Data Callback Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
@@ -394,7 +393,7 @@ export function setupCallbacks(
     bot.callbackQuery(/^admin:reports$/, async (ctx) => {
       const userId = ctx.from?.id;
       if (!userId || userId !== adminUserId) {
-        await ctx.answerCallbackQuery("❌ دسترسی محدود");
+        await ctx.answerCallbackQuery(errors.accessDenied);
         return;
       }
 
@@ -423,33 +422,33 @@ export function setupCallbacks(
         });
 
         if (reports.length === 0) {
-          await ctx.reply("📋 هیچ گزارشی ثبت نشده است.");
+          await ctx.reply(admin.noReports);
           return;
         }
 
-        let message = `📋 <b>Reports (${reports.length})</b>\n\n`;
+        let message = `${admin.reportsTitle(reports.length)}\n\n`;
         for (const report of reports) {
           const reporterName =
             report.reporter.display_name ||
             report.reporter.username ||
-            `User ${report.reporter.telegram_id}`;
+            `${admin.userPrefix} ${report.reporter.telegram_id}`;
           const reportedName =
             report.reportedUser.display_name ||
             report.reportedUser.username ||
-            `User ${report.reportedUser.telegram_id}`;
-          const reason = report.reason || "بدون دلیل";
+            `${admin.userPrefix} ${report.reportedUser.telegram_id}`;
+          const reason = report.reason || admin.noReason;
           const date = report.created_at.toLocaleDateString("fa-IR");
 
-          message += `👤 <b>Reporter:</b> ${reporterName} (<code>${report.reporter.telegram_id}</code>)\n`;
-          message += `🚫 <b>Reported:</b> ${reportedName} (<code>${report.reported_user_id}</code>)\n`;
-          message += `📝 <b>Reason:</b> ${reason}\n`;
-          message += `📅 <b>Date:</b> ${date}\n\n`;
+          message += `${admin.reportLabels.reporter} ${reporterName} (<code>${report.reporter.telegram_id}</code>)\n`;
+          message += `${admin.reportLabels.reported} ${reportedName} (<code>${report.reported_user_id}</code>)\n`;
+          message += `${admin.reportLabels.reason} ${reason}\n`;
+          message += `${admin.reportLabels.date} ${date}\n\n`;
         }
 
         await ctx.reply(message, { parse_mode: "HTML" });
       } catch (err) {
         log.error(BOT_NAME + " > Admin reports failed", err);
-        await ctx.reply("❌ خطا در دریافت گزارش‌ها");
+        await ctx.reply(errors.reportsFailed);
       }
     });
 
@@ -457,7 +456,7 @@ export function setupCallbacks(
     bot.callbackQuery(/^admin:all_users$/, async (ctx) => {
       const userId = ctx.from?.id;
       if (!userId || userId !== adminUserId) {
-        await ctx.answerCallbackQuery("❌ دسترسی محدود");
+        await ctx.answerCallbackQuery(errors.accessDenied);
         return;
       }
 
@@ -470,7 +469,7 @@ export function setupCallbacks(
         });
 
         if (allUsers.length === 0) {
-          await ctx.reply("👥 هیچ کاربری ثبت نشده است.");
+          await ctx.reply(admin.noUsers);
           return;
         }
 
@@ -494,7 +493,7 @@ export function setupCallbacks(
         // Mark as admin view so navigation preserves showUsername
         (session as any).isAdminView = true;
 
-        await ctx.reply(`👥 <b>All Users (${users.length})</b>`, {
+        await ctx.reply(admin.allUsersTitle(users.length), {
           parse_mode: "HTML",
         });
 
@@ -504,7 +503,7 @@ export function setupCallbacks(
         }
       } catch (err) {
         log.error(BOT_NAME + " > Admin all users failed", err);
-        await ctx.reply("❌ خطا در دریافت کاربران");
+        await ctx.reply(errors.usersFailed);
       }
     });
   }
