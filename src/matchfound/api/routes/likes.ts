@@ -6,6 +6,9 @@ import {
   invalidateExclusionCache,
   invalidateExclusionCacheForUsers,
 } from "../../exclusionCache";
+import {
+  invalidateMatchCacheForUsers,
+} from "../../matching";
 
 const router = express.Router();
 
@@ -62,8 +65,9 @@ router.post("/:userId", async (req: AuthRequest, res) => {
       },
     });
 
-    // Invalidate exclusion cache for both users (affects their match queries)
+    // Invalidate exclusion cache and match cache for both users (affects their match queries)
     await invalidateExclusionCacheForUsers([req.userId, likedUserId]);
+    await invalidateMatchCacheForUsers([req.userId, likedUserId]);
 
     // Check for mutual like (match)
     const mutualLike = await prisma.like.findUnique({
@@ -124,8 +128,9 @@ router.delete("/:userId", async (req: AuthRequest, res) => {
       update: {},
     });
 
-    // Invalidate exclusion cache for both users (affects their match queries)
+    // Invalidate exclusion cache and match cache for both users (affects their match queries)
     await invalidateExclusionCacheForUsers([req.userId, dislikedUserId]);
+    await invalidateMatchCacheForUsers([req.userId, dislikedUserId]);
 
     res.json({ message: "User disliked successfully" });
   } catch (error) {

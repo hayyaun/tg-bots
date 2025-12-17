@@ -4,10 +4,62 @@ import { MAX_COMPLETION_SCORE, MIN_INTERESTS, MAX_INTERESTS, MIN_COMPLETION_THRE
 import {
   archetypeCompatibility,
   mbtiCompatibility,
+  BOT_PREFIX,
 } from "./constants";
 import { MatchUser } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getUserProfile, getUserProfileById } from "../shared/database";
+import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
+
+// Cache TTL for match results (5 minutes)
+const MATCH_CACHE_TTL = 300;
+
+/**
+ * Get cached match results for a user
+ */
+async function getCachedMatches(userId: bigint): Promise<MatchUser[] | null> {
+  const cached = await getWithPrefix(
+    BOT_PREFIX,
+    `matches:${userId.toString()}`
+  );
+  if (!cached) return null;
+
+  try {
+    return JSON.parse(cached) as MatchUser[];
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cache match results for a user
+ */
+async function cacheMatches(userId: bigint, matches: MatchUser[]): Promise<void> {
+  await setWithPrefix(
+    BOT_PREFIX,
+    `matches:${userId.toString()}`,
+    JSON.stringify(matches),
+    MATCH_CACHE_TTL
+  );
+}
+
+/**
+ * Invalidate match cache for a user
+ * Call this when a user likes or ignores someone, or when their profile changes
+ */
+export async function invalidateMatchCache(userId: bigint): Promise<void> {
+  await delWithPrefix(BOT_PREFIX, `matches:${userId.toString()}`);
+}
+
+/**
+ * Invalidate match cache for multiple users
+ */
+export async function invalidateMatchCacheForUsers(userIds: bigint[]): Promise<void> {
+  const promises = userIds.map((userId) =>
+    delWithPrefix(BOT_PREFIX, `matches:${userId.toString()}`)
+  );
+  await Promise.all(promises);
+}
 
 export async function findMatches(userId: number | bigint, isAdmin: boolean = false): Promise<MatchUser[]> {
   
@@ -35,6 +87,14 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   
   if (!user || !user.gender || !user.looking_for_gender) return [];
 
+  // Check cache first (skip cache for admin users to see fresh results)
+  if (!isAdmin) {
+    const cached = await getCachedMatches(userIdBigInt);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const userAge = calculateAge(user.birth_date);
   if (!userAge || !user.birth_date) return [];
 
@@ -56,8 +116,8 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   minBirthDate.setMonth(0); // January
   minBirthDate.setDate(1); // First day of year
 
-  // Use raw SQL query with NOT EXISTS subqueries for efficient exclusion checking
-  // This is much more efficient than using notIn with large arrays (especially with 1M+ users)
+  // Use raw SQL query with LEFT JOINs for efficient exclusion checking
+  // LEFT JOINs can be faster than NOT EXISTS with proper composite indexes
   // Build the query conditionally based on gender preference
   let candidates: Array<{
     id: bigint;
@@ -88,8 +148,11 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
 
   if (user.looking_for_gender === "both") {
     candidates = await prisma.$queryRaw`
-      SELECT u.*
+      SELECT DISTINCT u.*
       FROM users u
+      LEFT JOIN likes l ON l.user_id = ${userIdBigInt} AND l.liked_user_id = u.id
+      LEFT JOIN ignored i1 ON i1.ignored_user_id = ${userIdBigInt} AND i1.user_id = u.id
+      LEFT JOIN ignored i2 ON i2.user_id = ${userIdBigInt} AND i2.ignored_user_id = u.id
       WHERE u.id != ${userIdBigInt}
         AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
         AND u.username IS NOT NULL
@@ -99,31 +162,19 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
         AND u.birth_date <= ${maxBirthDate}::date
         AND array_length(u.interests, 1) > 0
         AND u.gender IN ('male', 'female')
-        -- Exclude users already liked by this user (using NOT EXISTS for efficiency)
-        AND NOT EXISTS (
-          SELECT 1 FROM likes l 
-          WHERE l.user_id = ${userIdBigInt} 
-          AND l.liked_user_id = u.id
-        )
-        -- Exclude users who ignored this user
-        AND NOT EXISTS (
-          SELECT 1 FROM ignored i 
-          WHERE i.ignored_user_id = ${userIdBigInt} 
-          AND i.user_id = u.id
-        )
-        -- Exclude users this user has ignored
-        AND NOT EXISTS (
-          SELECT 1 FROM ignored i 
-          WHERE i.user_id = ${userIdBigInt} 
-          AND i.ignored_user_id = u.id
-        )
+        AND l.id IS NULL
+        AND i1.id IS NULL
+        AND i2.id IS NULL
       ORDER BY u.completion_score DESC
       LIMIT ${MAX_CANDIDATES_TO_FETCH}
     `;
   } else {
     candidates = await prisma.$queryRaw`
-      SELECT u.*
+      SELECT DISTINCT u.*
       FROM users u
+      LEFT JOIN likes l ON l.user_id = ${userIdBigInt} AND l.liked_user_id = u.id
+      LEFT JOIN ignored i1 ON i1.ignored_user_id = ${userIdBigInt} AND i1.user_id = u.id
+      LEFT JOIN ignored i2 ON i2.user_id = ${userIdBigInt} AND i2.ignored_user_id = u.id
       WHERE u.id != ${userIdBigInt}
         AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
         AND u.username IS NOT NULL
@@ -133,24 +184,9 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
         AND u.birth_date <= ${maxBirthDate}::date
         AND array_length(u.interests, 1) > 0
         AND u.gender = ${user.looking_for_gender}
-        -- Exclude users already liked by this user (using NOT EXISTS for efficiency)
-        AND NOT EXISTS (
-          SELECT 1 FROM likes l 
-          WHERE l.user_id = ${userIdBigInt} 
-          AND l.liked_user_id = u.id
-        )
-        -- Exclude users who ignored this user
-        AND NOT EXISTS (
-          SELECT 1 FROM ignored i 
-          WHERE i.ignored_user_id = ${userIdBigInt} 
-          AND i.user_id = u.id
-        )
-        -- Exclude users this user has ignored
-        AND NOT EXISTS (
-          SELECT 1 FROM ignored i 
-          WHERE i.user_id = ${userIdBigInt} 
-          AND i.ignored_user_id = u.id
-        )
+        AND l.id IS NULL
+        AND i1.id IS NULL
+        AND i2.id IS NULL
       ORDER BY u.completion_score DESC
       LIMIT ${MAX_CANDIDATES_TO_FETCH}
     `;
@@ -326,5 +362,12 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   });
 
   // Limit final results to prevent returning too many matches
-  return matches.slice(0, MAX_MATCHES_TO_RETURN);
+  const finalMatches = matches.slice(0, MAX_MATCHES_TO_RETURN);
+
+  // Cache results (skip cache for admin users)
+  if (!isAdmin) {
+    await cacheMatches(userIdBigInt, finalMatches);
+  }
+
+  return finalMatches;
 }

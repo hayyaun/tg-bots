@@ -17,6 +17,10 @@ import {
   isAdminUser,
   showNextUser,
 } from "./helpers";
+import {
+  invalidateMatchCache,
+  invalidateMatchCacheForUsers,
+} from "./matching";
 import { getSession } from "./session";
 import {
   admin,
@@ -69,6 +73,9 @@ export function setupCallbacks(
         },
         update: {},
       });
+
+      // Invalidate match cache for both users (matches change when likes are added)
+      await invalidateMatchCacheForUsers([userIdBigInt, likedUserIdBigInt]);
 
       // Check for mutual like
       const mutualLike = await prisma.like.findUnique({
@@ -181,6 +188,9 @@ export function setupCallbacks(
         },
         update: {},
       });
+
+      // Invalidate match cache for both users (matches change when ignores are added)
+      await invalidateMatchCacheForUsers([userIdBigInt, likedUserIdBigInt]);
 
       await ctx.answerCallbackQuery(callbacks.deleted);
       await showNextUser(ctx, userId, "liked");
