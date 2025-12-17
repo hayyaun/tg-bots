@@ -2,6 +2,10 @@ import express from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { prisma } from "../../../db";
 import log from "../../../log";
+import {
+  invalidateExclusionCache,
+  invalidateExclusionCacheForUsers,
+} from "../../exclusionCache";
 
 const router = express.Router();
 
@@ -57,6 +61,9 @@ router.post("/:userId", async (req: AuthRequest, res) => {
         liked_user_id: likedUserId,
       },
     });
+
+    // Invalidate exclusion cache for both users (affects their match queries)
+    await invalidateExclusionCacheForUsers([req.userId, likedUserId]);
 
     // Check for mutual like (match)
     const mutualLike = await prisma.like.findUnique({
@@ -116,6 +123,9 @@ router.delete("/:userId", async (req: AuthRequest, res) => {
       },
       update: {},
     });
+
+    // Invalidate exclusion cache for both users (affects their match queries)
+    await invalidateExclusionCacheForUsers([req.userId, dislikedUserId]);
 
     res.json({ message: "User disliked successfully" });
   } catch (error) {

@@ -138,7 +138,9 @@ export type ProfileFieldKey = typeof FIELD_KEY[keyof typeof FIELD_KEY];
 
 // Matching and compatibility scoring constants
 export const MAX_AGE_DIFFERENCE = 8; // Maximum age difference for matching
-export const MAX_CANDIDATES_TO_FETCH = 5000; // Maximum number of candidates to fetch from database for matching
+// Increased from 5000 to 10000 for better coverage with 1M+ users
+// With NOT EXISTS subqueries and composite indexes, this is still efficient
+export const MAX_CANDIDATES_TO_FETCH = 10000; // Maximum number of candidates to fetch from database for matching
 export const MAX_MATCHES_TO_RETURN = 500; // Maximum number of matches to return after scoring and sorting
 
 // Compatibility scoring weights (percentages)

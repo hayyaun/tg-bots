@@ -34,7 +34,7 @@ model User {
   bigfive_result     String?   @db.Text
   profile_image      String?
   mood               String?   @db.VarChar(10)
-  interests          String[]  @default([])
+  interests          String[]  @default([]) // Note: GIN index exists via migration (see 20251217135532_add_matching_indexes)
   location           String?   @db.VarChar(50)
   completion_score   Int       @default(0)
   last_online        DateTime?
@@ -57,6 +57,9 @@ model User {
   @@index([looking_for_gender])
   @@index([completion_score])
   @@index([birth_date])
+  // Composite indexes for efficient match finding queries
+  @@index([gender, completion_score, birth_date])
+  @@index([completion_score, birth_date])
   @@map("users")
 }
 

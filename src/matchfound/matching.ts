@@ -38,39 +38,6 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   const userAge = calculateAge(user.birth_date);
   if (!userAge || !user.birth_date) return [];
 
-  // Get all excluded user IDs - run queries in parallel for better performance
-  const excludedIds: bigint[] = [userIdBigInt];
-
-  // Fetch all exclusion data in parallel
-  const [likes, ignoredBy, ignoredByUser] = await Promise.all([
-    // Get users already liked
-    prisma.like.findMany({
-      where: { user_id: userIdBigInt },
-      select: { liked_user_id: true },
-    }),
-    // Get users who ignored this user
-    prisma.ignored.findMany({
-      where: { ignored_user_id: userIdBigInt },
-      select: { user_id: true },
-    }),
-    // Get users this user has ignored
-    prisma.ignored.findMany({
-      where: { user_id: userIdBigInt },
-      select: { ignored_user_id: true },
-    }),
-  ]);
-
-  // Build exclusion list from parallel results
-  likes.forEach((like: { liked_user_id: bigint }) =>
-    excludedIds.push(like.liked_user_id)
-  );
-  ignoredBy.forEach((ignored: { user_id: bigint }) =>
-    excludedIds.push(ignored.user_id)
-  );
-  ignoredByUser.forEach((ignored: { ignored_user_id: bigint }) =>
-    excludedIds.push(ignored.ignored_user_id)
-  );
-
   // Calculate birth_date range for age filtering (done in database)
   const today = new Date();
   const minAge = Math.max(18, userAge - MAX_AGE_DIFFERENCE); // Ensure minimum age of 18
@@ -89,35 +56,105 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   minBirthDate.setMonth(0); // January
   minBirthDate.setDate(1); // First day of year
 
-  // Get all candidates matching criteria
-  const whereClause: Prisma.UserWhereInput = {
-    id: { not: userIdBigInt, notIn: excludedIds },
-    completion_score: { gte: MIN_COMPLETION_THRESHOLD },
-    username: { not: null },
-    gender: { not: null },
-    birth_date: { 
-      not: null,
-      gte: minBirthDate,
-      lte: maxBirthDate,
-    },
-    interests: { isEmpty: false },
-  };
+  // Use raw SQL query with NOT EXISTS subqueries for efficient exclusion checking
+  // This is much more efficient than using notIn with large arrays (especially with 1M+ users)
+  // Build the query conditionally based on gender preference
+  let candidates: Array<{
+    id: bigint;
+    telegram_id: bigint | null;
+    google_id: string | null;
+    email: string | null;
+    username: string | null;
+    display_name: string | null;
+    biography: string | null;
+    birth_date: Date | null;
+    gender: string | null;
+    looking_for_gender: string | null;
+    archetype_result: string | null;
+    mbti_result: string | null;
+    leftright_result: string | null;
+    politicalcompass_result: string | null;
+    enneagram_result: string | null;
+    bigfive_result: string | null;
+    profile_image: string | null;
+    mood: string | null;
+    interests: string[];
+    location: string | null;
+    completion_score: number;
+    last_online: Date | null;
+    created_at: Date;
+    updated_at: Date;
+  }>;
 
-  // Build gender filter
   if (user.looking_for_gender === "both") {
-    whereClause.gender = { in: ["male", "female"] };
+    candidates = await prisma.$queryRaw`
+      SELECT u.*
+      FROM users u
+      WHERE u.id != ${userIdBigInt}
+        AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
+        AND u.username IS NOT NULL
+        AND u.gender IS NOT NULL
+        AND u.birth_date IS NOT NULL
+        AND u.birth_date >= ${minBirthDate}::date
+        AND u.birth_date <= ${maxBirthDate}::date
+        AND array_length(u.interests, 1) > 0
+        AND u.gender IN ('male', 'female')
+        -- Exclude users already liked by this user (using NOT EXISTS for efficiency)
+        AND NOT EXISTS (
+          SELECT 1 FROM likes l 
+          WHERE l.user_id = ${userIdBigInt} 
+          AND l.liked_user_id = u.id
+        )
+        -- Exclude users who ignored this user
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored i 
+          WHERE i.ignored_user_id = ${userIdBigInt} 
+          AND i.user_id = u.id
+        )
+        -- Exclude users this user has ignored
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored i 
+          WHERE i.user_id = ${userIdBigInt} 
+          AND i.ignored_user_id = u.id
+        )
+      ORDER BY u.completion_score DESC
+      LIMIT ${MAX_CANDIDATES_TO_FETCH}
+    `;
   } else {
-    whereClause.gender = user.looking_for_gender;
+    candidates = await prisma.$queryRaw`
+      SELECT u.*
+      FROM users u
+      WHERE u.id != ${userIdBigInt}
+        AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
+        AND u.username IS NOT NULL
+        AND u.gender IS NOT NULL
+        AND u.birth_date IS NOT NULL
+        AND u.birth_date >= ${minBirthDate}::date
+        AND u.birth_date <= ${maxBirthDate}::date
+        AND array_length(u.interests, 1) > 0
+        AND u.gender = ${user.looking_for_gender}
+        -- Exclude users already liked by this user (using NOT EXISTS for efficiency)
+        AND NOT EXISTS (
+          SELECT 1 FROM likes l 
+          WHERE l.user_id = ${userIdBigInt} 
+          AND l.liked_user_id = u.id
+        )
+        -- Exclude users who ignored this user
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored i 
+          WHERE i.ignored_user_id = ${userIdBigInt} 
+          AND i.user_id = u.id
+        )
+        -- Exclude users this user has ignored
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored i 
+          WHERE i.user_id = ${userIdBigInt} 
+          AND i.ignored_user_id = u.id
+        )
+      ORDER BY u.completion_score DESC
+      LIMIT ${MAX_CANDIDATES_TO_FETCH}
+    `;
   }
-
-  // Limit candidates fetched to prevent memory issues with large user bases
-  const candidates = await prisma.user.findMany({
-    where: whereClause,
-    take: MAX_CANDIDATES_TO_FETCH,
-    orderBy: {
-      completion_score: 'desc', // Prioritize users with higher completion scores first
-    },
-  });
 
   // Calculate compatibility for each candidate
   const matches: MatchUser[] = [];
