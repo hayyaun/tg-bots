@@ -13,6 +13,8 @@ export interface MatchMetadata {
   compatibility_score?: number;
 }
 
+export type DisplayMode = "match" | "liked";
+
 export interface SessionData extends BaseSessionData {
   // Store only IDs and metadata instead of full MatchUser arrays
   // This reduces memory usage by ~90% for large match lists
@@ -24,6 +26,5 @@ export interface SessionData extends BaseSessionData {
   reportingUserId?: number;
   banningUserId?: number; // User being banned (telegram_id)
   profileCompletionFieldIndex?: number; // Index of current field being completed
-  isAdminView?: boolean; // Flag for admin view mode
 }
 

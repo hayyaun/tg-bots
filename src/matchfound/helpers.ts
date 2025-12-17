@@ -1,6 +1,14 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
-import { FIELD_KEY, type ProfileFieldKey, INMANKIST_BOT_USERNAME, INTERESTS, ITEMS_PER_PAGE, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD } from "../shared/constants";
+import {
+  FIELD_KEY,
+  type ProfileFieldKey,
+  INMANKIST_BOT_USERNAME,
+  INTERESTS,
+  ITEMS_PER_PAGE,
+  MIN_INTERESTS,
+  MIN_COMPLETION_THRESHOLD,
+} from "../shared/constants";
 import { callbacks as callbackQueries } from "./callbackQueries";
 import {
   getUserIdFromTelegramId,
@@ -32,12 +40,25 @@ import {
   profileValues,
   success,
 } from "./strings";
-import { MatchUser, MatchMetadata } from "./types";
+import { MatchUser, MatchMetadata, DisplayMode } from "./types";
+
+// Helper to check if a user is admin
+export function isAdminUser(userId: number | undefined): boolean {
+  return ADMIN_USER_ID !== undefined && userId === ADMIN_USER_ID;
+}
+
+// Helper to check if the current context user is admin
+export function isAdminContext(ctx: { from?: { id?: number } }): boolean {
+  return isAdminUser(ctx.from?.id);
+}
 
 // Helper to convert MatchUser[] to optimized session format (IDs + metadata)
 export function storeMatchesInSession(
   matches: MatchUser[],
-  session: { matchIds?: number[]; matchMetadata?: Record<number, MatchMetadata> }
+  session: {
+    matchIds?: number[];
+    matchMetadata?: Record<number, MatchMetadata>;
+  }
 ): void {
   session.matchIds = matches.map((m) => m.telegram_id || 0);
   session.matchMetadata = {};
@@ -69,13 +90,11 @@ async function getMatchUserById(
 }
 
 // Helper to get current match from session
-async function getCurrentMatch(
-  session: {
-    matchIds?: number[];
-    matchMetadata?: Record<number, MatchMetadata>;
-    currentMatchIndex?: number;
-  }
-): Promise<MatchUser | null> {
+async function getCurrentMatch(session: {
+  matchIds?: number[];
+  matchMetadata?: Record<number, MatchMetadata>;
+  currentMatchIndex?: number;
+}): Promise<MatchUser | null> {
   if (
     !session.matchIds ||
     session.currentMatchIndex === undefined ||
@@ -121,9 +140,7 @@ export async function validateProfileForFind(
 
   // Check interests separately to show specific count
   if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
-    await ctx.reply(
-      errors.minInterestsNotMet(profile.interests?.length || 0)
-    );
+    await ctx.reply(errors.minInterestsNotMet(profile.interests?.length || 0));
     return false;
   }
 
@@ -166,7 +183,7 @@ export async function executeFindAndDisplay(
   if (checkRateLimit) {
     const rateLimitKey = `ratelimit:find:${userId}`;
     const lastFindTimestamp = await getWithPrefix(BOT_PREFIX, rateLimitKey);
-    
+
     if (lastFindTimestamp) {
       const lastFind = parseInt(lastFindTimestamp, 10);
       const now = Date.now();
@@ -178,7 +195,7 @@ export async function executeFindAndDisplay(
         return;
       }
     }
-    
+
     // Set rate limit with TTL (expires after FIND_RATE_LIMIT_SECONDS)
     await setWithPrefix(
       BOT_PREFIX,
@@ -189,8 +206,8 @@ export async function executeFindAndDisplay(
   }
 
   // Check if user is admin
-  const isAdmin = ADMIN_USER_ID !== undefined && userId === ADMIN_USER_ID;
-  
+  const isAdmin = isAdminUser(userId);
+
   const matches = await findMatches(userId, isAdmin);
   if (matches.length === 0) {
     await ctx.reply(errors.noMatches);
@@ -201,32 +218,20 @@ export async function executeFindAndDisplay(
   const session = await getSession(userId);
   storeMatchesInSession(matches, session);
   session.currentMatchIndex = 0;
-  // Mark as admin view if admin (so navigation preserves showUsername)
-  if (isAdmin) {
-    session.isAdminView = true;
-  }
 
   // Show match count
   await ctx.reply(success.matchesFound(matches.length));
 
   // Show first match (with username if admin)
   const firstMatch = matches[0];
-  await displayUser(
-    ctx,
-    firstMatch,
-    "match",
-    isAdmin, // showUsername = true for admin
-    session,
-    profile.interests || [],
-    profile
-  );
+  await displayUser(ctx, firstMatch, "match", session, profile);
 }
 
 // Helper to show next user after action (like/dislike/next/delete)
 export async function showNextUser(
   ctx: Context,
   userId: number,
-  type: "match" | "liked"
+  type: DisplayMode
 ): Promise<void> {
   const session = await getSession(userId);
   const profile = await getUserProfile(userId);
@@ -240,16 +245,7 @@ export async function showNextUser(
     if (session.currentMatchIndex < session.matchIds.length) {
       const match = await getCurrentMatch(session);
       if (match) {
-        const isAdminView = session.isAdminView === true;
-        await displayUser(
-          ctx,
-          match,
-          "match",
-          isAdminView,
-          session,
-          profile?.interests || [],
-          profile || undefined
-        );
+        await displayUser(ctx, match, "match", session, profile || undefined);
       } else {
         await ctx.reply(errors.noMatches);
       }
@@ -270,9 +266,7 @@ export async function showNextUser(
           ctx,
           likedUser,
           "liked",
-          false,
           undefined,
-          profile?.interests || [],
           profile || undefined
         );
       } else {
@@ -285,10 +279,7 @@ export async function showNextUser(
 }
 
 // Handle liked users functionality (shared between /liked command)
-export async function handleLiked(
-  ctx: Context,
-  userId: number
-): Promise<void> {
+export async function handleLiked(ctx: Context, userId: number): Promise<void> {
   // Get user id from telegram_id
   const userIdBigInt = await getUserIdFromTelegramId(userId);
   if (!userIdBigInt) {
@@ -335,8 +326,8 @@ export async function handleLiked(
 
   // Store in optimized format (IDs only)
   const session = await getSession(userId);
-  session.likedUserIds = filteredLikes.map(
-    (like: (typeof filteredLikes)[0]) => Number(like.user.telegram_id)
+  session.likedUserIds = filteredLikes.map((like: (typeof filteredLikes)[0]) =>
+    Number(like.user.telegram_id)
   );
   session.currentLikedIndex = 0;
 
@@ -348,15 +339,7 @@ export async function handleLiked(
     return;
   }
   const profile = await getUserProfile(userId);
-  await displayUser(
-    ctx,
-    firstUser,
-    "liked",
-    false,
-    undefined,
-    profile?.interests || [],
-    profile || undefined
-  );
+  await displayUser(ctx, firstUser, "liked", undefined, profile || undefined);
 }
 
 // Profile completion helpers
@@ -375,14 +358,25 @@ const FIELD_TYPE = {
   INTERESTS: "interests",
 } as const;
 
-
 const REQUIRED_FIELDS: RequiredField[] = [
   { key: FIELD_KEY.USERNAME, name: fields.username, type: FIELD_TYPE.USERNAME },
-  { key: FIELD_KEY.DISPLAY_NAME, name: fields.displayName, type: FIELD_TYPE.TEXT },
+  {
+    key: FIELD_KEY.DISPLAY_NAME,
+    name: fields.displayName,
+    type: FIELD_TYPE.TEXT,
+  },
   { key: FIELD_KEY.GENDER, name: fields.gender, type: FIELD_TYPE.SELECT },
-  { key: FIELD_KEY.LOOKING_FOR_GENDER, name: fields.lookingForGender, type: FIELD_TYPE.SELECT },
+  {
+    key: FIELD_KEY.LOOKING_FOR_GENDER,
+    name: fields.lookingForGender,
+    type: FIELD_TYPE.SELECT,
+  },
   { key: FIELD_KEY.BIRTH_DATE, name: fields.birthDate, type: FIELD_TYPE.DATE },
-  { key: FIELD_KEY.INTERESTS, name: fields.interests, type: FIELD_TYPE.INTERESTS },
+  {
+    key: FIELD_KEY.INTERESTS,
+    name: fields.interests,
+    type: FIELD_TYPE.INTERESTS,
+  },
 ];
 
 // Reusable keyboard for main actions
@@ -494,16 +488,28 @@ export async function promptNextRequiredField(
       if (field.key === FIELD_KEY.GENDER) {
         const genderKeyboard = new InlineKeyboard()
           .text(profileValues.male, callbackQueries.profileSetGender("male"))
-          .text(profileValues.female, callbackQueries.profileSetGender("female"));
+          .text(
+            profileValues.female,
+            callbackQueries.profileSetGender("female")
+          );
         await ctx.reply(profileCompletion.fieldPrompt.gender, {
           reply_markup: genderKeyboard,
         });
       } else if (field.key === FIELD_KEY.LOOKING_FOR_GENDER) {
         const lookingForKeyboard = new InlineKeyboard()
-          .text(profileValues.male, callbackQueries.profileSetLookingFor("male"))
-          .text(profileValues.female, callbackQueries.profileSetLookingFor("female"))
+          .text(
+            profileValues.male,
+            callbackQueries.profileSetLookingFor("male")
+          )
+          .text(
+            profileValues.female,
+            callbackQueries.profileSetLookingFor("female")
+          )
           .row()
-          .text(profileValues.both, callbackQueries.profileSetLookingFor("both"));
+          .text(
+            profileValues.both,
+            callbackQueries.profileSetLookingFor("both")
+          );
         await ctx.reply(profileCompletion.fieldPrompt.lookingFor, {
           reply_markup: lookingForKeyboard,
         });
@@ -581,7 +587,10 @@ export async function promptNextRequiredField(
           `صفحه 1/${totalPages}`,
           callbackQueries.profileInterestsNoop
         );
-        interestsKeyboard.text(buttons.next, callbackQueries.profileInterestsPage(1));
+        interestsKeyboard.text(
+          buttons.next,
+          callbackQueries.profileInterestsPage(1)
+        );
       }
 
       const selectedCount = currentInterests.size;
@@ -658,4 +667,3 @@ export async function continueProfileCompletion(
 }
 
 // Export helper functions used by commands.ts
-

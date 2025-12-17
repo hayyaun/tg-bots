@@ -1,18 +1,22 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
+import { ADMIN_USER_ID } from "../shared/constants";
 import {
   deleteUserData,
   getUserIdFromTelegramId,
   getUserProfile,
 } from "../shared/database";
-import { ADMIN_USER_ID } from "../shared/constants";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
 import { handleDisplayProfile } from "../shared/profileCommand";
-import { calculateAge } from "../shared/utils";
+import { callbacks as callbackQueries } from "./callbackQueries";
 import { BOT_NAME } from "./constants";
-import { displayUser } from "./display";
-import { continueProfileCompletion, handleFind, showNextUser, storeMatchesInSession } from "./helpers";
+import {
+  continueProfileCompletion,
+  handleFind,
+  isAdminUser,
+  showNextUser,
+} from "./helpers";
 import { getSession } from "./session";
 import {
   admin,
@@ -25,8 +29,6 @@ import {
   report,
   success,
 } from "./strings";
-import { callbacks as callbackQueries } from "./callbackQueries";
-import { MatchUser } from "./types";
 
 export function setupCallbacks(
   bot: Bot,
@@ -213,7 +215,7 @@ export function setupCallbacks(
   // Ban action (admin only)
   bot.callbackQuery(/ban:(\d+)/, async (ctx) => {
     const userId = ctx.from?.id;
-    if (!userId || userId !== ADMIN_USER_ID) {
+    if (!userId || !isAdminUser(userId)) {
       await ctx.answerCallbackQuery(errors.accessDenied);
       return;
     }
@@ -246,7 +248,7 @@ export function setupCallbacks(
   // Handle ban duration selection
   bot.callbackQuery(/ban_duration:(\d+):(.+)/, async (ctx) => {
     const userId = ctx.from?.id;
-    if (!userId || userId !== ADMIN_USER_ID) {
+    if (!userId || !isAdminUser(userId)) {
       await ctx.answerCallbackQuery(errors.accessDenied);
       return;
     }
@@ -340,7 +342,7 @@ export function setupCallbacks(
   // Handle ban cancellation
   bot.callbackQuery(/ban_cancel:(\d+)/, async (ctx) => {
     const userId = ctx.from?.id;
-    if (!userId || userId !== ADMIN_USER_ID) {
+    if (!userId || !isAdminUser(userId)) {
       await ctx.answerCallbackQuery(errors.accessDenied);
       return;
     }
@@ -595,7 +597,6 @@ export function setupCallbacks(
         await ctx.reply(errors.reportsFailed);
       }
     });
-
   }
 
   // Setup shared profile callbacks (all profile editing)

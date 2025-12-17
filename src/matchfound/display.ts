@@ -26,8 +26,8 @@ import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
 import { buildQuizResultsSection } from "../shared/display";
 import { isUserBanned } from "../shared/database";
-
-type DisplayMode = "match" | "liked";
+import { isAdminContext } from "./helpers";
+import { DisplayMode } from "./types";
 
 // Helper function to format last_online date in Persian
 function formatLastOnline(lastOnline: Date | null): string {
@@ -219,23 +219,25 @@ export async function displayUser(
   ctx: Context,
   user: MatchUser,
   mode: DisplayMode = "match",
-  showUsername = false,
   session?: SessionData,
-  userInterests?: string[],
   currentUserProfile?: UserProfile
 ) {
   // Check if viewing user is admin
-  const isAdmin = ADMIN_USER_ID !== undefined && ctx.from?.id === ADMIN_USER_ID;
+  const isAdmin = isAdminContext(ctx);
+  const showUsername = isAdmin; // Admins always see usernames
   
   // Calculate compatibility score
   const compatibilityScore = user.compatibility_score ?? 
     (currentUserProfile ? calculateCompatibilityScore(currentUserProfile, user) : undefined);
   
+  // Derive user interests from currentUserProfile
+  const userInterests = currentUserProfile?.interests ?? undefined;
+  
   // Build message sections in parallel where possible
   const [quizResultsSection, interestsSection, adminInfoSection] = await Promise.all([
     buildQuizResultsSection(user, BOT_NAME, ctx.from?.id, false),
     buildInterestsSection(user, userInterests, ctx.from?.id),
-    showUsername ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
+    isAdmin ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
   ]);
   
   // Build main message
