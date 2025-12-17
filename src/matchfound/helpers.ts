@@ -180,7 +180,8 @@ export async function executeFindAndDisplay(
   checkRateLimit: boolean = true
 ): Promise<void> {
   // Rate limiting (once per hour) - only for /find command, not button clicks
-  if (checkRateLimit) {
+  // Skip rate limiting for admin users
+  if (checkRateLimit && !isAdminUser(userId)) {
     const rateLimitKey = `ratelimit:find:${userId}`;
     const lastFindTimestamp = await getWithPrefix(BOT_PREFIX, rateLimitKey);
 
