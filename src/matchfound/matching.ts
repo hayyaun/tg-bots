@@ -228,11 +228,13 @@ export async function findMatches(
       user.interests.length > 0 &&
       matchUser.interests.length > 0
     ) {
-      const userInterestsSet = new Set(user.interests);
       const candidateInterestsSet = new Set(matchUser.interests);
-      mutualInterestsCount = Array.from(userInterestsSet).filter((interest) =>
-        candidateInterestsSet.has(interest)
-      ).length;
+      // Iterate over user interests and count matches (more efficient than Array.from + filter)
+      for (const interest of user.interests) {
+        if (candidateInterestsSet.has(interest)) {
+          mutualInterestsCount++;
+        }
+      }
     }
 
     // Set priority based on archetype, MBTI, and mutual interests
