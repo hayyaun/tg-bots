@@ -8,7 +8,8 @@
     "dev": "clear && ts-node src/index.ts",
     "generate": "prisma generate",
     "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "sync-rules": "node scripts/sync-cursor-rules.js"
   },
   "author": "",
   "license": "ISC",

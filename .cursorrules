@@ -1,10 +1,18 @@
-# ⚠️ IMPORTANT: AI ASSISTANT CONTEXT
+# Project Rules for tgbots
+
+<!-- This file is auto-generated from .cursor/rules/ directory. -->
+<!-- Edit rules in .cursor/rules/ and run: npm run sync-rules -->
+
+## ALWAYS APPLY: Re Export
+
+Do not re-export modules, import them from where they belong-to directly.
 
 ## 🚨 CRITICAL: DEVELOPMENT ENVIRONMENT - NO DATABASE ACCESS
 
 **This repository is in dev mode with NO local database access.**
 
 ### Rules:
+
 - ❌ **DO NOT** run database migrations locally (`prisma migrate dev`, etc.)
 - ❌ **DO NOT** attempt database connections or queries
 - ✅ **DO** update `prisma/schema.prisma` when making schema changes
@@ -13,6 +21,7 @@
 - ✅ User handles all database operations on the production server
 
 ### When Making Schema Changes:
+
 1. Update `prisma/schema.prisma`
 2. Create migration file manually following existing patterns
 3. User will apply migrations on the server
@@ -26,3 +35,4 @@ When using `ctx.react()` in Grammy bots, only the following emojis are allowed:
 👍, 👎, ❤, 🔥, 🥰, 👏, 😁, 🤔, 🤯, 😱, 🤬, 😢, 🎉, 🤩, 🤮, 💩, 🙏, 👌, 🕊, 🤡, 🥱, 🥴, 😍, 🐳, ❤‍🔥, 🌚, 🌭, 💯, 🤣, ⚡, 🍌, 🏆, 💔, 🤨, 😐, 🍓, 🍾, 💋, 🖕, 😈, 😴, 😭, 🤓, 👻, 👨‍💻, 👀, 🎃, 🙈, 😇, 😨, 🤝, ✍, 🤗, 🫡, 🎅, 🎄, ☃, 💅, 🤪, 🗿, 🆒, 💘, 🙉, 🦄, 😘, 💊, 🙊, 😎, 👾, 🤷‍♂, 🤷, 🤷‍♀, 😡
 
 **Note:** Always use one of these emojis when calling `ctx.react()` to avoid TypeScript compilation errors.
+

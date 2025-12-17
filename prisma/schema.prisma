@@ -37,6 +37,7 @@ model User {
   interests          String[]  @default([])
   location           String?   @db.VarChar(50)
   completion_score   Int       @default(0)
+  last_online        DateTime?
   created_at         DateTime  @default(now())
   updated_at         DateTime  @default(now()) @updatedAt
 
