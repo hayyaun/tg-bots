@@ -5,6 +5,7 @@ import {
   getUserIdFromTelegramId,
   getUserProfile,
   updateUserField,
+  isUserBanned,
 } from "../shared/database";
 import { getInterestNames } from "../shared/i18n";
 import { UserProfile } from "../shared/types";
@@ -90,11 +91,21 @@ async function getCurrentMatch(
 // Validate profile for find command (shared between /find and find:start callback)
 export async function validateProfileForFind(
   profile: UserProfile | null,
-  ctx: Context
+  ctx: Context,
+  userId?: number
 ): Promise<boolean> {
   if (!profile) {
     await ctx.reply(errors.startFirst);
     return false;
+  }
+
+  // Check if user is banned
+  if (userId) {
+    const banStatus = await isUserBanned(userId);
+    if (banStatus.banned) {
+      await ctx.reply(errors.userBanned(banStatus.bannedUntil));
+      return false;
+    }
   }
 
   // Check required fields first (these are mandatory for matching to work)
@@ -135,7 +146,7 @@ export async function handleFind(
   checkRateLimit: boolean = true
 ): Promise<void> {
   const profile = await getUserProfile(userId);
-  if (!(await validateProfileForFind(profile, ctx))) {
+  if (!(await validateProfileForFind(profile, ctx, userId))) {
     return;
   }
 

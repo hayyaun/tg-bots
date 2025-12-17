@@ -237,3 +237,38 @@ export async function updateLastOnline(telegramUserId: number): Promise<void> {
   }
 }
 
+// Check if a user is currently banned
+export async function isUserBanned(telegramUserId: number): Promise<{ banned: boolean; bannedUntil: Date | null }> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegram_id: BigInt(telegramUserId) },
+      select: { id: true },
+    });
+    if (!user) return { banned: false, bannedUntil: null };
+
+    const now = new Date();
+    
+    // Check for active bans (banned_until is null for forever, or in the future)
+    const activeBan = await prisma.ban.findFirst({
+      where: {
+        banned_user_id: user.id,
+        OR: [
+          { banned_until: null }, // Forever ban
+          { banned_until: { gt: now } }, // Temporary ban that hasn't expired
+        ],
+      },
+      orderBy: { created_at: "desc" },
+      select: { banned_until: true },
+    });
+
+    if (activeBan) {
+      return { banned: true, bannedUntil: activeBan.banned_until };
+    }
+
+    return { banned: false, bannedUntil: null };
+  } catch (error) {
+    // On error, assume not banned to avoid blocking legitimate users
+    return { banned: false, bannedUntil: null };
+  }
+}
+
