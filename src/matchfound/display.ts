@@ -26,6 +26,35 @@ import { buildQuizResultsSection } from "../shared/display";
 
 type DisplayMode = "match" | "liked";
 
+// Helper function to format last_online date in Persian
+function formatLastOnline(lastOnline: Date | null): string {
+  if (!lastOnline) return "هرگز";
+  
+  const now = new Date();
+  const diffMs = now.getTime() - lastOnline.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 60) {
+    return "همین الان";
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes} دقیقه پیش`;
+  } else if (diffHours < 24) {
+    return `${diffHours} ساعت پیش`;
+  } else if (diffDays < 7) {
+    return `${diffDays} روز پیش`;
+  } else {
+    // Format as date for older entries
+    const date = new Date(lastOnline);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}/${month}/${day}`;
+  }
+}
+
 // Helper function to calculate compatibility score between two users
 function calculateCompatibilityScore(
   currentUser: UserProfile,
@@ -174,6 +203,8 @@ export async function displayUser(
 
   if (showUsername) {
     message += `\n\n👤 Username: ${user.username ? `@${user.username}` : display.usernameNotSet}`;
+    const lastOnlineText = formatLastOnline(user.last_online);
+    message += `\n🕐 آخرین فعالیت: ${lastOnlineText}`;
   }
 
   const keyboard = new InlineKeyboard();

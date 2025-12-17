@@ -37,6 +37,7 @@ export interface UserProfile {
   interests: string[] | null;
   location: string | null;
   completion_score: number;
+  last_online: Date | null;
   created_at: Date;
   updated_at: Date;
 }

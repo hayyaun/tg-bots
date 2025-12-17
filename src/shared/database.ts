@@ -16,6 +16,7 @@ export async function getUserProfileById(
     ...user,
     telegram_id: user.telegram_id ? Number(user.telegram_id) : null,
     birth_date: user.birth_date || null,
+    last_online: user.last_online || null,
     created_at: user.created_at,
     updated_at: user.updated_at,
   } as UserProfile;
@@ -35,6 +36,7 @@ export async function getUserProfile(
     ...user,
     telegram_id: user.telegram_id ? Number(user.telegram_id) : null,
     birth_date: user.birth_date || null,
+    last_online: user.last_online || null,
     created_at: user.created_at,
     updated_at: user.updated_at,
   } as UserProfile;
