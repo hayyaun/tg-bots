@@ -24,7 +24,7 @@ import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
 import { buildQuizResultsSection } from "../shared/display";
 
-type DisplayMode = "match" | "liked";
+type DisplayMode = "match" | "liked" | "admin";
 
 // Helper function to format last_online date in Persian
 function formatLastOnline(lastOnline: Date | null): string {
@@ -209,24 +209,22 @@ export async function displayUser(
 
   const keyboard = new InlineKeyboard();
   if (!showUsername) {
-    if (mode === "match") {
-      keyboard.text(buttons.like, `like:${user.telegram_id}`);
-      keyboard.text(buttons.dislike, `dislike:${user.telegram_id}`);
-      keyboard.row();
-    } else if (mode === "liked") {
-      keyboard.text(buttons.like, `like:${user.telegram_id}`);
+    keyboard.text(buttons.like, `like:${user.telegram_id}`);
+    if (mode === "liked") {
       keyboard.text(buttons.delete, `delete_liked:${user.telegram_id}`);
-      keyboard.row();
-      // Add chat button if username exists
       if (user.username) {
         keyboard.url(buttons.chat, `https://t.me/${user.username}`);
       }
+    } else {
+      // match or admin mode
+      keyboard.text(buttons.dislike, `dislike:${user.telegram_id}`);
     }
+    keyboard.row();
   }
   
   // Add "Next" button if there are more matches (works for both regular and admin view)
   if (
-    mode === "match" &&
+    (mode === "match" || mode === "admin") &&
     session &&
     session.matchIds &&
     session.currentMatchIndex !== undefined
@@ -240,6 +238,12 @@ export async function displayUser(
   }
   
   keyboard.text(buttons.report, `report:${user.telegram_id}`);
+  
+  // Add ban button for admin mode
+  if (mode === "admin") {
+    keyboard.row();
+    keyboard.text(buttons.ban, `ban:${user.telegram_id}`);
+  }
 
   try {
     // Send photo if available - attach text as caption
@@ -253,7 +257,7 @@ export async function displayUser(
       await ctx.reply(message, { reply_markup: keyboard });
     }
   } catch (err) {
-    const errorContext = mode === "match" ? "match" : "liked user";
+    const errorContext = mode === "match" ? "match" : mode === "liked" ? "liked user" : "admin user";
     log.error(BOT_NAME + ` > Display ${errorContext} failed`, err);
     // Try to send just the message without image if photo send fails
     try {

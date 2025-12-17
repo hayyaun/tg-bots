@@ -76,6 +76,7 @@ export interface IProfileStrings {
     report: string;
     chat: string;
     delete: string;
+    ban: string;
     previous: string;
     next: string;
     addImage: string;
@@ -183,6 +184,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       report: "🚫 گزارش",
       chat: "💬 چت",
       delete: "🗑️ حذف",
+      ban: "🚫 بن",
       previous: "◀️ قبلی",
       next: "بعدی ▶️",
       addImage: "➕ افزودن/تغییر تصویر",
@@ -293,6 +295,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       report: "🚫 Report",
       chat: "💬 Chat",
       delete: "🗑️ Delete",
+      ban: "🚫 Ban",
       previous: "◀️ Previous",
       next: "Next ▶️",
       addImage: "➕ Add/Change Image",
@@ -405,6 +408,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       report: "🚫 Пожаловаться",
       chat: "💬 Чат",
       delete: "🗑️ Удалить",
+      ban: "🚫 Заблокировать",
       previous: "◀️ Назад",
       next: "Далее ▶️",
       addImage: "➕ Добавить/сменить фото",
@@ -515,6 +519,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       report: "🚫 بلاغ",
       chat: "💬 دردشة",
       delete: "🗑️ حذف",
+      ban: "🚫 حظر",
       previous: "◀️ السابق",
       next: "التالي ▶️",
       addImage: "➕ إضافة/تغيير الصورة",
