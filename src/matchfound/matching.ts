@@ -81,8 +81,8 @@ export async function findMatches(
   minBirthDate.setMonth(0); // January
   minBirthDate.setDate(1); // First day of year
 
-  // Use raw SQL query with LEFT JOINs for efficient exclusion checking
-  // LEFT JOINs can be faster than NOT EXISTS with proper composite indexes
+  // Use raw SQL query with NOT EXISTS subqueries for efficient exclusion checking
+  // NOT EXISTS is typically faster than LEFT JOINs at scale, especially with proper indexes
   // Build the query conditionally based on gender preference
   let candidates: Array<{
     id: bigint;
@@ -113,11 +113,8 @@ export async function findMatches(
 
   if (user.looking_for_gender === "both") {
     candidates = await prisma.$queryRaw`
-      SELECT DISTINCT u.*
+      SELECT u.*
       FROM users u
-      LEFT JOIN likes l ON l.user_id = ${userIdBigInt} AND l.liked_user_id = u.id
-      LEFT JOIN ignored i1 ON i1.ignored_user_id = ${userIdBigInt} AND i1.user_id = u.id
-      LEFT JOIN ignored i2 ON i2.user_id = ${userIdBigInt} AND i2.ignored_user_id = u.id
       WHERE u.id != ${userIdBigInt}
         AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
         AND u.username IS NOT NULL
@@ -127,19 +124,25 @@ export async function findMatches(
         AND u.birth_date <= ${maxBirthDate}::date
         AND array_length(u.interests, 1) > 0
         AND u.gender IN ('male', 'female')
-        AND l.id IS NULL
-        AND i1.id IS NULL
-        AND i2.id IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM likes 
+          WHERE user_id = ${userIdBigInt} AND liked_user_id = u.id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored 
+          WHERE ignored_user_id = ${userIdBigInt} AND user_id = u.id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored 
+          WHERE user_id = ${userIdBigInt} AND ignored_user_id = u.id
+        )
       ORDER BY u.completion_score DESC
       LIMIT ${MAX_CANDIDATES_TO_FETCH}
     `;
   } else {
     candidates = await prisma.$queryRaw`
-      SELECT DISTINCT u.*
+      SELECT u.*
       FROM users u
-      LEFT JOIN likes l ON l.user_id = ${userIdBigInt} AND l.liked_user_id = u.id
-      LEFT JOIN ignored i1 ON i1.ignored_user_id = ${userIdBigInt} AND i1.user_id = u.id
-      LEFT JOIN ignored i2 ON i2.user_id = ${userIdBigInt} AND i2.ignored_user_id = u.id
       WHERE u.id != ${userIdBigInt}
         AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
         AND u.username IS NOT NULL
@@ -149,9 +152,18 @@ export async function findMatches(
         AND u.birth_date <= ${maxBirthDate}::date
         AND array_length(u.interests, 1) > 0
         AND u.gender = ${user.looking_for_gender}
-        AND l.id IS NULL
-        AND i1.id IS NULL
-        AND i2.id IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM likes 
+          WHERE user_id = ${userIdBigInt} AND liked_user_id = u.id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored 
+          WHERE ignored_user_id = ${userIdBigInt} AND user_id = u.id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ignored 
+          WHERE user_id = ${userIdBigInt} AND ignored_user_id = u.id
+        )
       ORDER BY u.completion_score DESC
       LIMIT ${MAX_CANDIDATES_TO_FETCH}
     `;
@@ -301,6 +313,7 @@ export async function findMatches(
     matchUser.compatibility_score = Math.round(compatibilityScore);
 
     matchUser.match_priority = matchPriority;
+    matchUser.mutual_interests_count = mutualInterestsCount;
     matches.push(matchUser);
   }
 
@@ -318,15 +331,8 @@ export async function findMatches(
     }
 
     // If compatibility scores are equal, prioritize by mutual interests
-    const aInterests = a.interests || [];
-    const bInterests = b.interests || [];
-    const userInterestsSet = new Set(user.interests || []);
-    const aMutualCount = aInterests.filter((i) =>
-      userInterestsSet.has(i)
-    ).length;
-    const bMutualCount = bInterests.filter((i) =>
-      userInterestsSet.has(i)
-    ).length;
+    const aMutualCount = a.mutual_interests_count || 0;
+    const bMutualCount = b.mutual_interests_count || 0;
     if (aMutualCount !== bMutualCount) {
       return bMutualCount - aMutualCount; // More mutual interests = better
     }

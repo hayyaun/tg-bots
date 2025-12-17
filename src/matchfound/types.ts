@@ -5,6 +5,7 @@ export interface MatchUser extends UserProfile {
   age: number | null;
   match_priority: number; // 1 = both match, 2 = archetype only, 3 = MBTI only
   compatibility_score?: number; // Compatibility percentage (0-100)
+  mutual_interests_count?: number; // Number of mutual interests (pre-computed for sorting)
 }
 
 // Lightweight metadata stored in session (instead of full MatchUser objects)
