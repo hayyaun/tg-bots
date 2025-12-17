@@ -596,60 +596,6 @@ export function setupCallbacks(
       }
     });
 
-    // Admin: All Users
-    bot.callbackQuery(/^admin:all_users$/, async (ctx) => {
-      const userId = ctx.from?.id;
-      if (!userId || userId !== ADMIN_USER_ID) {
-        await ctx.answerCallbackQuery(errors.accessDenied);
-        return;
-      }
-
-      await ctx.answerCallbackQuery();
-
-      try {
-        // Get all users without any filtering
-        const allUsers = await prisma.user.findMany({
-          orderBy: { created_at: "desc" },
-        });
-
-        if (allUsers.length === 0) {
-          await ctx.reply(admin.noUsers);
-          return;
-        }
-
-        // Convert to MatchUser format for display
-        const users: MatchUser[] = allUsers.map((user) => {
-          const age = user.birth_date ? calculateAge(user.birth_date) : null;
-          return {
-            ...user,
-            telegram_id: Number(user.telegram_id),
-            birth_date: user.birth_date || null,
-            interests: user.interests || [],
-            age: age,
-            match_priority: 999, // Default priority for admin view
-          } as MatchUser;
-        });
-
-        // Store in optimized format (IDs + metadata)
-        const session = await getSession(userId);
-        storeMatchesInSession(users, session);
-        session.currentMatchIndex = 0;
-        // Mark as admin view so navigation preserves showUsername
-        session.isAdminView = true;
-
-        await ctx.reply(admin.allUsersTitle(users.length), {
-          parse_mode: "HTML",
-        });
-
-        // Show first user
-        if (users.length > 0) {
-          await displayUser(ctx, users[0], "match", true, session);
-        }
-      } catch (err) {
-        log.error(BOT_NAME + " > Admin all users failed", err);
-        await ctx.reply(errors.usersFailed);
-      }
-    });
   }
 
   // Setup shared profile callbacks (all profile editing)

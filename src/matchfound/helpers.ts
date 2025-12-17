@@ -18,6 +18,7 @@ import {
   FIND_RATE_LIMIT_MS,
   FIND_RATE_LIMIT_SECONDS,
 } from "./constants";
+import { ADMIN_USER_ID } from "../shared/constants";
 import { displayUser } from "./display";
 import { findMatches } from "./matching";
 import { getSession } from "./session";
@@ -187,7 +188,10 @@ export async function executeFindAndDisplay(
     );
   }
 
-  const matches = await findMatches(userId);
+  // Check if user is admin
+  const isAdmin = ADMIN_USER_ID !== undefined && userId === ADMIN_USER_ID;
+  
+  const matches = await findMatches(userId, isAdmin);
   if (matches.length === 0) {
     await ctx.reply(errors.noMatches);
     return;
@@ -197,17 +201,21 @@ export async function executeFindAndDisplay(
   const session = await getSession(userId);
   storeMatchesInSession(matches, session);
   session.currentMatchIndex = 0;
+  // Mark as admin view if admin (so navigation preserves showUsername)
+  if (isAdmin) {
+    session.isAdminView = true;
+  }
 
   // Show match count
   await ctx.reply(success.matchesFound(matches.length));
 
-  // Show first match
+  // Show first match (with username if admin)
   const firstMatch = matches[0];
   await displayUser(
     ctx,
     firstMatch,
     "match",
-    false,
+    isAdmin, // showUsername = true for admin
     session,
     profile.interests || [],
     profile

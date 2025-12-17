@@ -30,7 +30,6 @@ export const callbacks = {
   
   // Admin actions
   adminReports: "admin:reports",
-  adminAllUsers: "admin:all_users",
   
   // Profile editing (used in shared/profileCallbacks)
   profileSetGender: (gender: string) => `profile:set:gender:${gender}`,

@@ -13,6 +13,7 @@ import {
   handleLiked,
   promptNextRequiredField,
 } from "./helpers";
+import { callbacks as callbackQueries } from "./callbackQueries";
 import {
   admin,
   errors,
@@ -21,7 +22,6 @@ import {
   profileCompletion,
   settings,
 } from "./strings";
-import { callbacks as callbackQueries } from "./callbackQueries";
 
 const formatNumber = (value: number | bigint) => value.toLocaleString("en-US");
 const ADMIN_DAU_DAYS = 14;
@@ -275,8 +275,6 @@ export function setupCommands(
 
       const keyboard = new InlineKeyboard()
         .text(admin.buttons.reports, callbackQueries.adminReports)
-        .row()
-        .text(admin.buttons.users, callbackQueries.adminAllUsers)
         .row();
 
       const statsMessage = admin.statsMessage(

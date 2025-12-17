@@ -9,7 +9,7 @@ import { MatchUser } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getUserProfile, getUserProfileById } from "../shared/database";
 
-export async function findMatches(userId: number | bigint): Promise<MatchUser[]> {
+export async function findMatches(userId: number | bigint, isAdmin: boolean = false): Promise<MatchUser[]> {
   
   // userId can be either telegram_id (number) or id (bigint)
   // First, find the user to get their id
@@ -174,7 +174,12 @@ export async function findMatches(userId: number | bigint): Promise<MatchUser[]>
     } else if (mutualInterestsCount > 0) {
       matchPriority = 4;
     } else {
-      continue; // Skip if no match at all
+      // Skip if no match at all, unless admin (admins see everyone)
+      if (!isAdmin) {
+        continue;
+      }
+      // For admin, set a default priority so they see everyone
+      matchPriority = 999;
     }
 
     // Adjust priority based on mutual interests (reduce priority number for more interests)
