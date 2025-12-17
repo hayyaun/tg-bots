@@ -53,6 +53,10 @@ model User {
 
   @@index([telegram_id])
   @@index([google_id])
+  @@index([gender])
+  @@index([looking_for_gender])
+  @@index([completion_score])
+  @@index([birth_date])
   @@map("users")
 }
 

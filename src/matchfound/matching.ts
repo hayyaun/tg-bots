@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import { MAX_COMPLETION_SCORE, MIN_INTERESTS, MAX_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_AGE_DIFFERENCE, ARCHETYPE_MATCH_SCORE, MBTI_MATCH_SCORE, MAX_INTERESTS_SCORE, MAX_AGE_BONUS, MAX_COMPLETION_BONUS, MAX_COMPATIBILITY_SCORE } from "../shared/constants";
+import { MAX_COMPLETION_SCORE, MIN_INTERESTS, MAX_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_AGE_DIFFERENCE, ARCHETYPE_MATCH_SCORE, MBTI_MATCH_SCORE, MAX_INTERESTS_SCORE, MAX_AGE_BONUS, MAX_COMPLETION_BONUS, MAX_COMPATIBILITY_SCORE, MAX_CANDIDATES_TO_FETCH, MAX_MATCHES_TO_RETURN } from "../shared/constants";
 import {
   archetypeCompatibility,
   mbtiCompatibility,
@@ -36,37 +36,58 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   if (!user || !user.gender || !user.looking_for_gender) return [];
 
   const userAge = calculateAge(user.birth_date);
-  if (!userAge) return [];
+  if (!userAge || !user.birth_date) return [];
 
-  // Get all excluded user IDs
+  // Get all excluded user IDs - run queries in parallel for better performance
   const excludedIds: bigint[] = [userIdBigInt];
 
-  // Get users already liked
-  const likes = await prisma.like.findMany({
-    where: { user_id: userIdBigInt },
-    select: { liked_user_id: true },
-  });
+  // Fetch all exclusion data in parallel
+  const [likes, ignoredBy, ignoredByUser] = await Promise.all([
+    // Get users already liked
+    prisma.like.findMany({
+      where: { user_id: userIdBigInt },
+      select: { liked_user_id: true },
+    }),
+    // Get users who ignored this user
+    prisma.ignored.findMany({
+      where: { ignored_user_id: userIdBigInt },
+      select: { user_id: true },
+    }),
+    // Get users this user has ignored
+    prisma.ignored.findMany({
+      where: { user_id: userIdBigInt },
+      select: { ignored_user_id: true },
+    }),
+  ]);
+
+  // Build exclusion list from parallel results
   likes.forEach((like: { liked_user_id: bigint }) =>
     excludedIds.push(like.liked_user_id)
   );
-
-  // Get users who ignored this user
-  const ignoredBy = await prisma.ignored.findMany({
-    where: { ignored_user_id: userIdBigInt },
-    select: { user_id: true },
-  });
   ignoredBy.forEach((ignored: { user_id: bigint }) =>
     excludedIds.push(ignored.user_id)
   );
-
-  // Get users this user has ignored
-  const ignoredByUser = await prisma.ignored.findMany({
-    where: { user_id: userIdBigInt },
-    select: { ignored_user_id: true },
-  });
   ignoredByUser.forEach((ignored: { ignored_user_id: bigint }) =>
     excludedIds.push(ignored.ignored_user_id)
   );
+
+  // Calculate birth_date range for age filtering (done in database)
+  const today = new Date();
+  const minAge = Math.max(18, userAge - MAX_AGE_DIFFERENCE); // Ensure minimum age of 18
+  const maxAge = userAge + MAX_AGE_DIFFERENCE;
+  
+  // Calculate max birth_date (youngest person: to be at least minAge today)
+  // Someone who is minAge today was born on or before: today - minAge years
+  const maxBirthDate = new Date(today);
+  maxBirthDate.setFullYear(today.getFullYear() - minAge);
+  
+  // Calculate min birth_date (oldest person: to be at most maxAge today)
+  // Someone who is maxAge today was born on or after: (today - maxAge years) - 1 year + 1 day
+  // This ensures we include people who are exactly maxAge (haven't had birthday yet this year)
+  const minBirthDate = new Date(today);
+  minBirthDate.setFullYear(today.getFullYear() - maxAge - 1);
+  minBirthDate.setMonth(0); // January
+  minBirthDate.setDate(1); // First day of year
 
   // Get all candidates matching criteria
   const whereClause: Prisma.UserWhereInput = {
@@ -74,7 +95,11 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
     completion_score: { gte: MIN_COMPLETION_THRESHOLD },
     username: { not: null },
     gender: { not: null },
-    birth_date: { not: null },
+    birth_date: { 
+      not: null,
+      gte: minBirthDate,
+      lte: maxBirthDate,
+    },
     interests: { isEmpty: false },
   };
 
@@ -85,18 +110,21 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
     whereClause.gender = user.looking_for_gender;
   }
 
+  // Limit candidates fetched to prevent memory issues with large user bases
   const candidates = await prisma.user.findMany({
     where: whereClause,
+    take: MAX_CANDIDATES_TO_FETCH,
+    orderBy: {
+      completion_score: 'desc', // Prioritize users with higher completion scores first
+    },
   });
 
-  // Filter by age (max MAX_AGE_DIFFERENCE years difference) and calculate compatibility
+  // Calculate compatibility for each candidate
   const matches: MatchUser[] = [];
-  const minAge = userAge - MAX_AGE_DIFFERENCE;
-  const maxAge = userAge + MAX_AGE_DIFFERENCE;
 
   for (const candidate of candidates) {
     const candidateAge = calculateAge(candidate.birth_date);
-    if (!candidateAge || candidateAge < minAge || candidateAge > maxAge) {
+    if (!candidateAge) {
       continue;
     }
 
@@ -260,5 +288,6 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
     return ageDiffA - ageDiffB;
   });
 
-  return matches;
+  // Limit final results to prevent returning too many matches
+  return matches.slice(0, MAX_MATCHES_TO_RETURN);
 }
