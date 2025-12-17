@@ -255,7 +255,10 @@ export async function displayUser(
     }
   }
   
-  keyboard.text(buttons.report, `report:${user.telegram_id}`);
+  // Only show report button if not in admin mode
+  if (mode !== "admin") {
+    keyboard.text(buttons.report, `report:${user.telegram_id}`);
+  }
   
   // Add ban button for admin mode
   if (mode === "admin") {
