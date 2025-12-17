@@ -642,7 +642,7 @@ export function setupCallbacks(
 
         // Show first user
         if (users.length > 0) {
-          await displayUser(ctx, users[0], "match", true, session);
+          await displayUser(ctx, users[0], "admin", true, session);
         }
       } catch (err) {
         log.error(BOT_NAME + " > Admin all users failed", err);
