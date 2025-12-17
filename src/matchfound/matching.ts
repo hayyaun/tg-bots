@@ -258,8 +258,7 @@ export async function findMatches(
       if (!isAdmin) {
         continue;
       }
-      // For admin, set a default priority so they see everyone
-      matchPriority = 999;
+      // For admin, matchPriority remains 999 (default) so they see everyone
     }
 
     // Adjust priority based on mutual interests (reduce priority number for more interests)
