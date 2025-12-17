@@ -36,3 +36,6 @@ When using `ctx.react()` in Grammy bots, only the following emojis are allowed:
 
 **Note:** Always use one of these emojis when calling `ctx.react()` to avoid TypeScript compilation errors.
 
+## ALWAYS APPLY: Working with Strings
+
+When working with strings, if there is a strings.ts or i18n support for that bot, avoid hardcoding the strings.

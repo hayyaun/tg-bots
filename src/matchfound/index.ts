@@ -36,8 +36,8 @@ const startBot = async (botKey: string, agent: unknown) => {
   setupLastOnlineMiddleware(bot);
 
   // Setup commands and callbacks
-  setupCommands(bot, notifyAdmin, ADMIN_USER_ID);
-  setupCallbacks(bot, notifyAdmin, ADMIN_USER_ID);
+  setupCommands(bot, notifyAdmin);
+  setupCallbacks(bot, notifyAdmin);
 
   // Setup daily reports
   setupDailyReports(bot, notifyAdmin);

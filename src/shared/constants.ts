@@ -5,8 +5,17 @@
  * This ensures proper separation of concerns and prevents circular dependencies.
  */
 
+import { configDotenv } from "dotenv";
+
+configDotenv();
+
 // Inmankist bot username (for quiz completion links)
 export const INMANKIST_BOT_USERNAME = process.env.INMANKIST_BOT_USERNAME || "inmankist_bot";
+
+// Admin user ID (shared across all bots)
+export const ADMIN_USER_ID = process.env.ADMIN_USER_ID
+  ? parseInt(process.env.ADMIN_USER_ID)
+  : undefined;
 
 // Profile completion
 export const MAX_COMPLETION_SCORE = 12;

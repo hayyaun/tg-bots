@@ -1,6 +1,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import { FIELD_KEY, type ProfileFieldKey, INMANKIST_BOT_USERNAME, INTERESTS, ITEMS_PER_PAGE, MIN_INTERESTS, MIN_COMPLETION_THRESHOLD } from "../shared/constants";
+import { callbacks as callbackQueries } from "./callbackQueries";
 import {
   getUserIdFromTelegramId,
   getUserProfile,
@@ -379,9 +380,9 @@ const REQUIRED_FIELDS: RequiredField[] = [
 // Reusable keyboard for main actions
 export function createMainActionsKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
-    .text(buttons.completionStatus, "profile")
+    .text(buttons.completionStatus, callbackQueries.profile)
     .row()
-    .text(buttons.findPeople, "find:start")
+    .text(buttons.findPeople, callbackQueries.findStart)
     .row()
     .url(
       buttons.takeQuizzes,
@@ -462,8 +463,8 @@ export async function promptNextRequiredField(
         );
       } else {
         const keyboard = new InlineKeyboard().text(
-          "✅ نام کاربری را تنظیم کردم",
-          "profile:edit:username"
+          profileCompletion.usernameSetButton,
+          callbackQueries.profileEditUsername
         );
         await ctx.reply(profileCompletion.fieldPrompt.username, {
           reply_markup: keyboard,
@@ -484,17 +485,17 @@ export async function promptNextRequiredField(
       }
       if (field.key === FIELD_KEY.GENDER) {
         const genderKeyboard = new InlineKeyboard()
-          .text(profileValues.male, "profile:set:gender:male")
-          .text(profileValues.female, "profile:set:gender:female");
+          .text(profileValues.male, callbackQueries.profileSetGender("male"))
+          .text(profileValues.female, callbackQueries.profileSetGender("female"));
         await ctx.reply(profileCompletion.fieldPrompt.gender, {
           reply_markup: genderKeyboard,
         });
       } else if (field.key === FIELD_KEY.LOOKING_FOR_GENDER) {
         const lookingForKeyboard = new InlineKeyboard()
-          .text(profileValues.male, "profile:set:looking_for:male")
-          .text(profileValues.female, "profile:set:looking_for:female")
+          .text(profileValues.male, callbackQueries.profileSetLookingFor("male"))
+          .text(profileValues.female, callbackQueries.profileSetLookingFor("female"))
           .row()
-          .text(profileValues.both, "profile:set:looking_for:both");
+          .text(profileValues.both, callbackQueries.profileSetLookingFor("both"));
         await ctx.reply(profileCompletion.fieldPrompt.lookingFor, {
           reply_markup: lookingForKeyboard,
         });
@@ -567,12 +568,12 @@ export async function promptNextRequiredField(
 
       if (totalPages > 1) {
         interestsKeyboard.row();
-        interestsKeyboard.text(" ", "profile:interests:noop");
+        interestsKeyboard.text(" ", callbackQueries.profileInterestsNoop);
         interestsKeyboard.text(
           `صفحه 1/${totalPages}`,
-          "profile:interests:noop"
+          callbackQueries.profileInterestsNoop
         );
-        interestsKeyboard.text(buttons.next, `profile:interests:page:1`);
+        interestsKeyboard.text(buttons.next, callbackQueries.profileInterestsPage(1));
       }
 
       const selectedCount = currentInterests.size;

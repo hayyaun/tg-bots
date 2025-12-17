@@ -137,6 +137,11 @@ export const ban = {
   twoDays: "2 روز",
   twoWeeks: "2 هفته",
   twoMonths: "2 ماه",
+  cannotBanSelf: "شما نمی‌توانید خودتان را بن کنید!",
+  operationCancelled: "عملیات لغو شد.",
+  invalidDuration: "مدت زمان نامعتبر است.",
+  banFailed: "❌ خطا در بن کردن کاربر.",
+  cancelButton: "❌ لغو",
 };
 
 // Delete data messages
@@ -172,6 +177,29 @@ export const display = {
   usernameNotSet: "نام کاربری ثبت نشده",
   allLikedSeen: "تمام افرادی که شما را لایک کرده‌اند را دیده‌اید.",
   unknownPerson: "یک نفر",
+  // Last online formatting
+  lastOnlineNever: "هرگز",
+  lastOnlineJustNow: "همین الان",
+  lastOnlineMinutesAgo: (minutes: number) => `${minutes} دقیقه پیش`,
+  lastOnlineHoursAgo: (hours: number) => `${hours} ساعت پیش`,
+  lastOnlineDaysAgo: (days: number) => `${days} روز پیش`,
+  // Compatibility
+  compatibility: (score: number) => `\n💯 سازگاری: ${score}%`,
+  mutualInterests: (count: number) => ` (${count} مورد مشترک)`,
+  // Ban status
+  banStatusActive: "✅ وضعیت: فعال",
+  banStatusPermanent: "🚫 وضعیت: بن دائمی",
+  banStatusTemporary: (days: number) => `🚫 وضعیت: بن تا ${days} روز دیگر`,
+  // Admin info
+  adminUsername: "👤 Username:",
+  adminLastActivity: "🕐 آخرین فعالیت:",
+  // Display sections
+  interestsLabel: "🎯 علایق:",
+  moodLabel: "😊 مود:",
+  // Message structure
+  namePrefix: "👤",
+  agePrefix: "🎂",
+  bioPrefix: "📝",
 };
 
 // Callback query responses
@@ -252,6 +280,7 @@ export const profileCompletion = {
     `(${remaining} فیلد باقی مانده)`,
   allRequiredComplete:
     "🎉 تبریک! تمام فیلدهای اجباری تکمیل شدند!\n\nحالا می‌تونی از تمام امکانات ربات استفاده کنی!",
+  usernameSetButton: "✅ نام کاربری را تنظیم کردم",
   fieldPrompt: {
     username:
       "🔗 لطفا نام کاربری تلگرام خود را تنظیم کنید و سپس دکمه زیر را بزنید:",

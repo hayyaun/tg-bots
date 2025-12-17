@@ -6,6 +6,7 @@ import {
   getUserIdFromTelegramId,
   getUserProfile,
 } from "../shared/database";
+import { ADMIN_USER_ID } from "../shared/constants";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
 import { handleDisplayProfile } from "../shared/profileCommand";
 import { calculateAge } from "../shared/utils";
@@ -24,12 +25,12 @@ import {
   report,
   success,
 } from "./strings";
+import { callbacks as callbackQueries } from "./callbackQueries";
 import { MatchUser } from "./types";
 
 export function setupCallbacks(
   bot: Bot,
-  notifyAdmin: (message: string) => Promise<void>,
-  adminUserId?: number
+  notifyAdmin: (message: string) => Promise<void>
 ) {
   // Like action
   bot.callbackQuery(/like:(\d+)/, async (ctx) => {
@@ -212,14 +213,14 @@ export function setupCallbacks(
   // Ban action (admin only)
   bot.callbackQuery(/ban:(\d+)/, async (ctx) => {
     const userId = ctx.from?.id;
-    if (!userId || userId !== adminUserId) {
+    if (!userId || userId !== ADMIN_USER_ID) {
       await ctx.answerCallbackQuery(errors.accessDenied);
       return;
     }
 
     const bannedUserId = parseInt(ctx.match[1]);
     if (userId === bannedUserId) {
-      await ctx.answerCallbackQuery("شما نمی‌توانید خودتان را بن کنید!");
+      await ctx.answerCallbackQuery(ban.cannotBanSelf);
       return;
     }
 
@@ -231,13 +232,13 @@ export function setupCallbacks(
 
     // Create inline keyboard with ban duration options
     const keyboard = new InlineKeyboard()
-      .text(ban.twoDays, `ban_duration:${bannedUserId}:2days`)
-      .text(ban.twoWeeks, `ban_duration:${bannedUserId}:2weeks`)
+      .text(ban.twoDays, callbackQueries.banDuration(bannedUserId, "2days"))
+      .text(ban.twoWeeks, callbackQueries.banDuration(bannedUserId, "2weeks"))
       .row()
-      .text(ban.twoMonths, `ban_duration:${bannedUserId}:2months`)
-      .text(ban.forever, `ban_duration:${bannedUserId}:forever`)
+      .text(ban.twoMonths, callbackQueries.banDuration(bannedUserId, "2months"))
+      .text(ban.forever, callbackQueries.banDuration(bannedUserId, "forever"))
       .row()
-      .text("❌ لغو", `ban_cancel:${bannedUserId}`);
+      .text(ban.cancelButton, callbackQueries.banCancel(bannedUserId));
 
     await ctx.reply(ban.prompt, { reply_markup: keyboard });
   });
@@ -245,7 +246,7 @@ export function setupCallbacks(
   // Handle ban duration selection
   bot.callbackQuery(/ban_duration:(\d+):(.+)/, async (ctx) => {
     const userId = ctx.from?.id;
-    if (!userId || userId !== adminUserId) {
+    if (!userId || userId !== ADMIN_USER_ID) {
       await ctx.answerCallbackQuery(errors.accessDenied);
       return;
     }
@@ -255,7 +256,7 @@ export function setupCallbacks(
 
     const session = await getSession(userId);
     if (session.banningUserId !== bannedUserId) {
-      await ctx.answerCallbackQuery("عملیات لغو شد.");
+      await ctx.answerCallbackQuery(ban.operationCancelled);
       return;
     }
 
@@ -296,7 +297,7 @@ export function setupCallbacks(
           break;
         default:
           delete session.banningUserId;
-          await ctx.reply("مدت زمان نامعتبر است.");
+          await ctx.reply(ban.invalidDuration);
           return;
       }
 
@@ -329,7 +330,7 @@ export function setupCallbacks(
     } catch (err) {
       log.error(BOT_NAME + " > Ban failed", err);
       delete session.banningUserId;
-      await ctx.reply("❌ خطا در بن کردن کاربر.");
+      await ctx.reply(ban.banFailed);
       notifyAdmin(
         `❌ <b>Ban Failed</b>\nBanned User: <code>${bannedUserId}</code>\nBanner: <code>${userId}</code>\nError: ${err}`
       );
@@ -339,7 +340,7 @@ export function setupCallbacks(
   // Handle ban cancellation
   bot.callbackQuery(/ban_cancel:(\d+)/, async (ctx) => {
     const userId = ctx.from?.id;
-    if (!userId || userId !== adminUserId) {
+    if (!userId || userId !== ADMIN_USER_ID) {
       await ctx.answerCallbackQuery(errors.accessDenied);
       return;
     }
@@ -425,7 +426,7 @@ export function setupCallbacks(
   });
 
   // Callback: profile (from /start command) - shows profile with completion status
-  bot.callbackQuery("profile", async (ctx) => {
+  bot.callbackQuery(callbackQueries.profile, async (ctx) => {
     await ctx.answerCallbackQuery();
     const userId = ctx.from?.id;
     if (!userId) return;
@@ -434,7 +435,7 @@ export function setupCallbacks(
   });
 
   // Callback: find:start - triggers find functionality (same as /find command)
-  bot.callbackQuery("find:start", async (ctx) => {
+  bot.callbackQuery(callbackQueries.findStart, async (ctx) => {
     ctx.react("🤔").catch(() => {});
     await ctx.answerCallbackQuery();
     const userId = ctx.from?.id;
@@ -457,7 +458,7 @@ export function setupCallbacks(
   // This is called at the end of setupCallbacks
 
   // Wipe data confirmation
-  bot.callbackQuery("wipe_data:confirm", async (ctx) => {
+  bot.callbackQuery(callbackQueries.wipeDataConfirm, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -487,7 +488,7 @@ export function setupCallbacks(
     }
   });
 
-  bot.callbackQuery("wipe_data:cancel", async (ctx) => {
+  bot.callbackQuery(callbackQueries.wipeDataCancel, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -497,7 +498,7 @@ export function setupCallbacks(
   });
 
   // Settings: wipe_data callback
-  bot.callbackQuery("settings:wipe_data", async (ctx) => {
+  bot.callbackQuery(callbackQueries.settingsWipeData, async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -511,9 +512,9 @@ export function setupCallbacks(
       }
 
       const keyboard = new InlineKeyboard()
-        .text(deleteData.buttons.confirm, "wipe_data:confirm")
+        .text(deleteData.buttons.confirm, callbackQueries.wipeDataConfirm)
         .row()
-        .text(deleteData.buttons.cancel, "wipe_data:cancel");
+        .text(deleteData.buttons.cancel, callbackQueries.wipeDataCancel);
 
       await ctx.editMessageText(deleteData.confirmPrompt, {
         reply_markup: keyboard,
@@ -531,11 +532,11 @@ export function setupCallbacks(
   // Photo uploads for profile image are now handled by setupProfileCallbacks
 
   // Admin callbacks
-  if (adminUserId) {
+  if (ADMIN_USER_ID) {
     // Admin: Reports
     bot.callbackQuery(/^admin:reports$/, async (ctx) => {
       const userId = ctx.from?.id;
-      if (!userId || userId !== adminUserId) {
+      if (!userId || userId !== ADMIN_USER_ID) {
         await ctx.answerCallbackQuery(errors.accessDenied);
         return;
       }
@@ -598,7 +599,7 @@ export function setupCallbacks(
     // Admin: All Users
     bot.callbackQuery(/^admin:all_users$/, async (ctx) => {
       const userId = ctx.from?.id;
-      if (!userId || userId !== adminUserId) {
+      if (!userId || userId !== ADMIN_USER_ID) {
         await ctx.answerCallbackQuery(errors.accessDenied);
         return;
       }
@@ -642,7 +643,7 @@ export function setupCallbacks(
 
         // Show first user
         if (users.length > 0) {
-          await displayUser(ctx, users[0], "admin", true, session);
+          await displayUser(ctx, users[0], "match", true, session);
         }
       } catch (err) {
         log.error(BOT_NAME + " > Admin all users failed", err);

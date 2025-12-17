@@ -11,13 +11,15 @@ import {
   MAX_COMPLETION_BONUS,
   MAX_COMPATIBILITY_SCORE,
   MAX_AGE_DIFFERENCE,
+  ADMIN_USER_ID,
 } from "../shared/constants";
 import {
   BOT_NAME,
   archetypeCompatibility,
   mbtiCompatibility,
 } from "./constants";
-import { buttons, display } from "./strings";
+import { buttons, display, profileValues } from "./strings";
+import { callbacks as callbackQueries } from "./callbackQueries";
 import { UserProfile } from "../shared/types";
 import { MatchUser, SessionData } from "./types";
 import { calculateAge } from "../shared/utils";
@@ -25,11 +27,11 @@ import { getInterestNames } from "../shared/i18n";
 import { buildQuizResultsSection } from "../shared/display";
 import { isUserBanned } from "../shared/database";
 
-type DisplayMode = "match" | "liked" | "admin";
+type DisplayMode = "match" | "liked";
 
 // Helper function to format last_online date in Persian
 function formatLastOnline(lastOnline: Date | null): string {
-  if (!lastOnline) return "هرگز";
+  if (!lastOnline) return display.lastOnlineNever;
   
   const now = new Date();
   const diffMs = now.getTime() - lastOnline.getTime();
@@ -39,13 +41,13 @@ function formatLastOnline(lastOnline: Date | null): string {
   const diffDays = Math.floor(diffHours / 24);
   
   if (diffSeconds < 60) {
-    return "همین الان";
+    return display.lastOnlineJustNow;
   } else if (diffMinutes < 60) {
-    return `${diffMinutes} دقیقه پیش`;
+    return display.lastOnlineMinutesAgo(diffMinutes);
   } else if (diffHours < 24) {
-    return `${diffHours} ساعت پیش`;
+    return display.lastOnlineHoursAgo(diffHours);
   } else if (diffDays < 7) {
-    return `${diffDays} روز پیش`;
+    return display.lastOnlineDaysAgo(diffDays);
   } else {
     // Format as date for older entries
     const date = new Date(lastOnline);
@@ -136,6 +138,83 @@ function calculateCompatibilityScore(
   return Math.min(Math.round(compatibilityScore), MAX_COMPATIBILITY_SCORE);
 }
 
+// Helper to build ban status text
+async function buildBanStatusText(userTelegramId: number | null): Promise<string> {
+  if (!userTelegramId) return "";
+  
+  const banStatus = await isUserBanned(userTelegramId);
+  if (!banStatus.banned) {
+    return `\n${display.banStatusActive}`;
+  }
+  
+  if (banStatus.bannedUntil === null) {
+    return `\n${display.banStatusPermanent}`;
+  }
+  
+  const now = new Date();
+  const diffMs = banStatus.bannedUntil.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return `\n${display.banStatusTemporary(diffDays)}`;
+}
+
+// Helper to calculate mutual interests count
+function calculateMutualInterestsCount(
+  userInterests: string[] | null | undefined,
+  matchInterests: string[] | null | undefined
+): number {
+  if (!userInterests?.length || !matchInterests?.length) return 0;
+  
+  const userInterestsSet = new Set(userInterests);
+  const matchInterestsSet = new Set(matchInterests);
+  return Array.from(userInterestsSet).filter((interest) =>
+    matchInterestsSet.has(interest)
+  ).length;
+}
+
+// Helper to build interests section
+async function buildInterestsSection(
+  user: MatchUser,
+  userInterests: string[] | undefined,
+  viewerId: number | undefined
+): Promise<string> {
+  if (!user.interests?.length) return "";
+  
+  const [interestNamesMap] = await Promise.all([
+    getInterestNames(viewerId, BOT_NAME),
+  ]);
+  
+  const interestNames = user.interests
+    .map(
+      (interest) =>
+        interestNamesMap[interest as keyof typeof interestNamesMap] || interest
+    )
+    .join(", ");
+
+  const mutualCount = calculateMutualInterestsCount(userInterests, user.interests);
+  const mutualInterestsText = mutualCount > 0 ? display.mutualInterests(mutualCount) : "";
+
+  return `\n${display.interestsLabel} ${interestNames}${mutualInterestsText}`;
+}
+
+// Helper to build admin info section
+async function buildAdminInfoSection(
+  user: MatchUser,
+  isAdmin: boolean
+): Promise<string> {
+  if (!isAdmin) return "";
+  
+  let section = `\n\n${display.adminUsername} ${user.username ? `@${user.username}` : display.usernameNotSet}`;
+  const lastOnlineText = formatLastOnline(user.last_online);
+  section += `\n${display.adminLastActivity} ${lastOnlineText}`;
+  
+  if (user.telegram_id) {
+    const banStatusText = await buildBanStatusText(user.telegram_id);
+    section += banStatusText;
+  }
+  
+  return section;
+}
+
 export async function displayUser(
   ctx: Context,
   user: MatchUser,
@@ -145,104 +224,61 @@ export async function displayUser(
   userInterests?: string[],
   currentUserProfile?: UserProfile
 ) {
-  const ageText = user.age ? `${user.age} سال` : display.unknownAge;
+  // Check if viewing user is admin
+  const isAdmin = ADMIN_USER_ID !== undefined && ctx.from?.id === ADMIN_USER_ID;
+  
+  // Calculate compatibility score
+  const compatibilityScore = user.compatibility_score ?? 
+    (currentUserProfile ? calculateCompatibilityScore(currentUserProfile, user) : undefined);
+  
+  // Build message sections in parallel where possible
+  const [quizResultsSection, interestsSection, adminInfoSection] = await Promise.all([
+    buildQuizResultsSection(user, BOT_NAME, ctx.from?.id, false),
+    buildInterestsSection(user, userInterests, ctx.from?.id),
+    showUsername ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
+  ]);
+  
+  // Build main message
+  const ageText = user.age ? `${user.age} ${profileValues.year}` : display.unknownAge;
   const nameText = user.display_name || display.noName;
   const bioText = user.biography || display.noBio;
-
-  // Calculate or use compatibility score
-  let compatibilityScore = user.compatibility_score;
-  if (compatibilityScore === undefined && currentUserProfile) {
-    compatibilityScore = calculateCompatibilityScore(currentUserProfile, user);
-  }
-
-  // Show compatibility score if available
-  const compatibilityText =
-    compatibilityScore !== undefined
-      ? `\n💯 سازگاری: ${compatibilityScore}%`
-      : "";
-
-  const quizResultsSection = await buildQuizResultsSection(
-    user,
-    BOT_NAME,
-    ctx.from?.id,
-    false // Don't show "not set" for other users, only show existing quizzes
-  );
+  const compatibilityText = compatibilityScore !== undefined
+    ? display.compatibility(compatibilityScore)
+    : "";
   
-  let message = `👤 ${nameText}\n`;
-  message += `🎂 ${ageText}${compatibilityText}\n\n`;
-  message += `📝 ${bioText}\n`;
+  let message = `${display.namePrefix} ${nameText}\n`;
+  message += `${display.agePrefix} ${ageText}${compatibilityText}\n\n`;
+  message += `${display.bioPrefix} ${bioText}`;
+  
   if (quizResultsSection) {
     message += `\n${quizResultsSection}`;
   }
+  
   if (user.mood) {
-    message += `\n😊 مود: ${MOODS[user.mood] || user.mood}`;
+    message += `\n${display.moodLabel} ${MOODS[user.mood] || user.mood}`;
   }
-  if (user.interests && user.interests.length > 0) {
-    const interestNamesMap = await getInterestNames(ctx.from?.id, BOT_NAME);
-    const interestNames = user.interests
-      .map(
-        (interest) =>
-          interestNamesMap[interest as keyof typeof interestNamesMap] || interest
-      )
-      .join(", ");
-
-    // Calculate mutual interests count if user interests provided
-    let mutualInterestsText = "";
-    if (userInterests && userInterests.length > 0) {
-      const userInterestsSet = new Set(userInterests);
-      const matchInterestsSet = new Set(user.interests);
-      const mutualCount = Array.from(userInterestsSet).filter((interest) =>
-        matchInterestsSet.has(interest)
-      ).length;
-      if (mutualCount > 0) {
-        mutualInterestsText = ` (${mutualCount} مورد مشترک)`;
-      }
-    }
-
-    message += `\n🎯 علایق: ${interestNames}${mutualInterestsText}`;
-  }
-
-  if (showUsername) {
-    message += `\n\n👤 Username: ${user.username ? `@${user.username}` : display.usernameNotSet}`;
-    const lastOnlineText = formatLastOnline(user.last_online);
-    message += `\n🕐 آخرین فعالیت: ${lastOnlineText}`;
-    
-    // Show ban status in admin mode
-    if (mode === "admin" && user.telegram_id) {
-      const banStatus = await isUserBanned(user.telegram_id);
-      if (banStatus.banned) {
-        if (banStatus.bannedUntil === null) {
-          message += `\n🚫 وضعیت: بن دائمی`;
-        } else {
-          const now = new Date();
-          const diffMs = banStatus.bannedUntil.getTime() - now.getTime();
-          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-          message += `\n🚫 وضعیت: بن تا ${diffDays} روز دیگر`;
-        }
-      } else {
-        message += `\n✅ وضعیت: فعال`;
-      }
-    }
-  }
+  
+  message += interestsSection;
+  message += adminInfoSection;
 
   const keyboard = new InlineKeyboard();
   if (!showUsername) {
-    keyboard.text(buttons.like, `like:${user.telegram_id}`);
+    keyboard.text(buttons.like, callbackQueries.like(user.telegram_id || 0));
     if (mode === "liked") {
-      keyboard.text(buttons.delete, `delete_liked:${user.telegram_id}`);
+      keyboard.text(buttons.delete, callbackQueries.deleteLiked(user.telegram_id || 0));
       if (user.username) {
         keyboard.url(buttons.chat, `https://t.me/${user.username}`);
       }
     } else {
       // match or admin mode
-      keyboard.text(buttons.dislike, `dislike:${user.telegram_id}`);
+      keyboard.text(buttons.dislike, callbackQueries.dislike(user.telegram_id || 0));
     }
     keyboard.row();
   }
   
-  // Add "Next" button if there are more matches (works for both regular and admin view)
+  // Add "Next" button if there are more matches
   if (
-    (mode === "match" || mode === "admin") &&
+    mode === "match" &&
     session &&
     session.matchIds &&
     session.currentMatchIndex !== undefined
@@ -250,20 +286,20 @@ export async function displayUser(
     const currentIndex = session.currentMatchIndex;
     const totalMatches = session.matchIds.length;
     if (currentIndex < totalMatches - 1) {
-      keyboard.text(buttons.next, `next_match:${user.telegram_id}`);
+      keyboard.text(buttons.next, callbackQueries.nextMatch(user.telegram_id || 0));
       keyboard.row();
     }
   }
   
-  // Only show report button if not in admin mode
-  if (mode !== "admin") {
-    keyboard.text(buttons.report, `report:${user.telegram_id}`);
+  // Only show report button if not admin
+  if (!isAdmin) {
+    keyboard.text(buttons.report, callbackQueries.report(user.telegram_id || 0));
   }
   
-  // Add ban button for admin mode
-  if (mode === "admin") {
+  // Add ban button if admin
+  if (isAdmin) {
     keyboard.row();
-    keyboard.text(buttons.ban, `ban:${user.telegram_id}`);
+    keyboard.text(buttons.ban, callbackQueries.ban(user.telegram_id || 0));
   }
 
   try {
@@ -278,7 +314,7 @@ export async function displayUser(
       await ctx.reply(message, { reply_markup: keyboard });
     }
   } catch (err) {
-    const errorContext = mode === "match" ? "match" : mode === "liked" ? "liked user" : "admin user";
+    const errorContext = mode === "match" ? "match" : "liked user";
     log.error(BOT_NAME + ` > Display ${errorContext} failed`, err);
     // Try to send just the message without image if photo send fails
     try {

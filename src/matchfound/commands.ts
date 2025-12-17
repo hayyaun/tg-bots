@@ -1,7 +1,7 @@
 import { Bot, InlineKeyboard, InputFile } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
-import { MIN_COMPLETION_THRESHOLD } from "../shared/constants";
+import { MIN_COMPLETION_THRESHOLD, ADMIN_USER_ID } from "../shared/constants";
 import { ensureUserExists, getUserProfile } from "../shared/database";
 import { setupProfileCommand } from "../shared/profileCommand";
 import { generateDailyActiveUsersChart } from "./charts";
@@ -21,14 +21,14 @@ import {
   profileCompletion,
   settings,
 } from "./strings";
+import { callbacks as callbackQueries } from "./callbackQueries";
 
 const formatNumber = (value: number | bigint) => value.toLocaleString("en-US");
 const ADMIN_DAU_DAYS = 14;
 
 export function setupCommands(
   bot: Bot,
-  notifyAdmin: (message: string) => Promise<void>,
-  adminUserId?: number
+  notifyAdmin: (message: string) => Promise<void>
 ) {
   // /start command
   bot.command("start", async (ctx) => {
@@ -132,7 +132,7 @@ export function setupCommands(
     try {
       const keyboard = new InlineKeyboard().text(
         settings.wipeDataButton,
-        "settings:wipe_data"
+        callbackQueries.settingsWipeData
       );
 
       await ctx.reply(settings.title, {
@@ -153,7 +153,7 @@ export function setupCommands(
     if (!userId) return;
 
     // Check if user is admin
-    if (!adminUserId || userId !== adminUserId) {
+    if (!ADMIN_USER_ID || userId !== ADMIN_USER_ID) {
       await ctx.reply(errors.accessDenied);
       return;
     }
@@ -274,9 +274,9 @@ export function setupCommands(
       );
 
       const keyboard = new InlineKeyboard()
-        .text(admin.buttons.reports, "admin:reports")
+        .text(admin.buttons.reports, callbackQueries.adminReports)
         .row()
-        .text(admin.buttons.users, "admin:all_users")
+        .text(admin.buttons.users, callbackQueries.adminAllUsers)
         .row();
 
       const statsMessage = admin.statsMessage(
