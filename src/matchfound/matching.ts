@@ -180,8 +180,10 @@ export async function findMatches(
       continue;
     }
 
+    // Extract id separately to exclude it (it's BigInt and not needed in MatchUser)
+    const { id, ...candidateWithoutId } = candidate;
     const matchUser: MatchUser = {
-      ...candidate,
+      ...candidateWithoutId,
       telegram_id: candidate.telegram_id ? Number(candidate.telegram_id) : 0,
       birth_date: candidate.birth_date || null,
       created_at: candidate.created_at,

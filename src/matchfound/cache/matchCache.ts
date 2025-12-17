@@ -16,7 +16,15 @@ export async function getCachedMatches(userId: bigint): Promise<MatchUser[] | nu
   if (!cached) return null;
 
   try {
-    return JSON.parse(cached) as MatchUser[];
+    const parsed = JSON.parse(cached) as MatchUser[];
+    // Convert Date strings back to Date objects
+    return parsed.map((match) => ({
+      ...match,
+      birth_date: match.birth_date ? new Date(match.birth_date) : null,
+      last_online: match.last_online ? new Date(match.last_online) : null,
+      created_at: new Date(match.created_at),
+      updated_at: new Date(match.updated_at),
+    }));
   } catch {
     return null;
   }
@@ -26,10 +34,27 @@ export async function getCachedMatches(userId: bigint): Promise<MatchUser[] | nu
  * Cache match results for a user
  */
 export async function cacheMatches(userId: bigint, matches: MatchUser[]): Promise<void> {
+  // Convert BigInt values to strings and handle Date serialization
+  const serializable = matches.map((match) => {
+    const serialized: any = { ...match };
+    // Remove any BigInt fields (like id) that might be present
+    if ('id' in serialized && typeof serialized.id === 'bigint') {
+      delete serialized.id;
+    }
+    // Dates are automatically serialized by JSON.stringify, but we ensure they're Date objects
+    return serialized;
+  });
+
   await setWithPrefix(
     BOT_PREFIX,
     `matches:${userId.toString()}`,
-    JSON.stringify(matches),
+    JSON.stringify(serializable, (key, value) => {
+      // Convert BigInt to string if encountered
+      if (typeof value === 'bigint') {
+        return value.toString();
+      }
+      return value;
+    }),
     MATCH_CACHE_TTL
   );
 }
