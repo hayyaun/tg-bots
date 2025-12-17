@@ -2,22 +2,10 @@ import { Context, InlineKeyboard } from "grammy";
 import log from "../log";
 import {
   MOODS,
-  MAX_COMPLETION_SCORE,
-  MAX_INTERESTS,
-  ARCHETYPE_MATCH_SCORE,
-  MBTI_MATCH_SCORE,
-  MAX_INTERESTS_SCORE,
-  MAX_AGE_BONUS,
-  MAX_COMPLETION_BONUS,
   MAX_COMPATIBILITY_SCORE,
-  MAX_AGE_DIFFERENCE,
   ADMIN_USER_ID,
 } from "../shared/constants";
-import {
-  BOT_NAME,
-  archetypeCompatibility,
-  mbtiCompatibility,
-} from "./constants";
+import { BOT_NAME } from "./constants";
 import { buttons, display, profileValues } from "./strings";
 import { callbacks as callbackQueries } from "./callbackQueries";
 import { UserProfile } from "../shared/types";
@@ -28,6 +16,10 @@ import { buildQuizResultsSection } from "../shared/display";
 import { isUserBanned } from "../shared/database";
 import { isAdminContext } from "./helpers";
 import { DisplayMode } from "./types";
+import {
+  calculateCompatibilityScore as calculateCompatibilityScoreCore,
+  calculateMatchInfo,
+} from "./matching";
 
 // Helper function to format last_online date in Persian
 function formatLastOnline(lastOnline: Date | null): string {
@@ -63,78 +55,26 @@ function calculateCompatibilityScore(
   currentUser: UserProfile,
   otherUser: MatchUser
 ): number {
-  let compatibilityScore = 0;
   const currentUserAge = calculateAge(currentUser.birth_date);
   const otherUserAge = otherUser.age || calculateAge(otherUser.birth_date);
 
-  // Check archetype compatibility
-  let archetypeMatch = false;
-  if (currentUser.archetype_result && otherUser.archetype_result) {
-    const userArchetype = currentUser.archetype_result.toLowerCase();
-    const targetArchetype = otherUser.archetype_result.toLowerCase();
+  // Calculate match information (archetype, MBTI, mutual interests)
+  const { archetypeMatch, mbtiMatch, mutualInterestsCount } = calculateMatchInfo(
+    currentUser,
+    otherUser
+  );
 
-    if (currentUser.gender === otherUser.gender) {
-      // Same-gender matching: same archetype
-      archetypeMatch = userArchetype === targetArchetype;
-    } else {
-      // Opposite-gender matching: use compatibility matrix
-      const compatible = archetypeCompatibility[userArchetype] || [];
-      archetypeMatch = compatible.includes(targetArchetype);
-    }
-  }
+  // Use shared compatibility score calculation
+  const compatibilityScore = calculateCompatibilityScoreCore(
+    archetypeMatch,
+    mbtiMatch,
+    mutualInterestsCount,
+    currentUserAge || 0,
+    otherUserAge,
+    otherUser.completion_score
+  );
 
-  // Check MBTI compatibility
-  let mbtiMatch = false;
-  if (currentUser.mbti_result && otherUser.mbti_result) {
-    const userMBTI = currentUser.mbti_result.toUpperCase();
-    const targetMBTI = otherUser.mbti_result.toUpperCase();
-    const compatible = mbtiCompatibility[userMBTI] || [];
-    mbtiMatch = compatible.includes(targetMBTI);
-  }
-
-  // Calculate mutual interests
-  let mutualInterestsCount = 0;
-  if (
-    currentUser.interests &&
-    otherUser.interests &&
-    currentUser.interests.length > 0 &&
-    otherUser.interests.length > 0
-  ) {
-    const userInterestsSet = new Set(currentUser.interests);
-    const otherInterestsSet = new Set(otherUser.interests);
-    mutualInterestsCount = Array.from(userInterestsSet).filter((interest) =>
-      otherInterestsSet.has(interest)
-    ).length;
-  }
-
-  // Archetype match
-  if (archetypeMatch) {
-    compatibilityScore += ARCHETYPE_MATCH_SCORE;
-  }
-
-  // MBTI match
-  if (mbtiMatch) {
-    compatibilityScore += MBTI_MATCH_SCORE;
-  }
-
-  // Mutual interests: up to MAX_INTERESTS_SCORE (scaled by number of mutual interests, max MAX_INTERESTS)
-  if (mutualInterestsCount > 0) {
-    const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE, MAX_INTERESTS_SCORE);
-    compatibilityScore += interestsScore;
-  }
-
-  // Age difference bonus: up to MAX_AGE_BONUS (smaller difference = higher bonus)
-  if (currentUserAge && otherUserAge) {
-    const ageDiff = Math.abs(otherUserAge - currentUserAge);
-    const ageBonus = Math.max(0, MAX_AGE_BONUS - (ageDiff / MAX_AGE_DIFFERENCE) * MAX_AGE_BONUS);
-    compatibilityScore += ageBonus;
-  }
-
-  // Completion score bonus: up to MAX_COMPLETION_BONUS (higher score = higher bonus)
-  const completionBonus = Math.min((otherUser.completion_score / MAX_COMPLETION_SCORE) * MAX_COMPLETION_BONUS, MAX_COMPLETION_BONUS);
-  compatibilityScore += completionBonus;
-
-  // Cap at MAX_COMPATIBILITY_SCORE
+  // Round and cap at MAX_COMPATIBILITY_SCORE
   return Math.min(Math.round(compatibilityScore), MAX_COMPATIBILITY_SCORE);
 }
 
