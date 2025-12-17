@@ -19,7 +19,8 @@ import { DisplayMode } from "./types";
 import {
   calculateCompatibilityScore as calculateCompatibilityScoreCore,
   calculateMatchInfo,
-} from "./matching";
+  calculateMutualInterestsCount,
+} from "./helpers";
 
 // Helper function to format last_online date in Persian
 function formatLastOnline(lastOnline: Date | null): string {
@@ -95,20 +96,6 @@ async function buildBanStatusText(userTelegramId: number | null): Promise<string
   const diffMs = banStatus.bannedUntil.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   return `\n${display.banStatusTemporary(diffDays)}`;
-}
-
-// Helper to calculate mutual interests count
-function calculateMutualInterestsCount(
-  userInterests: string[] | null | undefined,
-  matchInterests: string[] | null | undefined
-): number {
-  if (!userInterests?.length || !matchInterests?.length) return 0;
-  
-  const userInterestsSet = new Set(userInterests);
-  const matchInterestsSet = new Set(matchInterests);
-  return Array.from(userInterestsSet).filter((interest) =>
-    matchInterestsSet.has(interest)
-  ).length;
 }
 
 // Helper to build interests section
