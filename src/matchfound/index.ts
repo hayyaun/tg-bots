@@ -5,7 +5,7 @@ import { BOT_NAME } from "./constants";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";
 import { setupDailyReports, setupProfileReminders } from "./reports";
-import { createAdminNotifier, setupBotErrorHandling, initializeBot } from "../utils/bot";
+import { createAdminNotifier, setupBotErrorHandling, initializeBot, setupLastOnlineMiddleware } from "../utils/bot";
 
 configDotenv();
 
@@ -31,6 +31,9 @@ const startBot = async (botKey: string, agent: unknown) => {
   ];
 
   await bot.api.setMyCommands(commands);
+
+  // Setup middleware to update last_online on user interactions
+  setupLastOnlineMiddleware(bot);
 
   // Setup commands and callbacks
   setupCommands(bot, notifyAdmin, ADMIN_USER_ID);

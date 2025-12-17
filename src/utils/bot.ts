@@ -1,5 +1,6 @@
-import { Bot } from "grammy";
+import { Bot, Context } from "grammy";
 import log from "../log";
+import { updateLastOnline } from "../shared/database";
 
 /**
  * Creates an admin notification function for a bot
@@ -42,6 +43,24 @@ export function setupBotErrorHandling(
       notifyAdmin(`❌ <b>Critical Bot Error</b>\nError: ${err}`).catch(() => {});
     }
   };
+}
+
+/**
+ * Middleware to update user's last_online timestamp on any interaction
+ * This runs asynchronously and doesn't block the main flow
+ * @param bot - The bot instance
+ */
+export function setupLastOnlineMiddleware(bot: Bot): void {
+  bot.use(async (ctx: Context, next) => {
+    // Update last_online in the background (fire-and-forget)
+    if (ctx.from?.id) {
+      updateLastOnline(ctx.from.id).catch(() => {
+        // Silently fail - don't log errors for this background operation
+      });
+    }
+    // Continue to next middleware/handler
+    await next();
+  });
 }
 
 /**

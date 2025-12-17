@@ -5,6 +5,7 @@ import {
   createAdminNotifier,
   setupBotErrorHandling,
   initializeBot,
+  setupLastOnlineMiddleware,
 } from "../utils/bot";
 import { getQuizTypeName, quizTypes } from "./config";
 import { getQuizTypeEmoji } from "../shared/quizUtils";
@@ -48,6 +49,9 @@ const startBot = async (botKey: string, agent: unknown) => {
   }
 
   await bot.api.setMyCommands(commands);
+
+  // Setup middleware to update last_online on user interactions
+  setupLastOnlineMiddleware(bot);
 
   // Setup commands and callbacks
   setupCommands(bot, notifyAdmin);

@@ -216,3 +216,22 @@ export async function deleteUserData(telegramUserId: number): Promise<void> {
   });
 }
 
+// Update user's last_online timestamp
+export async function updateLastOnline(telegramUserId: number): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegram_id: BigInt(telegramUserId) },
+      select: { id: true },
+    });
+    if (!user) return;
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { last_online: new Date() },
+    });
+  } catch (error) {
+    // Silently fail - don't block bot interactions if update fails
+    // Log error in development if needed
+  }
+}
+
