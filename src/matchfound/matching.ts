@@ -1,73 +1,38 @@
-import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
-import { MAX_COMPLETION_SCORE, MIN_INTERESTS, MAX_INTERESTS, MIN_COMPLETION_THRESHOLD, MAX_AGE_DIFFERENCE, ARCHETYPE_MATCH_SCORE, MBTI_MATCH_SCORE, MAX_INTERESTS_SCORE, MAX_AGE_BONUS, MAX_COMPLETION_BONUS, MAX_COMPATIBILITY_SCORE, MAX_CANDIDATES_TO_FETCH, MAX_MATCHES_TO_RETURN } from "../shared/constants";
 import {
-  archetypeCompatibility,
-  mbtiCompatibility,
-  BOT_PREFIX,
-} from "./constants";
-import { MatchUser } from "./types";
-import { calculateAge } from "../shared/utils";
+  ARCHETYPE_MATCH_SCORE,
+  MAX_AGE_BONUS,
+  MAX_AGE_DIFFERENCE,
+  MAX_CANDIDATES_TO_FETCH,
+  MAX_COMPATIBILITY_SCORE,
+  MAX_COMPLETION_BONUS,
+  MAX_COMPLETION_SCORE,
+  MAX_INTERESTS,
+  MAX_INTERESTS_SCORE,
+  MAX_MATCHES_TO_RETURN,
+  MBTI_MATCH_SCORE,
+  MIN_COMPLETION_THRESHOLD,
+  MIN_INTERESTS,
+} from "../shared/constants";
 import { getUserProfile, getUserProfileById } from "../shared/database";
-import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
+import { calculateAge } from "../shared/utils";
+import { cacheMatches, getCachedMatches } from "./cache/matchCache";
+import { archetypeCompatibility, mbtiCompatibility } from "./constants";
+import { MatchUser } from "./types";
+export {
+  invalidateMatchCache,
+  invalidateMatchCacheForUsers,
+} from "./cache/matchCache";
 
-// Cache TTL for match results (5 minutes)
-const MATCH_CACHE_TTL = 300;
-
-/**
- * Get cached match results for a user
- */
-async function getCachedMatches(userId: bigint): Promise<MatchUser[] | null> {
-  const cached = await getWithPrefix(
-    BOT_PREFIX,
-    `matches:${userId.toString()}`
-  );
-  if (!cached) return null;
-
-  try {
-    return JSON.parse(cached) as MatchUser[];
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Cache match results for a user
- */
-async function cacheMatches(userId: bigint, matches: MatchUser[]): Promise<void> {
-  await setWithPrefix(
-    BOT_PREFIX,
-    `matches:${userId.toString()}`,
-    JSON.stringify(matches),
-    MATCH_CACHE_TTL
-  );
-}
-
-/**
- * Invalidate match cache for a user
- * Call this when a user likes or ignores someone, or when their profile changes
- */
-export async function invalidateMatchCache(userId: bigint): Promise<void> {
-  await delWithPrefix(BOT_PREFIX, `matches:${userId.toString()}`);
-}
-
-/**
- * Invalidate match cache for multiple users
- */
-export async function invalidateMatchCacheForUsers(userIds: bigint[]): Promise<void> {
-  const promises = userIds.map((userId) =>
-    delWithPrefix(BOT_PREFIX, `matches:${userId.toString()}`)
-  );
-  await Promise.all(promises);
-}
-
-export async function findMatches(userId: number | bigint, isAdmin: boolean = false): Promise<MatchUser[]> {
-  
+export async function findMatches(
+  userId: number | bigint,
+  isAdmin: boolean = false
+): Promise<MatchUser[]> {
   // userId can be either telegram_id (number) or id (bigint)
   // First, find the user to get their id
   let user;
   let userIdBigInt: bigint;
-  
+
   if (typeof userId === "bigint") {
     // Already an id
     userIdBigInt = userId;
@@ -84,7 +49,7 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
     if (!userRecord) return [];
     userIdBigInt = userRecord.id;
   }
-  
+
   if (!user || !user.gender || !user.looking_for_gender) return [];
 
   // Check cache first (skip cache for admin users to see fresh results)
@@ -102,12 +67,12 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
   const today = new Date();
   const minAge = Math.max(18, userAge - MAX_AGE_DIFFERENCE); // Ensure minimum age of 18
   const maxAge = userAge + MAX_AGE_DIFFERENCE;
-  
+
   // Calculate max birth_date (youngest person: to be at least minAge today)
   // Someone who is minAge today was born on or before: today - minAge years
   const maxBirthDate = new Date(today);
   maxBirthDate.setFullYear(today.getFullYear() - minAge);
-  
+
   // Calculate min birth_date (oldest person: to be at most maxAge today)
   // Someone who is maxAge today was born on or after: (today - maxAge years) - 1 year + 1 day
   // This ensures we include people who are exactly maxAge (haven't had birthday yet this year)
@@ -285,39 +250,52 @@ export async function findMatches(userId: number | bigint, isAdmin: boolean = fa
 
     // Adjust priority based on mutual interests (reduce priority number for more interests)
     // Increased weight: Each mutual interest reduces priority by 0.1 (max reduction for MAX_INTERESTS)
-    const interestBonus = Math.min(mutualInterestsCount * 0.1, MAX_INTERESTS * 0.1);
+    const interestBonus = Math.min(
+      mutualInterestsCount * 0.1,
+      MAX_INTERESTS * 0.1
+    );
     matchPriority = matchPriority - interestBonus;
 
     // Calculate compatibility percentage (0-MAX_COMPATIBILITY_SCORE%)
     let compatibilityScore = 0;
-    
+
     // Archetype match
     if (archetypeMatch) {
       compatibilityScore += ARCHETYPE_MATCH_SCORE;
     }
-    
+
     // MBTI match
     if (mbtiMatch) {
       compatibilityScore += MBTI_MATCH_SCORE;
     }
-    
+
     // Mutual interests: up to MAX_INTERESTS_SCORE (scaled by number of mutual interests, max MAX_INTERESTS)
     // Formula: (mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE
     if (mutualInterestsCount > 0) {
-      const interestsScore = Math.min((mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE, MAX_INTERESTS_SCORE);
+      const interestsScore = Math.min(
+        (mutualInterestsCount / MAX_INTERESTS) * MAX_INTERESTS_SCORE,
+        MAX_INTERESTS_SCORE
+      );
       compatibilityScore += interestsScore;
     }
-    
+
     // Age difference bonus: up to MAX_AGE_BONUS (smaller difference = higher bonus)
     // Max age difference is MAX_AGE_DIFFERENCE years
     const ageDiff = Math.abs((matchUser.age || 0) - userAge);
-    const ageBonus = Math.max(0, MAX_AGE_BONUS - (ageDiff / MAX_AGE_DIFFERENCE) * MAX_AGE_BONUS);
+    const ageBonus = Math.max(
+      0,
+      MAX_AGE_BONUS - (ageDiff / MAX_AGE_DIFFERENCE) * MAX_AGE_BONUS
+    );
     compatibilityScore += ageBonus;
-    
+
     // Completion score bonus: up to MAX_COMPLETION_BONUS (higher score = higher bonus)
-    const completionBonus = Math.min((matchUser.completion_score / MAX_COMPLETION_SCORE) * MAX_COMPLETION_BONUS, MAX_COMPLETION_BONUS);
+    const completionBonus = Math.min(
+      (matchUser.completion_score / MAX_COMPLETION_SCORE) *
+        MAX_COMPLETION_BONUS,
+      MAX_COMPLETION_BONUS
+    );
     compatibilityScore += completionBonus;
-    
+
     // Cap at MAX_COMPATIBILITY_SCORE
     compatibilityScore = Math.min(compatibilityScore, MAX_COMPATIBILITY_SCORE);
     matchUser.compatibility_score = Math.round(compatibilityScore);

@@ -5,10 +5,10 @@ import log from "../../../log";
 import {
   invalidateExclusionCache,
   invalidateExclusionCacheForUsers,
-} from "../../exclusionCache";
+} from "../../cache/exclusionCache";
 import {
   invalidateMatchCacheForUsers,
-} from "../../matching";
+} from "../../cache/matchCache";
 
 const router = express.Router();
 

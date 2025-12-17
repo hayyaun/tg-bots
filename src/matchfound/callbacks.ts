@@ -20,7 +20,7 @@ import {
 import {
   invalidateMatchCache,
   invalidateMatchCacheForUsers,
-} from "./matching";
+} from "./cache/matchCache";
 import { getSession } from "./session";
 import {
   admin,

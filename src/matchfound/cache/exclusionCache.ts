@@ -1,4 +1,4 @@
-import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
+import { getWithPrefix, setWithPrefix, delWithPrefix } from "../../redis";
 
 const CACHE_PREFIX = "matchfound";
 const EXCLUSION_CACHE_TTL = 3600; // 1 hour cache TTL
