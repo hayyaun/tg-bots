@@ -23,6 +23,7 @@ import { MatchUser, SessionData } from "./types";
 import { calculateAge } from "../shared/utils";
 import { getInterestNames } from "../shared/i18n";
 import { buildQuizResultsSection } from "../shared/display";
+import { isUserBanned } from "../shared/database";
 
 type DisplayMode = "match" | "liked" | "admin";
 
@@ -205,6 +206,23 @@ export async function displayUser(
     message += `\n\n👤 Username: ${user.username ? `@${user.username}` : display.usernameNotSet}`;
     const lastOnlineText = formatLastOnline(user.last_online);
     message += `\n🕐 آخرین فعالیت: ${lastOnlineText}`;
+    
+    // Show ban status in admin mode
+    if (mode === "admin" && user.telegram_id) {
+      const banStatus = await isUserBanned(user.telegram_id);
+      if (banStatus.banned) {
+        if (banStatus.bannedUntil === null) {
+          message += `\n🚫 وضعیت: بن دائمی`;
+        } else {
+          const now = new Date();
+          const diffMs = banStatus.bannedUntil.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          message += `\n🚫 وضعیت: بن تا ${diffDays} روز دیگر`;
+        }
+      } else {
+        message += `\n✅ وضعیت: فعال`;
+      }
+    }
   }
 
   const keyboard = new InlineKeyboard();
