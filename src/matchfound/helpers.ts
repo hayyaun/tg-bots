@@ -205,10 +205,7 @@ export async function executeFindAndDisplay(
     );
   }
 
-  // Check if user is admin
-  const isAdmin = isAdminUser(userId);
-
-  const matches = await findMatches(userId, isAdmin);
+  const matches = await findMatches(userId);
   if (matches.length === 0) {
     await ctx.reply(errors.noMatches);
     return;

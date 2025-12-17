@@ -25,8 +25,7 @@ export {
 } from "./cache/matchCache";
 
 export async function findMatches(
-  userId: number | bigint,
-  isAdmin: boolean = false
+  userId: number | bigint
 ): Promise<MatchUser[]> {
   // userId can be either telegram_id (number) or id (bigint)
   // First, find the user to get their id
@@ -52,12 +51,10 @@ export async function findMatches(
 
   if (!user || !user.gender || !user.looking_for_gender) return [];
 
-  // Check cache first (skip cache for admin users to see fresh results)
-  if (!isAdmin) {
-    const cached = await getCachedMatches(userIdBigInt);
-    if (cached) {
-      return cached;
-    }
+  // Check cache first
+  const cached = await getCachedMatches(userIdBigInt);
+  if (cached) {
+    return cached;
   }
 
   const userAge = calculateAge(user.birth_date);
@@ -254,11 +251,8 @@ export async function findMatches(
     } else if (mutualInterestsCount > 0) {
       matchPriority = 4;
     } else {
-      // Skip if no match at all, unless admin (admins see everyone)
-      if (!isAdmin) {
-        continue;
-      }
-      // For admin, matchPriority remains 999 (default) so they see everyone
+      // Skip if no match at all
+      continue;
     }
 
     // Adjust priority based on mutual interests (reduce priority number for more interests)
@@ -349,10 +343,8 @@ export async function findMatches(
   // Limit final results to prevent returning too many matches
   const finalMatches = matches.slice(0, MAX_MATCHES_TO_RETURN);
 
-  // Cache results (skip cache for admin users)
-  if (!isAdmin) {
-    await cacheMatches(userIdBigInt, finalMatches);
-  }
+  // Cache results
+  await cacheMatches(userIdBigInt, finalMatches);
 
   return finalMatches;
 }
