@@ -119,6 +119,17 @@ export const report = {
   cancelled: "گزارش لغو شد.",
 };
 
+// Ban messages
+export const ban = {
+  prompt: "مدت زمان بن را انتخاب کنید:",
+  cancelled: "بن لغو شد.",
+  success: (duration: string) => `✅ کاربر به مدت ${duration} بن شد.`,
+  forever: "برای همیشه",
+  twoDays: "2 روز",
+  twoWeeks: "2 هفته",
+  twoMonths: "2 ماه",
+};
+
 // Delete data messages
 export const deleteData = {
   confirmPrompt:

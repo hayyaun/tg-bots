@@ -48,6 +48,8 @@ model User {
   ignoredReceived Ignored[] @relation("IgnoredByUser")
   reportsGiven  Report[]   @relation("Reporter")
   reportsReceived Report[] @relation("ReportedUser")
+  bansGiven    Ban[]      @relation("Banner")
+  bansReceived Ban[]       @relation("BannedUser")
 
   @@index([telegram_id])
   @@index([google_id])
@@ -97,4 +99,21 @@ model Report {
   @@index([reporter_id])
   @@index([reported_user_id])
   @@map("reports")
+}
+
+model Ban {
+  id            BigInt    @id @default(autoincrement()) @db.BigInt
+  banned_user_id BigInt   @db.BigInt
+  banner_id     BigInt    @db.BigInt
+  banned_until  DateTime? @db.Timestamp(3)
+  reason        String?   @db.Text
+  created_at    DateTime  @default(now())
+
+  bannedUser User @relation("BannedUser", fields: [banned_user_id], references: [id], onDelete: Cascade)
+  banner     User @relation("Banner", fields: [banner_id], references: [id], onDelete: Cascade)
+
+  @@index([banned_user_id])
+  @@index([banner_id])
+  @@index([banned_until])
+  @@map("bans")
 }

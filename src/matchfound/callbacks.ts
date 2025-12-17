@@ -15,6 +15,7 @@ import { continueProfileCompletion, handleFind, showNextUser, storeMatchesInSess
 import { getSession } from "./session";
 import {
   admin,
+  ban,
   callbacks,
   deleteData,
   display,
@@ -206,6 +207,148 @@ export function setupCallbacks(
 
     await ctx.answerCallbackQuery();
     await ctx.reply(report.prompt);
+  });
+
+  // Ban action (admin only)
+  bot.callbackQuery(/ban:(\d+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId || userId !== adminUserId) {
+      await ctx.answerCallbackQuery(errors.accessDenied);
+      return;
+    }
+
+    const bannedUserId = parseInt(ctx.match[1]);
+    if (userId === bannedUserId) {
+      await ctx.answerCallbackQuery("شما نمی‌توانید خودتان را بن کنید!");
+      return;
+    }
+
+    // Store in session for duration selection
+    const session = await getSession(userId);
+    session.banningUserId = bannedUserId;
+
+    await ctx.answerCallbackQuery();
+
+    // Create inline keyboard with ban duration options
+    const keyboard = new InlineKeyboard()
+      .text(ban.twoDays, `ban_duration:${bannedUserId}:2days`)
+      .text(ban.twoWeeks, `ban_duration:${bannedUserId}:2weeks`)
+      .row()
+      .text(ban.twoMonths, `ban_duration:${bannedUserId}:2months`)
+      .text(ban.forever, `ban_duration:${bannedUserId}:forever`)
+      .row()
+      .text("❌ لغو", `ban_cancel:${bannedUserId}`);
+
+    await ctx.reply(ban.prompt, { reply_markup: keyboard });
+  });
+
+  // Handle ban duration selection
+  bot.callbackQuery(/ban_duration:(\d+):(.+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId || userId !== adminUserId) {
+      await ctx.answerCallbackQuery(errors.accessDenied);
+      return;
+    }
+
+    const bannedUserId = parseInt(ctx.match[1]);
+    const duration = ctx.match[2];
+
+    const session = await getSession(userId);
+    if (session.banningUserId !== bannedUserId) {
+      await ctx.answerCallbackQuery("عملیات لغو شد.");
+      return;
+    }
+
+    await ctx.answerCallbackQuery();
+
+    try {
+      // Get user ids from telegram_ids
+      const bannerIdBigInt = await getUserIdFromTelegramId(userId);
+      const bannedUserIdBigInt = await getUserIdFromTelegramId(bannedUserId);
+
+      if (!bannerIdBigInt || !bannedUserIdBigInt) {
+        delete session.banningUserId;
+        await ctx.reply(errors.userNotFound);
+        return;
+      }
+
+      // Calculate banned_until date based on duration
+      let bannedUntil: Date | null = null;
+      let durationText = "";
+      const now = new Date();
+
+      switch (duration) {
+        case "2days":
+          bannedUntil = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+          durationText = ban.twoDays;
+          break;
+        case "2weeks":
+          bannedUntil = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+          durationText = ban.twoWeeks;
+          break;
+        case "2months":
+          bannedUntil = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // Approximate 2 months
+          durationText = ban.twoMonths;
+          break;
+        case "forever":
+          bannedUntil = null; // null means forever
+          durationText = ban.forever;
+          break;
+        default:
+          delete session.banningUserId;
+          await ctx.reply("مدت زمان نامعتبر است.");
+          return;
+      }
+
+      // Create ban record
+      await prisma.ban.create({
+        data: {
+          banned_user_id: bannedUserIdBigInt,
+          banner_id: bannerIdBigInt,
+          banned_until: bannedUntil,
+        },
+      });
+
+      // Get user info for admin notification
+      const bannedUser = await prisma.user.findUnique({
+        where: { telegram_id: BigInt(bannedUserId) },
+        select: { username: true, display_name: true },
+      });
+
+      // Notify admin
+      notifyAdmin(
+        `🚫 <b>User Banned</b>\n\n` +
+          `Banned User: ${bannedUser?.username ? `@${bannedUser.username}` : bannedUser?.display_name || bannedUserId}\n` +
+          `Banned User ID: <code>${bannedUserId}</code>\n\n` +
+          `Duration: ${durationText}\n` +
+          `Banned by: <code>${userId}</code>`
+      );
+
+      delete session.banningUserId;
+      await ctx.reply(ban.success(durationText));
+    } catch (err) {
+      log.error(BOT_NAME + " > Ban failed", err);
+      delete session.banningUserId;
+      await ctx.reply("❌ خطا در بن کردن کاربر.");
+      notifyAdmin(
+        `❌ <b>Ban Failed</b>\nBanned User: <code>${bannedUserId}</code>\nBanner: <code>${userId}</code>\nError: ${err}`
+      );
+    }
+  });
+
+  // Handle ban cancellation
+  bot.callbackQuery(/ban_cancel:(\d+)/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId || userId !== adminUserId) {
+      await ctx.answerCallbackQuery(errors.accessDenied);
+      return;
+    }
+
+    const session = await getSession(userId);
+    delete session.banningUserId;
+
+    await ctx.answerCallbackQuery();
+    await ctx.reply(ban.cancelled);
   });
 
   // Handle report reason

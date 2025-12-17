@@ -22,6 +22,7 @@ export interface SessionData extends BaseSessionData {
   likedUserIds?: number[]; // Array of telegram_ids in display order
   currentLikedIndex?: number;
   reportingUserId?: number;
+  banningUserId?: number; // User being banned (telegram_id)
   profileCompletionFieldIndex?: number; // Index of current field being completed
   isAdminView?: boolean; // Flag for admin view mode
 }
