@@ -1,8 +1,5 @@
 # Project Rules for tgbots
 
-<!-- This file is auto-generated from .cursor/rules/ directory. -->
-<!-- Edit rules in .cursor/rules/ and run: npm run sync-rules -->
-
 ## ALWAYS APPLY: Unused Import
 
 After your work is done, always check for unused imports in the files you made changes in.

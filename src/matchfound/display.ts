@@ -1,38 +1,33 @@
 import { Context, InlineKeyboard } from "grammy";
 import log from "../log";
-import {
-  MOODS,
-  MAX_COMPATIBILITY_SCORE,
-  ADMIN_USER_ID,
-} from "../shared/constants";
-import { BOT_NAME } from "./constants";
-import { buttons, display, profileValues } from "./strings";
-import { callbacks as callbackQueries } from "./callbackQueries";
-import { UserProfile } from "../shared/types";
-import { MatchUser, SessionData } from "./types";
-import { calculateAge } from "../shared/utils";
-import { getInterestNames } from "../shared/i18n";
-import { buildQuizResultsSection } from "../shared/display";
+import { MAX_COMPATIBILITY_SCORE, MOODS } from "../shared/constants";
 import { isUserBanned } from "../shared/database";
-import { isAdminContext } from "./helpers";
-import { DisplayMode } from "./types";
+import { buildQuizResultsSection } from "../shared/display";
+import { getInterestNames } from "../shared/i18n";
+import { UserProfile } from "../shared/types";
+import { calculateAge } from "../shared/utils";
+import { callbacks as callbackQueries } from "./callbackQueries";
+import { BOT_NAME } from "./constants";
 import {
   calculateCompatibilityScore as calculateCompatibilityScoreCore,
   calculateMatchInfo,
   calculateMutualInterestsCount,
+  isAdminContext,
 } from "./helpers";
+import { buttons, display, profileValues } from "./strings";
+import { DisplayMode, MatchUser, SessionData } from "./types";
 
 // Helper function to format last_online date in Persian
 function formatLastOnline(lastOnline: Date | null): string {
   if (!lastOnline) return display.lastOnlineNever;
-  
+
   const now = new Date();
   const diffMs = now.getTime() - lastOnline.getTime();
   const diffSeconds = Math.floor(diffMs / 1000);
   const diffMinutes = Math.floor(diffSeconds / 60);
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
-  
+
   if (diffSeconds < 60) {
     return display.lastOnlineJustNow;
   } else if (diffMinutes < 60) {
@@ -60,10 +55,8 @@ function calculateCompatibilityScore(
   const otherUserAge = otherUser.age || calculateAge(otherUser.birth_date);
 
   // Calculate match information (archetype, MBTI, mutual interests)
-  const { archetypeMatch, mbtiMatch, mutualInterestsCount } = calculateMatchInfo(
-    currentUser,
-    otherUser
-  );
+  const { archetypeMatch, mbtiMatch, mutualInterestsCount } =
+    calculateMatchInfo(currentUser, otherUser);
 
   // Use shared compatibility score calculation
   const compatibilityScore = calculateCompatibilityScoreCore(
@@ -80,18 +73,20 @@ function calculateCompatibilityScore(
 }
 
 // Helper to build ban status text
-async function buildBanStatusText(userTelegramId: number | null): Promise<string> {
+async function buildBanStatusText(
+  userTelegramId: number | null
+): Promise<string> {
   if (!userTelegramId) return "";
-  
+
   const banStatus = await isUserBanned(userTelegramId);
   if (!banStatus.banned) {
     return `\n${display.banStatusActive}`;
   }
-  
+
   if (banStatus.bannedUntil === null) {
     return `\n${display.banStatusPermanent}`;
   }
-  
+
   const now = new Date();
   const diffMs = banStatus.bannedUntil.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -105,11 +100,11 @@ async function buildInterestsSection(
   viewerId: number | undefined
 ): Promise<string> {
   if (!user.interests?.length) return "";
-  
+
   const [interestNamesMap] = await Promise.all([
     getInterestNames(viewerId, BOT_NAME),
   ]);
-  
+
   const interestNames = user.interests
     .map(
       (interest) =>
@@ -117,8 +112,12 @@ async function buildInterestsSection(
     )
     .join(", ");
 
-  const mutualCount = calculateMutualInterestsCount(userInterests, user.interests);
-  const mutualInterestsText = mutualCount > 0 ? display.mutualInterests(mutualCount) : "";
+  const mutualCount = calculateMutualInterestsCount(
+    userInterests,
+    user.interests
+  );
+  const mutualInterestsText =
+    mutualCount > 0 ? display.mutualInterests(mutualCount) : "";
 
   return `\n${display.interestsLabel} ${interestNames}${mutualInterestsText}`;
 }
@@ -129,16 +128,16 @@ async function buildAdminInfoSection(
   isAdmin: boolean
 ): Promise<string> {
   if (!isAdmin) return "";
-  
+
   let section = `\n\n${display.adminUsername} ${user.username ? `@${user.username}` : display.usernameNotSet}`;
   const lastOnlineText = formatLastOnline(user.last_online);
   section += `\n${display.adminLastActivity} ${lastOnlineText}`;
-  
+
   if (user.telegram_id) {
     const banStatusText = await buildBanStatusText(user.telegram_id);
     section += banStatusText;
   }
-  
+
   return section;
 }
 
@@ -152,41 +151,48 @@ export async function displayUser(
   // Check if viewing user is admin
   const isAdmin = isAdminContext(ctx);
   const showUsername = isAdmin; // Admins always see usernames
-  
+
   // Calculate compatibility score
-  const compatibilityScore = user.compatibility_score ?? 
-    (currentUserProfile ? calculateCompatibilityScore(currentUserProfile, user) : undefined);
-  
+  const compatibilityScore =
+    user.compatibility_score ??
+    (currentUserProfile
+      ? calculateCompatibilityScore(currentUserProfile, user)
+      : undefined);
+
   // Derive user interests from currentUserProfile
   const userInterests = currentUserProfile?.interests ?? undefined;
-  
+
   // Build message sections in parallel where possible
-  const [quizResultsSection, interestsSection, adminInfoSection] = await Promise.all([
-    buildQuizResultsSection(user, BOT_NAME, ctx.from?.id, false),
-    buildInterestsSection(user, userInterests, ctx.from?.id),
-    isAdmin ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
-  ]);
-  
+  const [quizResultsSection, interestsSection, adminInfoSection] =
+    await Promise.all([
+      buildQuizResultsSection(user, BOT_NAME, ctx.from?.id, false),
+      buildInterestsSection(user, userInterests, ctx.from?.id),
+      isAdmin ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
+    ]);
+
   // Build main message
-  const ageText = user.age ? `${user.age} ${profileValues.year}` : display.unknownAge;
+  const ageText = user.age
+    ? `${user.age} ${profileValues.year}`
+    : display.unknownAge;
   const nameText = user.display_name || display.noName;
   const bioText = user.biography || display.noBio;
-  const compatibilityText = compatibilityScore !== undefined
-    ? display.compatibility(compatibilityScore)
-    : "";
-  
+  const compatibilityText =
+    compatibilityScore !== undefined
+      ? display.compatibility(compatibilityScore)
+      : "";
+
   let message = `${display.namePrefix} ${nameText}\n`;
   message += `${display.agePrefix} ${ageText}${compatibilityText}\n\n`;
   message += `${display.bioPrefix} ${bioText}`;
-  
+
   if (quizResultsSection) {
     message += `\n${quizResultsSection}`;
   }
-  
+
   if (user.mood) {
     message += `\n${display.moodLabel} ${MOODS[user.mood] || user.mood}`;
   }
-  
+
   message += interestsSection;
   message += adminInfoSection;
 
@@ -194,17 +200,23 @@ export async function displayUser(
   if (!showUsername) {
     keyboard.text(buttons.like, callbackQueries.like(user.telegram_id || 0));
     if (mode === "liked") {
-      keyboard.text(buttons.delete, callbackQueries.deleteLiked(user.telegram_id || 0));
+      keyboard.text(
+        buttons.delete,
+        callbackQueries.deleteLiked(user.telegram_id || 0)
+      );
       if (user.username) {
         keyboard.url(buttons.chat, `https://t.me/${user.username}`);
       }
     } else {
       // match or admin mode
-      keyboard.text(buttons.dislike, callbackQueries.dislike(user.telegram_id || 0));
+      keyboard.text(
+        buttons.dislike,
+        callbackQueries.dislike(user.telegram_id || 0)
+      );
     }
     keyboard.row();
   }
-  
+
   // Add "Next" button if there are more matches
   if (
     mode === "match" &&
@@ -215,16 +227,22 @@ export async function displayUser(
     const currentIndex = session.currentMatchIndex;
     const totalMatches = session.matchIds.length;
     if (currentIndex < totalMatches - 1) {
-      keyboard.text(buttons.next, callbackQueries.nextMatch(user.telegram_id || 0));
+      keyboard.text(
+        buttons.next,
+        callbackQueries.nextMatch(user.telegram_id || 0)
+      );
       keyboard.row();
     }
   }
-  
+
   // Only show report button if not admin
   if (!isAdmin) {
-    keyboard.text(buttons.report, callbackQueries.report(user.telegram_id || 0));
+    keyboard.text(
+      buttons.report,
+      callbackQueries.report(user.telegram_id || 0)
+    );
   }
-  
+
   // Add ban button if admin
   if (isAdmin) {
     keyboard.row();
