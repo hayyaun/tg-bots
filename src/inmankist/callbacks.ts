@@ -361,12 +361,14 @@ export function setupCallbacks(
 ) {
   // Language Selection
   bot.callbackQuery(/lang:(.+)/, async (ctx) => {
+    // Answer callback query immediately to stop loading animation
+    ctx.answerCallbackQuery().catch(() => {});
+    
     try {
       const language = ctx.match[1] as Language;
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
       await setUserLanguage(userId, language);
-      ctx.answerCallbackQuery().catch(() => {});
       const strings = await getStringsForUser(userId);
       ctx
         .editMessageText(
@@ -385,6 +387,9 @@ export function setupCallbacks(
 
   // Quiz Type
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
+    // Answer callback query immediately to stop loading animation
+    ctx.answerCallbackQuery().catch(() => {});
+    
     try {
       const type = ctx.match[1] as QuizType;
       const userId = ctx.from?.id;
@@ -392,14 +397,11 @@ export function setupCallbacks(
       // Validate: If language is not set, show language selection
       const userHasLanguage = await hasUserLanguage(userId);
       if (!userHasLanguage) {
-        ctx.answerCallbackQuery().catch(() => {});
         await showLanguageSelection(ctx);
         return;
       }
 
       const language = await getUserLanguage(userId);
-
-      ctx.answerCallbackQuery().catch(() => {});
       const welcomeId = ctx.callbackQuery?.message?.message_id;
       if (welcomeId) {
         await updateWelcomeMessage(ctx, welcomeId, type, language);
@@ -420,6 +422,9 @@ export function setupCallbacks(
 
   // Quiz Mode
   bot.callbackQuery(/mode:(\d+)/, async (ctx) => {
+    // Answer callback query immediately to stop loading animation
+    ctx.answerCallbackQuery().catch(() => {});
+    
     try {
       const mode = parseInt(ctx.match[1]) as QuizMode;
       const userId = ctx.from?.id;
@@ -432,7 +437,6 @@ export function setupCallbacks(
 
       // Validate: If quiz type was not set, show quiz type selection
       if (!user.quiz) {
-        ctx.answerCallbackQuery().catch(() => {});
         const language =
           user.language || (await getUserLanguage(userId)) || DEFAULT_LANGUAGE;
         await showQuizTypeSelection(ctx, language);
@@ -441,7 +445,6 @@ export function setupCallbacks(
 
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
-      ctx.answerCallbackQuery().catch(() => {});
       ctx.deleteMessage().catch(() => {});
       await updateWelcomeMessage(
         ctx,
@@ -510,6 +513,9 @@ export function setupCallbacks(
 
   // Gender
   bot.callbackQuery(/gender:(.+)/, async (ctx) => {
+    // Answer callback query immediately to stop loading animation
+    ctx.answerCallbackQuery().catch(() => {});
+    
     try {
       const gender = ctx.match[1] as Gender;
       const userId = ctx.from?.id;
@@ -522,7 +528,6 @@ export function setupCallbacks(
 
       // Validate: If quiz mode was not set, show quiz mode selection
       if (user.mode === undefined || user.mode === null) {
-        ctx.answerCallbackQuery().catch(() => {});
         const language = user.language || DEFAULT_LANGUAGE;
         await showQuizModeSelection(ctx, language);
         return;
@@ -536,7 +541,6 @@ export function setupCallbacks(
         return;
       }
       const language = user.language || DEFAULT_LANGUAGE;
-      ctx.answerCallbackQuery().catch(() => {});
       ctx.deleteMessage().catch(() => {});
       await updateWelcomeMessage(
         ctx,
@@ -577,6 +581,9 @@ export function setupCallbacks(
 
   // Answer
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
+    // Answer callback query immediately to stop loading animation
+    ctx.answerCallbackQuery().catch(() => {});
+    
     try {
       const userId = ctx.from.id;
       let user = await getUserData(userId);
@@ -584,7 +591,6 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
-      ctx.answerCallbackQuery().catch(() => {});
 
       // Save/Update Answer
       const questionIndex = parseInt(ctx.match[1]);
@@ -627,10 +633,12 @@ export function setupCallbacks(
 
   // Details
   bot.callbackQuery(/detail:(.+):(.+)/, (ctx) => {
+    // Answer callback query immediately to stop loading animation
+    ctx.answerCallbackQuery().catch(() => {});
+    
     try {
       const type = ctx.match[1] as QuizType;
       const item = ctx.match[2];
-      ctx.answerCallbackQuery().catch(() => {});
       replyDetial(ctx, type, item);
     } catch (err) {
       log.error(BOT_NAME + " > Detail", err);
