@@ -1,6 +1,6 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import _ from "lodash";
-import { getQuestion } from ".";
+import { getQuestionByQuestionIndex } from ".";
 import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
@@ -78,8 +78,8 @@ export function calculateResult(user: IUserData): Array<[EnneagramType, number]>
   const typeScores = new Map<EnneagramType, number>();
 
   Object.entries(user.answers).forEach((answer) => {
-    const index = parseInt(answer[0]);
-    const question = getQuestion(user, index);
+    const questionIndex = parseInt(answer[0]);
+    const question = getQuestionByQuestionIndex(user, questionIndex);
     if (!question) throw "Something went wrong!";
     const value = answer[1];
     const previous = typeScores.get(question.belong);

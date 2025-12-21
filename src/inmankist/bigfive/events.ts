@@ -1,5 +1,5 @@
 import { Bot, Context } from "grammy";
-import { getQuestion } from ".";
+import { getQuestionByQuestionIndex } from ".";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IUserData } from "../types";
@@ -66,8 +66,8 @@ function calculateScores(user: IUserData): {
 
   // Calculate aspect scores
   Object.entries(user.answers).forEach((answer) => {
-    const index = parseInt(answer[0]);
-    const question = getQuestion(user, index);
+    const questionIndex = parseInt(answer[0]);
+    const question = getQuestionByQuestionIndex(user, questionIndex);
     if (!question) return;
     const value = answer[1]; // 0-3 scale
 

@@ -1,5 +1,5 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
-import { getQuestion } from ".";
+import { getQuestionByQuestionIndex } from ".";
 import { toPercentage } from "../../utils/string";
 import { quizModes } from "../config";
 import { getStringsForUser } from "../i18n";
@@ -78,8 +78,8 @@ export function calculateResult(user: IUserData): LeftRightResult {
   let rightScore = 0;
 
   Object.entries(user.answers).forEach((answer) => {
-    const index = parseInt(answer[0]);
-    const question = getQuestion(user, index);
+    const questionIndex = parseInt(answer[0]);
+    const question = getQuestionByQuestionIndex(user, questionIndex);
     if (!question) throw "Something went wrong!";
     const value = answer[1];
 

@@ -1,6 +1,6 @@
 import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
-import { getQuestion } from ".";
+import { getQuestionByQuestionIndex } from ".";
 import { quizModes } from "../config";
 import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
@@ -103,8 +103,8 @@ export function calculateResult(user: IUserData): MBTIResult {
   const dimensionScores = new Map<Dimension, number>();
 
   Object.entries(user.answers).forEach((answer) => {
-    const index = parseInt(answer[0]);
-    const question = getQuestion(user, index);
+    const questionIndex = parseInt(answer[0]);
+    const question = getQuestionByQuestionIndex(user, questionIndex);
     if (!question) throw "Something went wrong!";
     const value = answer[1];
     const previous = dimensionScores.get(question.belong);

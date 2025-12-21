@@ -1,5 +1,5 @@
 import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
-import { getQuestion } from ".";
+import { getQuestionByQuestionIndex } from ".";
 import { getStringsForUser } from "../i18n";
 import { Language } from "../../shared/types";
 import { QuizType } from "../../shared/types";
@@ -74,8 +74,8 @@ export function calculateResult(user: IUserData): PoliticalCompassResult {
   let libertarianScore = 0;
 
   Object.entries(user.answers).forEach((answer) => {
-    const index = parseInt(answer[0]);
-    const question = getQuestion(user, index);
+    const questionIndex = parseInt(answer[0]);
+    const question = getQuestionByQuestionIndex(user, questionIndex);
     if (!question) throw "Something went wrong!";
     const value = answer[1]; // 0-3 scale
 

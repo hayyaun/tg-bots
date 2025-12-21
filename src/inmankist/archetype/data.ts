@@ -100,21 +100,24 @@ export const getSample = (
   return sample(items, all, size);
 };
 
-const getQuestionByIndex = (
-  order: number[],
-  index: number,
-  gender: Gender,
-  language: Language
-) => {
-  const items = getItems(gender, language);
-  const all = combine(items);
-  return all[order[index]];
-};
-
+// Get question by position in order array (for sending questions)
 export const getQuestion = (user: IUserData, index: number) => {
   const language = user.language || Language.Persian;
   if (!user.gender) {
     throw new Error("Gender is required for Archetype quiz");
   }
-  return getQuestionByIndex(user.order, index, user.gender, language);
+  const items = getItems(user.gender, language);
+  const all = combine(items);
+  return all[user.order[index]];
+};
+
+// Get question by actual question index (for calculating results)
+export const getQuestionByQuestionIndex = (user: IUserData, questionIndex: number) => {
+  const language = user.language || Language.Persian;
+  if (!user.gender) {
+    throw new Error("Gender is required for Archetype quiz");
+  }
+  const items = getItems(user.gender, language);
+  const all = combine(items);
+  return all[questionIndex];
 };
