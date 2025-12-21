@@ -274,9 +274,7 @@ function findNextUnansweredQuestion(user: IUserData): number | null {
     (questionIndex) => typeof user.answers[questionIndex] === "number"
   );
 
-  if (allAnswered) {
-    return null; // All questions answered
-  }
+  if (allAnswered) return null; // All questions answered
 
   // Find first unanswered question (return position in order array, not question index)
   for (let position = 0; position < user.order.length; position++) {
@@ -292,7 +290,6 @@ function findNextUnansweredQuestion(user: IUserData): number | null {
 // Quiz
 async function sendQuestionOrResult(
   ctx: Context,
-  currentOrUnused: number | null,
   userData?: IUserData,
   notifyAdmin?: (message: string) => Promise<void>
 ) {
@@ -484,7 +481,7 @@ export function setupCallbacks(
             mode,
             gender
           );
-          await sendQuestionOrResult(ctx, null, finalUser, notifyAdmin);
+          await sendQuestionOrResult(ctx, finalUser, notifyAdmin);
           return;
         }
         // No gender in database, ask for it
@@ -501,7 +498,7 @@ export function setupCallbacks(
           { order: updatedUser.order },
           updatedUser
         );
-        await sendQuestionOrResult(ctx, null, finalUser, notifyAdmin);
+        await sendQuestionOrResult(ctx, finalUser, notifyAdmin);
       }
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Mode", err);
@@ -569,7 +566,7 @@ export function setupCallbacks(
         },
       });
 
-      await sendQuestionOrResult(ctx, null, updatedUser, notifyAdmin);
+      await sendQuestionOrResult(ctx, updatedUser, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
       notifyAdmin(
@@ -619,7 +616,7 @@ export function setupCallbacks(
       if (!wasPreviouslyAnswered || !changed) {
         // Answer is new (first time answering) OR same answer clicked - send next unanswered question
         // Pass null since we'll find the next unanswered question inside the function
-        await sendQuestionOrResult(ctx, null, user, notifyAdmin);
+        await sendQuestionOrResult(ctx, user, notifyAdmin);
       }
     } catch (err) {
       log.error(BOT_NAME + " > Answer", err);
