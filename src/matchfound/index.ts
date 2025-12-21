@@ -4,7 +4,7 @@ import { BotCommand } from "grammy/types";
 import { BOT_NAME } from "./constants";
 import { setupCommands } from "./commands";
 import { setupCallbacks } from "./callbacks";
-import { setupDailyReports, setupProfileReminders } from "./reports";
+import { setupProfileReminders } from "./reminders";
 import { createAdminNotifier, setupBotErrorHandling, initializeBot, setupLastOnlineMiddleware } from "../utils/bot";
 
 configDotenv();
@@ -38,9 +38,6 @@ const startBot = async (botKey: string, agent: unknown) => {
   // Setup commands and callbacks
   setupCommands(bot, notifyAdmin);
   setupCallbacks(bot, notifyAdmin);
-
-  // Setup daily reports
-  setupDailyReports(bot, notifyAdmin);
 
   // Setup profile reminders
   setupProfileReminders(bot, notifyAdmin);
