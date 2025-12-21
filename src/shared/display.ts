@@ -5,7 +5,6 @@ import {
   MAX_COMPLETION_SCORE,
 } from "./constants";
 import { UserProfile, QuizType } from "./types";
-import { calculateAge } from "./utils";
 import { getSharedStrings, getInterestNames, getProvinceNames } from "./i18n";
 import { getQuizTypeEmoji, getQuizResult } from "./quizUtils";
 
@@ -123,8 +122,8 @@ export async function displayProfile(
 ) {
   const strings = await getSharedStrings(userId, botName);
 
-  const ageText = profile.birth_date
-    ? `${calculateAge(profile.birth_date)} ${strings.year}`
+  const ageText = profile.age
+    ? `${profile.age} ${strings.year}`
     : strings.notSet;
   const genderText = formatGenderValue(profile.gender, strings);
   const lookingForText = formatGenderValue(profile.looking_for_gender, strings);

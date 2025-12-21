@@ -36,6 +36,7 @@ router.get("/", async (req: AuthRequest, res) => {
       display_name: user.display_name,
       biography: user.biography,
       birth_date: user.birth_date,
+      age: user.age,
       gender: user.gender,
       looking_for_gender: user.looking_for_gender,
       archetype_result: user.archetype_result,
@@ -73,7 +74,7 @@ router.patch("/", async (req: AuthRequest, res) => {
       "username",
       "display_name",
       "biography",
-      "birth_date",
+      "age",
       "gender",
       "looking_for_gender",
       "mood",
@@ -85,8 +86,13 @@ router.patch("/", async (req: AuthRequest, res) => {
     const updates: Record<string, any> = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        if (field === "birth_date" && req.body[field]) {
-          updates[field] = new Date(req.body[field]);
+        if (field === "age" && req.body[field] !== null) {
+          const age = parseInt(req.body[field], 10);
+          if (isNaN(age) || age < 18 || age > 120) {
+            res.status(400).json({ error: "Invalid age" });
+            return;
+          }
+          updates[field] = age;
         } else if (field === "interests" && Array.isArray(req.body[field])) {
           updates[field] = req.body[field];
         } else {

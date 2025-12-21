@@ -6,7 +6,6 @@ import { isUserBanned } from "../shared/database";
 import { buildQuizResultsSection } from "../shared/display";
 import { getInterestNames } from "../shared/i18n";
 import { UserProfile } from "../shared/types";
-import { calculateAge } from "../shared/utils";
 import { callbacks as callbackQueries } from "./callbackQueries";
 import { BOT_NAME } from "./constants";
 import {
@@ -52,8 +51,8 @@ function calculateCompatibilityScore(
   currentUser: UserProfile,
   otherUser: MatchUser
 ): number {
-  const currentUserAge = calculateAge(currentUser.birth_date);
-  const otherUserAge = otherUser.age || calculateAge(otherUser.birth_date);
+  const currentUserAge = currentUser.age || 0;
+  const otherUserAge = otherUser.age || 0;
 
   // Calculate match information (archetype, MBTI, mutual interests)
   const { archetypeMatch, mbtiMatch, mutualInterestsCount } =

@@ -8,7 +8,6 @@ import {
   MIN_INTERESTS,
 } from "../shared/constants";
 import { getUserProfile, getUserProfileById } from "../shared/database";
-import { calculateAge } from "../shared/utils";
 import { cacheMatches, getCachedMatches } from "./cache/matchCache";
 import { MatchUser } from "./types";
 import { calculateMatchInfo, calculateCompatibilityScore } from "./helpers";
@@ -50,26 +49,12 @@ export async function findMatches(
     return cached;
   }
 
-  const userAge = calculateAge(user.birth_date);
-  if (!userAge || !user.birth_date) return [];
+  const userAge = user.age;
+  if (!userAge) return [];
 
-  // Calculate birth_date range for age filtering (done in database)
-  const today = new Date();
+  // Calculate age range for filtering
   const minAge = Math.max(18, userAge - MAX_AGE_DIFFERENCE); // Ensure minimum age of 18
   const maxAge = userAge + MAX_AGE_DIFFERENCE;
-
-  // Calculate max birth_date (youngest person: to be at least minAge today)
-  // Someone who is minAge today was born on or before: today - minAge years
-  const maxBirthDate = new Date(today);
-  maxBirthDate.setFullYear(today.getFullYear() - minAge);
-
-  // Calculate min birth_date (oldest person: to be at most maxAge today)
-  // Someone who is maxAge today was born on or after: (today - maxAge years) - 1 year + 1 day
-  // This ensures we include people who are exactly maxAge (haven't had birthday yet this year)
-  const minBirthDate = new Date(today);
-  minBirthDate.setFullYear(today.getFullYear() - maxAge - 1);
-  minBirthDate.setMonth(0); // January
-  minBirthDate.setDate(1); // First day of year
 
   // Use raw SQL query with NOT EXISTS subqueries for efficient exclusion checking
   // NOT EXISTS is typically faster than LEFT JOINs at scale, especially with proper indexes
@@ -83,6 +68,7 @@ export async function findMatches(
     display_name: string | null;
     biography: string | null;
     birth_date: Date | null;
+    age: number | null;
     gender: string | null;
     looking_for_gender: string | null;
     archetype_result: string | null;
@@ -109,9 +95,9 @@ export async function findMatches(
         AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
         AND u.username IS NOT NULL
         AND u.gender IS NOT NULL
-        AND u.birth_date IS NOT NULL
-        AND u.birth_date >= ${minBirthDate}::date
-        AND u.birth_date <= ${maxBirthDate}::date
+        AND u.age IS NOT NULL
+        AND u.age >= ${minAge}
+        AND u.age <= ${maxAge}
         AND array_length(u.interests, 1) > 0
         AND u.gender IN ('male', 'female')
         AND NOT EXISTS (
@@ -137,9 +123,9 @@ export async function findMatches(
         AND u.completion_score >= ${MIN_COMPLETION_THRESHOLD}
         AND u.username IS NOT NULL
         AND u.gender IS NOT NULL
-        AND u.birth_date IS NOT NULL
-        AND u.birth_date >= ${minBirthDate}::date
-        AND u.birth_date <= ${maxBirthDate}::date
+        AND u.age IS NOT NULL
+        AND u.age >= ${minAge}
+        AND u.age <= ${maxAge}
         AND array_length(u.interests, 1) > 0
         AND u.gender = ${user.looking_for_gender}
         AND NOT EXISTS (
@@ -163,7 +149,7 @@ export async function findMatches(
   const matches: MatchUser[] = [];
 
   for (const candidate of candidates) {
-    const candidateAge = calculateAge(candidate.birth_date);
+    const candidateAge = candidate.age;
     if (!candidateAge) {
       continue;
     }
@@ -179,9 +165,9 @@ export async function findMatches(
       ...candidateWithoutId,
       telegram_id: candidate.telegram_id ? Number(candidate.telegram_id) : 0,
       birth_date: candidate.birth_date || null,
+      age: candidateAge,
       created_at: candidate.created_at,
       updated_at: candidate.updated_at,
-      age: candidateAge,
       match_priority: 999,
     } as MatchUser;
 

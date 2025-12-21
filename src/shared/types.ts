@@ -24,6 +24,7 @@ export interface UserProfile {
   display_name: string | null;
   biography: string | null;
   birth_date: Date | null;
+  age: number | null;
   gender: string | null;
   looking_for_gender: string | null;
   archetype_result: string | null;

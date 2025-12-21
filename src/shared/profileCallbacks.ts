@@ -4,7 +4,6 @@ import { getUserProfile, updateUserField, addProfileImage } from "./database";
 import { getInterestNames, getProvinceNames } from "./i18n";
 import { INTERESTS, IRAN_PROVINCES, MOODS, MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "./constants";
 import { getProfileStrings } from "./i18n/profileStrings";
-import { calculateAge } from "./utils";
 import { BaseSessionData } from "./session";
 import log from "../log";
 
@@ -458,7 +457,7 @@ export function setupProfileCallbacks(
         break;
 
       case "birthdate":
-        session.editingField = FIELD_KEY.BIRTH_DATE;
+        session.editingField = FIELD_KEY.AGE;
         await ctx.reply(editPrompts.birthdate);
         break;
 
@@ -644,7 +643,7 @@ export function setupProfileCallbacks(
     await ctx.reply(success.imageCleared);
   });
 
-  // Handle text messages for profile editing (name, bio, birthdate)
+  // Handle text messages for profile editing (name, bio, age)
   bot.on("message:text", async (ctx, next) => {
     const userId = ctx.from?.id;
     if (!userId) return;
@@ -693,33 +692,15 @@ export function setupProfileCallbacks(
             await ctx.reply(success.bioUpdated + `\n\n📝 تعداد کاراکتر: ${text.length}/500`);
             break;
 
-          case FIELD_KEY.BIRTH_DATE:
-            // Validate date format YYYY-MM-DD
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(text)) {
-              await ctx.reply(errors.invalidDate);
-              return;
-            }
-            // Parse date string to Date object
-            const [year, month, day] = text.split("-").map(Number);
-            const birthDate = new Date(year, month - 1, day); // month is 0-indexed
-            if (isNaN(birthDate.getTime())) {
-              await ctx.reply(errors.invalidDateValue);
-              return;
-            }
-            // Check if date is not in the future
-            if (birthDate > new Date()) {
-              await ctx.reply(errors.futureDate);
-              return;
-            }
-            // Check if age is reasonable
-            const age = calculateAge(birthDate);
-            if (!age || age < MIN_AGE || age > MAX_AGE) {
+          case FIELD_KEY.AGE:
+            // Validate age is a number
+            const age = parseInt(text, 10);
+            if (isNaN(age) || !Number.isInteger(age) || age < MIN_AGE || age > MAX_AGE) {
               await ctx.reply(errors.invalidAge);
               return;
             }
-            // Pass Date object to Prisma, not the string
-            await updateUserField(userId, FIELD_KEY.BIRTH_DATE, birthDate);
+            // Save age directly
+            await updateUserField(userId, FIELD_KEY.AGE, age);
             delete session.editingField;
             await ctx.reply(success.birthdateUpdated(age));
             // Continue profile completion if in progress

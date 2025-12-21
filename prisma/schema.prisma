@@ -24,6 +24,7 @@ model User {
   display_name       String?   @db.VarChar(100)
   biography          String?   @db.Text
   birth_date         DateTime? @db.Date
+  age                Int?
   gender             String?   @db.VarChar(20)
   looking_for_gender String?   @db.VarChar(20)
   archetype_result   String?   @db.VarChar(50)
@@ -57,9 +58,12 @@ model User {
   @@index([looking_for_gender])
   @@index([completion_score])
   @@index([birth_date])
+  @@index([age])
   // Composite indexes for efficient match finding queries
   @@index([gender, completion_score, birth_date])
   @@index([completion_score, birth_date])
+  @@index([gender, completion_score, age])
+  @@index([completion_score, age])
   @@map("users")
 }
 

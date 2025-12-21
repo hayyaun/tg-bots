@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { prisma } from "../../../db";
 import { generateToken } from "../middleware/auth";
 import log from "../../../log";
+import { calculateAge } from "../../../shared/utils";
 
 const GOOGLE_CLIENT_ID = process.env.MATCHFOUND_GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.MATCHFOUND_GOOGLE_CLIENT_SECRET || "";
@@ -74,13 +75,14 @@ passport.use(
 
           if (user) {
             // Link Google account to existing user
-            // Only update birth_date if user doesn't have one (don't overwrite existing)
+            // Only update age if user doesn't have one (don't overwrite existing)
             const updateData: {
               google_id: string;
               email: string | null;
               display_name: string | null;
               profile_image: string | null;
               birth_date?: Date;
+              age?: number;
             } = {
               google_id: googleId,
               email: email || user.email,
@@ -90,6 +92,10 @@ passport.use(
             
             if (birthDate && !user.birth_date) {
               updateData.birth_date = birthDate;
+              const age = calculateAge(birthDate);
+              if (age && !user.age) {
+                updateData.age = age;
+              }
             }
             
             user = await prisma.user.update({
@@ -98,6 +104,7 @@ passport.use(
             });
           } else {
             // Create new user
+            const age = birthDate ? calculateAge(birthDate) : null;
             user = await prisma.user.create({
               data: {
                 google_id: googleId,
@@ -105,17 +112,19 @@ passport.use(
                 display_name: displayName,
                 profile_image: photo,
                 birth_date: birthDate,
+                age: age,
               },
             });
           }
         } else {
           // Update existing user info
-          // Only update birth_date if user doesn't have one (don't overwrite existing)
+          // Only update age if user doesn't have one (don't overwrite existing)
           const updateData: {
             email: string | null;
             display_name: string | null;
             profile_image: string | null;
             birth_date?: Date;
+            age?: number;
           } = {
             email: email || user.email,
             display_name: user.display_name || displayName,
@@ -124,6 +133,10 @@ passport.use(
           
           if (birthDate && !user.birth_date) {
             updateData.birth_date = birthDate;
+            const age = calculateAge(birthDate);
+            if (age && !user.age) {
+              updateData.age = age;
+            }
           }
           
           user = await prisma.user.update({

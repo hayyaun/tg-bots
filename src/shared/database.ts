@@ -16,6 +16,7 @@ export async function getUserProfileById(
     ...user,
     telegram_id: user.telegram_id ? Number(user.telegram_id) : null,
     birth_date: user.birth_date || null,
+    age: user.age || null,
     last_online: user.last_online || null,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -36,6 +37,7 @@ export async function getUserProfile(
     ...user,
     telegram_id: user.telegram_id ? Number(user.telegram_id) : null,
     birth_date: user.birth_date || null,
+    age: user.age || null,
     last_online: user.last_online || null,
     created_at: user.created_at,
     updated_at: user.updated_at,
@@ -52,7 +54,7 @@ export async function calculateCompletionScore(
   if (profile.profile_image) score++;
   if (profile.display_name) score++;
   if (profile.biography) score++;
-  if (profile.birth_date) score++;
+  if (profile.age) score++;
   if (profile.gender) score++;
   if (profile.looking_for_gender) score++;
   if (profile.archetype_result) score++;

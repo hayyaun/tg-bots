@@ -14,18 +14,22 @@ Do not re-export modules, import them from where they belong-to directly.
 
 ### Rules:
 
-- ❌ **DO NOT** run database migrations locally (`prisma migrate dev`, etc.)
+- ❌ **DO NOT** run/apply database migrations locally (`prisma migrate dev`, `prisma migrate deploy`, etc.)
 - ❌ **DO NOT** attempt database connections or queries
 - ✅ **DO** update `prisma/schema.prisma` when making schema changes
-- ✅ **DO** create migration files manually: `prisma/migrations/YYYYMMDDHHMMSS_description/migration.sql`
+- ✅ **DO** create migration SQL files manually: `prisma/migrations/YYYYMMDDHHMMSS_description/migration.sql`
+- ✅ **DO** run `npx prisma generate` after schema changes (updates TypeScript types only, no DB access)
 - ✅ **DO** follow existing migration patterns
-- ✅ User handles all database operations on the production server
+- ✅ User handles applying migrations to the production database
 
 ### When Making Schema Changes:
 
 1. Update `prisma/schema.prisma`
-2. Create migration file manually following existing patterns
-3. User will apply migrations on the server
+2. Run `npx prisma generate` to update TypeScript types
+3. Create migration SQL file manually following existing patterns
+4. User will apply migrations on the server
+
+**Note:** Creating migration files is allowed and expected. Only running/applying migrations is prohibited.
 
 **READ THIS BEFORE MAKING ANY DATABASE-RELATED SUGGESTIONS!**
 

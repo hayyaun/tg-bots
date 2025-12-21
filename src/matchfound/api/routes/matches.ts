@@ -26,6 +26,7 @@ router.get("/", async (req: AuthRequest, res) => {
       id: match.telegram_id?.toString() || "", // For backward compatibility, using telegram_id as id
       telegram_id: match.telegram_id,
       birth_date: match.birth_date?.toISOString() || null,
+      age: match.age,
       created_at: match.created_at.toISOString(),
       updated_at: match.updated_at.toISOString(),
     }));

@@ -27,7 +27,6 @@ import {
 } from "../shared/database";
 import { getInterestNames } from "../shared/i18n";
 import { UserProfile } from "../shared/types";
-import { calculateAge } from "../shared/utils";
 import { getWithPrefix, setWithPrefix } from "../redis";
 import {
   BOT_NAME,
@@ -229,10 +228,9 @@ async function getMatchUserById(
   const profile = await getUserProfile(telegramId);
   if (!profile) return null;
 
-  const age = calculateAge(profile.birth_date);
   return {
     ...profile,
-    age,
+    age: profile.age || null,
     match_priority: metadata?.match_priority ?? 999,
     compatibility_score: metadata?.compatibility_score,
   };
@@ -285,7 +283,7 @@ export async function validateProfileForFind(
   if (!profile.gender) missingRequiredFields.push(fields.gender);
   if (!profile.looking_for_gender)
     missingRequiredFields.push(fields.lookingForGender);
-  if (!profile.birth_date) missingRequiredFields.push(fields.birthDate);
+  if (!profile.age) missingRequiredFields.push(fields.birthDate);
 
   // Check interests separately to show specific count
   if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
@@ -518,7 +516,7 @@ const REQUIRED_FIELDS: RequiredField[] = [
     name: fields.lookingForGender,
     type: FIELD_TYPE.SELECT,
   },
-  { key: FIELD_KEY.BIRTH_DATE, name: fields.birthDate, type: FIELD_TYPE.DATE },
+  { key: FIELD_KEY.AGE, name: fields.birthDate, type: FIELD_TYPE.DATE },
   {
     key: FIELD_KEY.INTERESTS,
     name: fields.interests,
@@ -664,12 +662,11 @@ export async function promptNextRequiredField(
       break;
     }
     case FIELD_TYPE.DATE: {
-      // Check if user already has birthdate (e.g., from Google OAuth)
+      // Check if user already has age (e.g., from Google OAuth)
       const profile = await getUserProfile(userId);
-      if (profile?.birth_date) {
-        // Birthdate already exists, skip this field
-        const age = calculateAge(profile.birth_date);
-        await ctx.reply(success.birthdateUpdated(age || 0));
+      if (profile?.age) {
+        // Age already exists, skip this field
+        await ctx.reply(success.birthdateUpdated(profile.age));
         if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
           await ctx.reply(
             profileCompletion.nextField(
@@ -686,8 +683,8 @@ export async function promptNextRequiredField(
           fieldIndex + 1
         );
       } else {
-        // Telegram doesn't provide birthdate in user profile, so we need manual input
-        // Note: If user linked Google account, birthdate would have been imported via OAuth
+        // Telegram doesn't provide age in user profile, so we need manual input
+        // Note: If user linked Google account, age would have been imported via OAuth
         if (fieldIndex > 0) {
           await ctx.reply(profileCompletion.nextField(field.name, remaining));
         }
