@@ -584,6 +584,8 @@ export function setupCallbacks(
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
 
+    console.time("DEBUG:ANSWER");
+
     const userId = ctx.from?.id;
     try {
       if (!userId) {
@@ -595,6 +597,8 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
+
+      console.timeLog("DEBUG:ANSWER", "userData");
 
       // Save/Update Answer
       const questionIndex = parseInt(ctx.match[1]);
@@ -619,6 +623,8 @@ export function setupCallbacks(
       // Pass existing user data to avoid redundant Redis read
       user = await updateUserData(userId, { answers: user.answers }, user);
 
+      console.timeLog("DEBUG:ANSWER", "updateUserData");
+
       // Update keyboard
       const keyboard = new InlineKeyboard();
       ANSWER_VALUES.forEach((v, i: Value) =>
@@ -635,7 +641,10 @@ export function setupCallbacks(
       if (!wasPreviouslyAnswered) {
         // Answer is new (first time answering) - send next unanswered question
         await sendQuestionOrResult(ctx, user, notifyAdmin);
+        console.timeLog("DEBUG:ANSWER", "sendQuestionResult");
       }
+
+      console.timeEnd("DEBUG:ANSWER");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const errorStack = err instanceof Error ? err.stack : undefined;
