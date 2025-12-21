@@ -247,6 +247,7 @@ export async function displayUsersToAdmin(ctx: Context, page: number = 0, usersP
         last_online: true,
         gender: true,
         looking_for_gender: true,
+        language: true,
         archetype_result: true,
         mbti_result: true,
         leftright_result: true,
@@ -275,12 +276,14 @@ export async function displayUsersToAdmin(ctx: Context, page: number = 0, usersP
     const lastOnline = user.last_online ? user.last_online.toLocaleDateString("en-US") : "Never";
     const gender = user.gender || "N/A";
     const lookingFor = user.looking_for_gender || "N/A";
+    const language = user.language || "N/A";
 
     message += `${number}. ID: ${telegramId}\n`;
     message += `   Username: ${username}\n`;
     message += `   Name: ${displayName}\n`;
     message += `   Completion: ${completionScore}%\n`;
     message += `   Gender: ${gender} | Looking for: ${lookingFor}\n`;
+    message += `   Language: ${language}\n`;
 
     // Show exam results if available
     const examResults = [];
