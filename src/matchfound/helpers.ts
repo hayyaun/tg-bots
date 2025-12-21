@@ -516,7 +516,7 @@ const REQUIRED_FIELDS: RequiredField[] = [
     name: fields.lookingForGender,
     type: FIELD_TYPE.SELECT,
   },
-  { key: FIELD_KEY.AGE, name: fields.birthDate, type: FIELD_TYPE.DATE },
+  { key: FIELD_KEY.AGE, name: fields.birthDate, type: FIELD_TYPE.TEXT },
   {
     key: FIELD_KEY.INTERESTS,
     name: fields.interests,
@@ -623,7 +623,36 @@ export async function promptNextRequiredField(
       if (fieldIndex > 0) {
         await ctx.reply(profileCompletion.nextField(field.name, remaining));
       }
-      await ctx.reply(profileCompletion.fieldPrompt.displayName);
+      // Handle age field
+      if (field.key === FIELD_KEY.AGE) {
+        // Check if user already has age (e.g., from Google OAuth)
+        const profile = await getUserProfile(userId);
+        if (profile?.age) {
+          // Age already exists, skip this field
+          await ctx.reply(success.birthdateUpdated(profile.age));
+          if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
+            await ctx.reply(
+              profileCompletion.nextField(
+                missingFields[fieldIndex + 1].name,
+                remaining
+              )
+            );
+          }
+          await promptNextRequiredField(
+            ctx,
+            bot,
+            userId,
+            missingFields,
+            fieldIndex + 1
+          );
+        } else {
+          // Telegram doesn't provide age in user profile, so we need manual input
+          // Note: If user linked Google account, age would have been imported via OAuth
+          await ctx.reply(profileCompletion.fieldPrompt.birthDate);
+        }
+      } else if (field.key === FIELD_KEY.DISPLAY_NAME) {
+        await ctx.reply(profileCompletion.fieldPrompt.displayName);
+      }
       break;
     }
     case FIELD_TYPE.SELECT: {
@@ -658,37 +687,6 @@ export async function promptNextRequiredField(
         await ctx.reply(profileCompletion.fieldPrompt.lookingFor, {
           reply_markup: lookingForKeyboard,
         });
-      }
-      break;
-    }
-    case FIELD_TYPE.DATE: {
-      // Check if user already has age (e.g., from Google OAuth)
-      const profile = await getUserProfile(userId);
-      if (profile?.age) {
-        // Age already exists, skip this field
-        await ctx.reply(success.birthdateUpdated(profile.age));
-        if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
-          await ctx.reply(
-            profileCompletion.nextField(
-              missingFields[fieldIndex + 1].name,
-              remaining
-            )
-          );
-        }
-        await promptNextRequiredField(
-          ctx,
-          bot,
-          userId,
-          missingFields,
-          fieldIndex + 1
-        );
-      } else {
-        // Telegram doesn't provide age in user profile, so we need manual input
-        // Note: If user linked Google account, age would have been imported via OAuth
-        if (fieldIndex > 0) {
-          await ctx.reply(profileCompletion.nextField(field.name, remaining));
-        }
-        await ctx.reply(profileCompletion.fieldPrompt.birthDate);
       }
       break;
     }

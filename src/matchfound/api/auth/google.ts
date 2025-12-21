@@ -23,8 +23,8 @@ passport.use(
         const displayName = profile.displayName || null;
         const photo = profile.photos?.[0]?.value || null;
         
-        // Try to get birthdate from Google People API
-        let birthDate: Date | null = null;
+        // Try to get age from Google People API (via birthdate)
+        let age: number | null = null;
         if (accessToken) {
           try {
             // Fetch birthday from Google People API
@@ -49,7 +49,8 @@ passport.use(
                   // Google provides: {year: 1990, month: 1, day: 15}
                   // Note: year might be missing for privacy, month/day are 1-indexed
                   if (date.year && date.month && date.day) {
-                    birthDate = new Date(date.year, date.month - 1, date.day);
+                    const birthDate = new Date(date.year, date.month - 1, date.day);
+                    age = calculateAge(birthDate);
                   }
                 }
               }
@@ -81,7 +82,6 @@ passport.use(
               email: string | null;
               display_name: string | null;
               profile_image: string | null;
-              birth_date?: Date;
               age?: number;
             } = {
               google_id: googleId,
@@ -90,12 +90,8 @@ passport.use(
               profile_image: user.profile_image || photo,
             };
             
-            if (birthDate && !user.birth_date) {
-              updateData.birth_date = birthDate;
-              const age = calculateAge(birthDate);
-              if (age && !user.age) {
-                updateData.age = age;
-              }
+            if (age && !user.age) {
+              updateData.age = age;
             }
             
             user = await prisma.user.update({
@@ -104,14 +100,12 @@ passport.use(
             });
           } else {
             // Create new user
-            const age = birthDate ? calculateAge(birthDate) : null;
             user = await prisma.user.create({
               data: {
                 google_id: googleId,
                 email,
                 display_name: displayName,
                 profile_image: photo,
-                birth_date: birthDate,
                 age: age,
               },
             });
@@ -123,7 +117,6 @@ passport.use(
             email: string | null;
             display_name: string | null;
             profile_image: string | null;
-            birth_date?: Date;
             age?: number;
           } = {
             email: email || user.email,
@@ -131,12 +124,8 @@ passport.use(
             profile_image: user.profile_image || photo,
           };
           
-          if (birthDate && !user.birth_date) {
-            updateData.birth_date = birthDate;
-            const age = calculateAge(birthDate);
-            if (age && !user.age) {
-              updateData.age = age;
-            }
+          if (age && !user.age) {
+            updateData.age = age;
           }
           
           user = await prisma.user.update({

@@ -20,7 +20,6 @@ export async function getCachedMatches(userId: bigint): Promise<MatchUser[] | nu
     // Convert Date strings back to Date objects
     return parsed.map((match) => ({
       ...match,
-      birth_date: match.birth_date ? new Date(match.birth_date) : null,
       last_online: match.last_online ? new Date(match.last_online) : null,
       created_at: new Date(match.created_at),
       updated_at: new Date(match.updated_at),

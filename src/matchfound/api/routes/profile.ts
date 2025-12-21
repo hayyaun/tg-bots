@@ -35,7 +35,6 @@ router.get("/", async (req: AuthRequest, res) => {
       username: user.username,
       display_name: user.display_name,
       biography: user.biography,
-      birth_date: user.birth_date,
       age: user.age,
       gender: user.gender,
       looking_for_gender: user.looking_for_gender,

@@ -124,7 +124,6 @@ export const FIELD_KEY = {
   USERNAME: "username",
   DISPLAY_NAME: "display_name",
   BIOGRAPHY: "biography",
-  BIRTH_DATE: "birth_date",
   AGE: "age",
   GENDER: "gender",
   LOOKING_FOR_GENDER: "looking_for_gender",

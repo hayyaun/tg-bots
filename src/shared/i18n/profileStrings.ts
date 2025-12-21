@@ -171,7 +171,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 انجام تست‌ها",
       editName: "✏️ ویرایش نام",
       editBio: "📝 ویرایش بیوگرافی",
-      editBirthdate: "🎂 تاریخ تولد",
+      editBirthdate: "🎂 سن",
       editGender: "⚧️ جنسیت",
       editLookingFor: "🤝 پیشنهاد",
       editImage: "📷 تصویر",
@@ -194,7 +194,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       name: `لطفا نام نمایشی خود را ارسال کنید (حداکثر ${MAX_DISPLAY_NAME_LENGTH} کاراکتر):\n\nبرای لغو: /cancel`,
       bio: "لطفا بیوگرافی خود را ارسال کنید (حداکثر 500 کاراکتر):\n\n📝 تعداد کاراکتر: 0/500\n\nبرای لغو: /cancel",
       birthdate:
-        "لطفا تاریخ تولد خود را به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15):\n\nبرای لغو: /cancel",
+        "لطفا سن خود را به صورت عدد ارسال کنید (مثال: 25):\n\nبرای لغو: /cancel",
       gender: "جنسیت خود را انتخاب کنید:",
       lookingFor: "می‌خواهید چه کسی به شما پیشنهاد شود؟",
       image: {
@@ -282,7 +282,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 Take Quizzes",
       editName: "✏️ Edit Name",
       editBio: "📝 Edit Biography",
-      editBirthdate: "🎂 Birthdate",
+      editBirthdate: "🎂 Age",
       editGender: "⚧️ Gender",
       editLookingFor: "🤝 Looking For",
       editImage: "📷 Image",
@@ -305,7 +305,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       name: `Please send your display name (max ${MAX_DISPLAY_NAME_LENGTH} characters):\n\nTo cancel: /cancel`,
       bio: "Please send your biography (max 500 characters):\n\n📝 Characters: 0/500\n\nTo cancel: /cancel",
       birthdate:
-        "Please send your birthdate in YYYY-MM-DD (e.g., 1995-05-15):\n\nTo cancel: /cancel",
+        "Please send your age as a number (e.g., 25):\n\nTo cancel: /cancel",
       gender: "Choose your gender:",
       lookingFor: "Who do you want to be suggested?",
       image: {
@@ -395,7 +395,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 Пройти тесты",
       editName: "✏️ Имя",
       editBio: "📝 Биография",
-      editBirthdate: "🎂 Дата рождения",
+      editBirthdate: "🎂 Возраст",
       editGender: "⚧️ Пол",
       editLookingFor: "🤝 Предпочтения",
       editImage: "📷 Фото",
@@ -418,7 +418,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       name: `Отправьте имя (макс. ${MAX_DISPLAY_NAME_LENGTH} символов):\n\nОтмена: /cancel`,
       bio: "Отправьте биографию (макс. 500 символов):\n\n📝 Символы: 0/500\n\nОтмена: /cancel",
       birthdate:
-        "Отправьте дату в формате YYYY-MM-DD (например, 1995-05-15):\n\nОтмена: /cancel",
+        "Отправьте ваш возраст числом (например, 25):\n\nОтмена: /cancel",
       gender: "Выберите пол:",
       lookingFor: "Кого вы хотите видеть в рекомендациях?",
       image: {
@@ -506,7 +506,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 إجراء الاختبارات",
       editName: "✏️ تعديل الاسم",
       editBio: "📝 تعديل السيرة",
-      editBirthdate: "🎂 تاريخ الميلاد",
+      editBirthdate: "🎂 العمر",
       editGender: "⚧️ الجنس",
       editLookingFor: "🤝 التفضيل",
       editImage: "📷 الصورة",
@@ -529,7 +529,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       name: `أرسل اسم العرض (بحد أقصى ${MAX_DISPLAY_NAME_LENGTH} حرفًا):\n\nللإلغاء: /cancel`,
       bio: "أرسل سيرتك الذاتية (بحد أقصى 500 حرف):\n\n📝 عدد الأحرف: 0/500\n\nللإلغاء: /cancel",
       birthdate:
-        "أرسل تاريخ ميلادك بصيغة YYYY-MM-DD (مثال: 1995-05-15):\n\nللإلغاء: /cancel",
+        "أرسل عمرك كرقم (مثال: 25):\n\nللإلغاء: /cancel",
       gender: "اختر جنسك:",
       lookingFor: "من تريد أن يتم اقتراحه لك؟",
       image: {

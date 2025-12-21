@@ -67,7 +67,6 @@ export async function findMatches(
     username: string | null;
     display_name: string | null;
     biography: string | null;
-    birth_date: Date | null;
     age: number | null;
     gender: string | null;
     looking_for_gender: string | null;
@@ -164,7 +163,6 @@ export async function findMatches(
     const matchUser: MatchUser = {
       ...candidateWithoutId,
       telegram_id: candidate.telegram_id ? Number(candidate.telegram_id) : 0,
-      birth_date: candidate.birth_date || null,
       age: candidateAge,
       created_at: candidate.created_at,
       updated_at: candidate.updated_at,
