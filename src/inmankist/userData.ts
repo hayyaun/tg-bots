@@ -41,11 +41,6 @@ export async function setUserData(userId: number, data: IUserData): Promise<void
   });
 }
 
-// Update cache without Redis write (for in-memory updates)
-export function updateUserDataCache(userId: number, data: IUserData): void {
-  userDataCache.set(userId, { data, timestamp: Date.now() });
-}
-
 // Update user data (merge with existing)
 // Optionally accepts existing data to avoid redundant Redis read
 export async function updateUserData(

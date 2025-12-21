@@ -28,7 +28,6 @@ import {
   getUserData,
   setUserData,
   updateUserData,
-  updateUserDataCache,
   deleteUserData,
 } from "./userData";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
@@ -454,7 +453,6 @@ export function setupCallbacks(
         mode
       );
       const updatedUser = await updateUserData(userId, { mode }, user);
-      updateUserDataCache(userId, updatedUser);
 
       // Only ask for gender if the quiz type needs it
       if (quizNeedsGender(updatedUser.quiz)) {
@@ -477,7 +475,6 @@ export function setupCallbacks(
             { gender, order: updatedUser.order },
             updatedUser
           );
-          updateUserDataCache(userId, finalUser);
           await updateWelcomeMessage(
             ctx,
             updatedUser.welcomeId!,
@@ -503,7 +500,6 @@ export function setupCallbacks(
           { order: updatedUser.order },
           updatedUser
         );
-        updateUserDataCache(userId, finalUser);
         await sendQuestionOrResult(ctx, null, finalUser, notifyAdmin);
       }
     } catch (err) {
@@ -559,7 +555,6 @@ export function setupCallbacks(
         { gender, order: user.order },
         user
       );
-      updateUserDataCache(userId, updatedUser);
 
       // Save gender to database
       await prisma.user.upsert({
@@ -604,8 +599,6 @@ export function setupCallbacks(
         user.answers[questionIndex] = selectedAnswer;
         // Pass existing user data to avoid redundant Redis read
         user = await updateUserData(userId, { answers: user.answers }, user);
-        // Update cache immediately
-        updateUserDataCache(userId, user);
       }
 
       // Update keyboard for current question if answer changed
