@@ -3,21 +3,26 @@ import { Language } from "../../shared/types";
 import { IQuest, IUserData } from "../types";
 import { PoliticalAxis } from "./types";
 
+import * as fa from "./json/fa";
+import * as en from "./json/en";
+import * as ru from "./json/ru";
+import * as ar from "./json/ar";
+
+// Question data by language and axis
+const questionsByLanguage: Record<Language, Record<string, string[]>> = {
+  [Language.Persian]: fa,
+  [Language.English]: en,
+  [Language.Russian]: ru,
+  [Language.Arabic]: ar,
+};
+
 // Load questions by language
 function loadQuestions(axis: string, language: Language): string[] {
   try {
-    if (language === Language.Persian) {
-      return require(`./json/fa/${axis}.json`);
-    } else if (language === Language.English) {
-      return require(`./json/en/${axis}.json`);
-    } else if (language === Language.Russian) {
-      return require(`./json/ru/${axis}.json`);
-    } else {
-      return require(`./json/ar/${axis}.json`);
-    }
+    return questionsByLanguage[language][axis as keyof typeof fa];
   } catch {
     // Fallback to Persian if translation not available
-    return require(`./json/fa/${axis}.json`);
+    return questionsByLanguage[Language.Persian][axis as keyof typeof fa];
   }
 }
 

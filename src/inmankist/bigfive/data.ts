@@ -4,21 +4,26 @@ import { Language } from "../../shared/types";
 import { IQuest, IUserData } from "../types";
 import { BigFiveAspect } from "./types";
 
+import * as fa from "./json/fa";
+import * as en from "./json/en";
+import * as ru from "./json/ru";
+import * as ar from "./json/ar";
+
+// Question data by language
+const questionsByLanguage: Record<Language, Record<string, string[]>> = {
+  [Language.Persian]: fa,
+  [Language.English]: en,
+  [Language.Russian]: ru,
+  [Language.Arabic]: ar,
+};
+
 // Load questions by language
 function loadQuestions(aspect: string, language: Language): string[] {
   try {
-    if (language === Language.Persian) {
-      return require(`./json/fa/${aspect}.json`);
-    } else if (language === Language.English) {
-      return require(`./json/en/${aspect}.json`);
-    } else if (language === Language.Russian) {
-      return require(`./json/ru/${aspect}.json`);
-    } else {
-      return require(`./json/ar/${aspect}.json`);
-    }
+    return questionsByLanguage[language][aspect as keyof typeof fa];
   } catch {
     // Fallback to English if translation not available
-    return require(`./json/en/${aspect}.json`);
+    return questionsByLanguage[Language.English][aspect as keyof typeof en];
   }
 }
 

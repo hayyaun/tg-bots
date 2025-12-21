@@ -3,21 +3,26 @@ import { Language } from "../../shared/types";
 import { Gender, IQuest, IUserData } from "../types";
 import { Deity } from "./types";
 
+import * as fa from "./json/fa";
+import * as en from "./json/en";
+import * as ru from "./json/ru";
+import * as ar from "./json/ar";
+
+// Question data by language
+const questionsByLanguage: Record<Language, Record<string, string[]>> = {
+  [Language.Persian]: fa,
+  [Language.English]: en,
+  [Language.Russian]: ru,
+  [Language.Arabic]: ar,
+};
+
 // Load questions by language
 function loadQuestions(deity: string, language: Language): string[] {
   try {
-    if (language === Language.Persian) {
-      return require(`./json/fa/${deity}.json`);
-    } else if (language === Language.English) {
-      return require(`./json/en/${deity}.json`);
-    } else if (language === Language.Russian) {
-      return require(`./json/ru/${deity}.json`);
-    } else {
-      return require(`./json/ar/${deity}.json`);
-    }
+    return questionsByLanguage[language][deity.toLowerCase() as keyof typeof fa];
   } catch {
     // Fallback to Persian if translation not available
-    return require(`./json/fa/${deity}.json`);
+    return questionsByLanguage[Language.Persian][deity.toLowerCase() as keyof typeof fa];
   }
 }
 

@@ -1,24 +1,28 @@
 import _ from "lodash";
-import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IQuest, IUserData } from "../types";
 import { Dimension } from "./types";
 
+import * as ar from "./json/ar";
+import * as en from "./json/en";
+import * as fa from "./json/fa";
+import * as ru from "./json/ru";
+
+// Question data by language
+const questionsByLanguage: Record<Language, Record<string, string[]>> = {
+  [Language.Persian]: fa,
+  [Language.English]: en,
+  [Language.Russian]: ru,
+  [Language.Arabic]: ar,
+};
+
 // Load questions by language
 function loadQuestions(dimension: string, language: Language): string[] {
   try {
-    if (language === Language.Persian) {
-      return require(`./json/fa/${dimension}.json`);
-    } else if (language === Language.English) {
-      return require(`./json/en/${dimension}.json`);
-    } else if (language === Language.Russian) {
-      return require(`./json/ru/${dimension}.json`);
-    } else {
-      return require(`./json/ar/${dimension}.json`);
-    }
+    return questionsByLanguage[language][dimension as keyof typeof fa];
   } catch {
     // Fallback to English if translation not available
-    return require(`./json/en/${dimension}.json`);
+    return questionsByLanguage[Language.English][dimension as keyof typeof en];
   }
 }
 
@@ -59,13 +63,20 @@ function getItems(language: Language): IListItem[] {
   ];
 }
 
-export const getSample = (size: number, language: Language = Language.Persian) => {
+export const getSample = (
+  size: number,
+  language: Language = Language.Persian
+) => {
   const items = getItems(language);
   const all = combine(items);
   return sample(items, all, size);
 };
 
-const getQuestionByIndex = (order: number[], index: number, language: Language) => {
+const getQuestionByIndex = (
+  order: number[],
+  index: number,
+  language: Language
+) => {
   const items = getItems(language);
   const all = combine(items);
   return all[order[index]];

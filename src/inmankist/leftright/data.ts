@@ -3,21 +3,26 @@ import { Language } from "../../shared/types";
 import { IQuest, IUserData } from "../types";
 import { CognitiveStyle } from "./types";
 
+import * as fa from "./json/fa";
+import * as en from "./json/en";
+import * as ru from "./json/ru";
+import * as ar from "./json/ar";
+
+// Question data by language
+const questionsByLanguage: Record<Language, Record<string, string[]>> = {
+  [Language.Persian]: fa,
+  [Language.English]: en,
+  [Language.Russian]: ru,
+  [Language.Arabic]: ar,
+};
+
 // Load questions by language
 function loadQuestions(style: string, language: Language): string[] {
   try {
-    if (language === Language.Persian) {
-      return require(`./json/fa/${style}.json`);
-    } else if (language === Language.English) {
-      return require(`./json/en/${style}.json`);
-    } else if (language === Language.Russian) {
-      return require(`./json/ru/${style}.json`);
-    } else {
-      return require(`./json/ar/${style}.json`);
-    }
+    return questionsByLanguage[language][style as keyof typeof fa];
   } catch {
     // Fallback to English if translation not available
-    return require(`./json/en/${style}.json`);
+    return questionsByLanguage[Language.English][style as keyof typeof en];
   }
 }
 
