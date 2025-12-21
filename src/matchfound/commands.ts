@@ -23,7 +23,6 @@ import {
   settings,
 } from "./strings";
 
-const formatNumber = (value: number | bigint) => value.toLocaleString("en-US");
 const ADMIN_DAU_DAYS = 14;
 
 export function setupCommands(
@@ -275,6 +274,7 @@ export function setupCommands(
 
       const keyboard = new InlineKeyboard()
         .text(admin.buttons.reports, callbackQueries.adminReports)
+        .text(admin.buttons.users, callbackQueries.adminUsers(0))
         .row();
 
       const statsMessage = admin.statsMessage(

@@ -9,18 +9,16 @@ import {
 } from "../shared/database";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
 import { handleDisplayProfile } from "../shared/profileCommand";
+import { invalidateMatchCacheForUsers } from "./cache/matchCache";
 import { callbacks as callbackQueries } from "./callbackQueries";
 import { BOT_NAME } from "./constants";
+import { displayUsersToAdmin } from "./display";
 import {
   continueProfileCompletion,
   handleFind,
   isAdminUser,
   showNextUser,
 } from "./helpers";
-import {
-  invalidateMatchCache,
-  invalidateMatchCacheForUsers,
-} from "./cache/matchCache";
 import { getSession } from "./session";
 import {
   admin,
@@ -545,6 +543,25 @@ export function setupCallbacks(
 
   // Admin callbacks
   if (ADMIN_USER_ID) {
+    // Admin: Users list with pagination
+    bot.callbackQuery(/^admin:users:(\d+)$/, async (ctx) => {
+      const userId = ctx.from?.id;
+      if (!userId || userId !== ADMIN_USER_ID) {
+        await ctx.answerCallbackQuery(errors.accessDenied);
+        return;
+      }
+
+      await ctx.answerCallbackQuery();
+
+      try {
+        const page = parseInt(ctx.match[1]);
+        await displayUsersToAdmin(ctx, page);
+      } catch (err) {
+        log.error(BOT_NAME + " > Admin users failed", err);
+        await ctx.reply(errors.usersFailed);
+      }
+    });
+
     // Admin: Reports
     bot.callbackQuery(/^admin:reports$/, async (ctx) => {
       const userId = ctx.from?.id;

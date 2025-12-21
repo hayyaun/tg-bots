@@ -10,11 +10,7 @@ import {
   MATCHFOUND_BOT_USERNAME,
   quizNeedsGender,
 } from "./config";
-import {
-  getStrings,
-  getStringsForUser,
-  ANSWER_VALUES,
-} from "./i18n";
+import { getStrings, getStringsForUser, ANSWER_VALUES } from "./i18n";
 import {
   getUserLanguage,
   setUserLanguage,
@@ -28,12 +24,7 @@ import {
   displaySavedResult,
 } from "./reducer";
 import { Language, QuizType } from "../shared/types";
-import {
-  Gender,
-  IUserData,
-  QuizMode,
-  Value,
-} from "./types";
+import { Gender, IUserData, QuizMode, Value } from "./types";
 import {
   getUserData,
   setUserData,
@@ -70,11 +61,7 @@ function extractQuizResult(
       return null;
 
     case QuizType.MBTI:
-      if (
-        typeof result === "object" &&
-        result !== null &&
-        "type" in result
-      ) {
+      if (typeof result === "object" && result !== null && "type" in result) {
         // result is object with type and distribution - store just type
         return (result as { type: string }).type.toUpperCase();
       }
@@ -300,7 +287,6 @@ async function sendQuestionOrResult(
     await handleExpiredSession(ctx);
     return;
   }
-  const strings = getStrings(user.language || DEFAULT_LANGUAGE);
 
   const length = user.order.length;
 
@@ -397,10 +383,10 @@ export function setupCallbacks(
       if (welcomeId) {
         await updateWelcomeMessage(ctx, welcomeId, type, language);
       }
-      
+
       // Display saved result if available
       await displaySavedResult(ctx, userId, type, language);
-      
+
       await setUser(ctx, type, notifyAdmin);
       const keyboard = new InlineKeyboard();
       Object.keys(quizModes).forEach((k) =>
@@ -515,7 +501,9 @@ export function setupCallbacks(
       }
       // Defensive check: only process gender selection if quiz needs it
       if (!quizNeedsGender(user.quiz)) {
-        await ctx.answerCallbackQuery("❌ This quiz doesn't require gender selection").catch(() => {});
+        await ctx
+          .answerCallbackQuery("❌ This quiz doesn't require gender selection")
+          .catch(() => {});
         return;
       }
       const language = user.language || DEFAULT_LANGUAGE;
@@ -568,7 +556,6 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
-      const strings = getStrings(user.language || DEFAULT_LANGUAGE);
       ctx.answerCallbackQuery().catch(() => {});
 
       // Save/Update Answer

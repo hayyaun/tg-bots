@@ -1,4 +1,5 @@
 import { Context, InlineKeyboard } from "grammy";
+import { prisma } from "../db";
 import log from "../log";
 import { MAX_COMPATIBILITY_SCORE, MOODS } from "../shared/constants";
 import { isUserBanned } from "../shared/database";
@@ -14,7 +15,7 @@ import {
   calculateMutualInterestsCount,
   isAdminContext,
 } from "./helpers";
-import { buttons, display, profileValues } from "./strings";
+import { admin, buttons, display, profileValues } from "./strings";
 import { DisplayMode, MatchUser, SessionData } from "./types";
 
 // Helper function to format last_online date in Persian
@@ -270,5 +271,83 @@ export async function displayUser(
       log.error(BOT_NAME + ` > Display ${errorContext} reply failed`, replyErr);
       throw err; // Re-throw original error
     }
+  }
+}
+
+export async function displayUsersToAdmin(
+  ctx: Context,
+  page: number = 0,
+  usersPerPage: number = 10
+) {
+  const skip = page * usersPerPage;
+
+  const [users, totalCount] = await Promise.all([
+    prisma.user.findMany({
+      skip,
+      take: usersPerPage,
+      orderBy: { created_at: "desc" },
+      select: {
+        telegram_id: true,
+        username: true,
+        display_name: true,
+        completion_score: true,
+        created_at: true,
+        last_online: true,
+        gender: true,
+        looking_for_gender: true,
+      },
+    }),
+    prisma.user.count(),
+  ]);
+
+  if (users.length === 0) {
+    await ctx.reply(admin.noUsers);
+    return;
+  }
+
+  let message = `${admin.allUsersTitle(totalCount)}\n\n`;
+
+  users.forEach((user, index) => {
+    const number = skip + index + 1;
+    const telegramId = user.telegram_id ? Number(user.telegram_id) : "N/A";
+    const username = user.username ? `@${user.username}` : "N/A";
+    const displayName = user.display_name || "N/A";
+    const completionScore = user.completion_score || 0;
+    const createdAt = user.created_at.toLocaleDateString("en-US");
+    const lastOnline = user.last_online
+      ? user.last_online.toLocaleDateString("en-US")
+      : "Never";
+    const gender = user.gender || "N/A";
+    const lookingFor = user.looking_for_gender || "N/A";
+
+    message += `${number}. ID: ${telegramId}\n`;
+    message += `   Username: ${username}\n`;
+    message += `   Name: ${displayName}\n`;
+    message += `   Completion: ${completionScore}%\n`;
+    message += `   Gender: ${gender} | Looking for: ${lookingFor}\n`;
+    message += `   Created: ${createdAt} | Last online: ${lastOnline}\n\n`;
+  });
+
+  const keyboard = new InlineKeyboard();
+
+  if (page > 0) {
+    keyboard.text("◀️ Prev", callbackQueries.adminUsers(page - 1));
+  }
+
+  if (skip + usersPerPage < totalCount) {
+    keyboard.text("Next ▶️", callbackQueries.adminUsers(page + 1));
+  }
+
+  try {
+    await ctx.editMessageText(message, {
+      parse_mode: "HTML",
+      reply_markup: keyboard,
+    });
+  } catch {
+    // If message doesn't exist (first time), use reply instead
+    await ctx.reply(message, {
+      parse_mode: "HTML",
+      reply_markup: keyboard,
+    });
   }
 }
