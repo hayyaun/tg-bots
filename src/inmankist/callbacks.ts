@@ -290,12 +290,11 @@ function findNextUnansweredQuestionPosition(user: IUserData): number | null {
 // Quiz
 async function sendQuestionOrResult(
   ctx: Context,
-  userData?: IUserData,
+  user: IUserData,
   notifyAdmin?: (message: string) => Promise<void>
 ) {
   const userId = ctx.from?.id;
   if (!userId) throw new Error("UserId Invalid!");
-  const user = userData || (await getUserData(userId));
   if (!user) {
     // User data expired or not found - show helpful message
     await handleExpiredSession(ctx);
@@ -304,6 +303,9 @@ async function sendQuestionOrResult(
 
   // Find next unanswered question (returns position in order array)
   const nextPosition = findNextUnansweredQuestionPosition(user);
+
+  console.timeLog("DEBUG:ANSWER", "findNextUnansweredQuestionPosition");
+
 
   if (nextPosition === null) {
     // Quiz finished - all questions answered
@@ -350,6 +352,7 @@ async function sendQuestionOrResult(
   );
 
   const question = selectQuizQuestion(user, questionIndex);
+  console.timeLog("DEBUG:ANSWER", "selectQuizQuestion");
   if (!question) throw new Error("Cannot find next question");
   const message = `${positionInOrder}/${user.order.length} \n\n${question.text}`;
   await ctx.reply(message, { reply_markup: keyboard });
