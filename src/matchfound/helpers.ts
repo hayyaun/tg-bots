@@ -283,7 +283,7 @@ export async function validateProfileForFind(
   if (!profile.gender) missingRequiredFields.push(fields.gender);
   if (!profile.looking_for_gender)
     missingRequiredFields.push(fields.lookingForGender);
-  if (!profile.age) missingRequiredFields.push(fields.birthDate);
+  if (!profile.age) missingRequiredFields.push(fields.age);
 
   // Check interests separately to show specific count
   if (!profile.interests || profile.interests.length < MIN_INTERESTS) {
@@ -516,7 +516,7 @@ const REQUIRED_FIELDS: RequiredField[] = [
     name: fields.lookingForGender,
     type: FIELD_TYPE.SELECT,
   },
-  { key: FIELD_KEY.AGE, name: fields.birthDate, type: FIELD_TYPE.TEXT },
+  { key: FIELD_KEY.AGE, name: fields.age, type: FIELD_TYPE.TEXT },
   {
     key: FIELD_KEY.INTERESTS,
     name: fields.interests,
@@ -629,7 +629,7 @@ export async function promptNextRequiredField(
         const profile = await getUserProfile(userId);
         if (profile?.age) {
           // Age already exists, skip this field
-          await ctx.reply(success.birthdateUpdated(profile.age));
+          await ctx.reply(success.ageUpdated(profile.age));
           if (remaining > 0 && fieldIndex + 1 < missingFields.length) {
             await ctx.reply(
               profileCompletion.nextField(
@@ -648,7 +648,7 @@ export async function promptNextRequiredField(
         } else {
           // Telegram doesn't provide age in user profile, so we need manual input
           // Note: If user linked Google account, age would have been imported via OAuth
-          await ctx.reply(profileCompletion.fieldPrompt.birthDate);
+          await ctx.reply(profileCompletion.fieldPrompt.age);
         }
       } else if (field.key === FIELD_KEY.DISPLAY_NAME) {
         await ctx.reply(profileCompletion.fieldPrompt.displayName);

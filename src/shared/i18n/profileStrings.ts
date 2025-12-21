@@ -13,9 +13,6 @@ export interface IProfileStrings {
     editCancelled: string;
     nameTooLong: string;
     bioTooLong: string;
-    invalidDate: string;
-    invalidDateValue: string;
-    futureDate: string;
     invalidAge: string;
     updateFailed: string;
     invalidMood: string;
@@ -30,7 +27,7 @@ export interface IProfileStrings {
   success: {
     nameUpdated: (name: string) => string;
     bioUpdated: string;
-    birthdateUpdated: (age: number) => string;
+    ageUpdated: (age: number) => string;
     genderUpdated: (gender: string) => string;
     lookingForUpdated: (text: string) => string;
     moodUpdated: (mood: string) => string;
@@ -63,7 +60,7 @@ export interface IProfileStrings {
     takeQuizzes: string;
     editName: string;
     editBio: string;
-    editBirthdate: string;
+    editAge: string;
     editGender: string;
     editLookingFor: string;
     editImage: string;
@@ -85,7 +82,7 @@ export interface IProfileStrings {
   editPrompts: {
     name: string;
     bio: string;
-    birthdate: string;
+    age: string;
     gender: string;
     lookingFor: string;
     image: {
@@ -114,10 +111,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       editCancelled: "❌ ویرایش لغو شد.",
       nameTooLong: `❌ نام نمایشی نمی‌تواند بیشتر از ${MAX_DISPLAY_NAME_LENGTH} کاراکتر باشد.`,
       bioTooLong: "❌ بیوگرافی نمی‌تواند بیشتر از 500 کاراکتر باشد.",
-      invalidDate:
-        "❌ فرمت تاریخ نامعتبر است. لطفا به فرمت YYYY-MM-DD ارسال کنید (مثال: 1995-05-15)",
-      invalidDateValue: "❌ تاریخ نامعتبر است.",
-      futureDate: "❌ تاریخ تولد نمی‌تواند در آینده باشد.",
       invalidAge: `❌ سن باید بین ${MIN_AGE} تا ${MAX_AGE} سال باشد.`,
       updateFailed: "❌ خطا در به‌روزرسانی پروفایل.",
       invalidMood: "❌ مود نامعتبر است.",
@@ -136,7 +129,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     success: {
       nameUpdated: (name: string) => `✅ نام نمایشی به "${name}" تغییر یافت.`,
       bioUpdated: "✅ بیوگرافی به‌روزرسانی شد.",
-      birthdateUpdated: (age: number) =>
+      ageUpdated: (age: number) =>
         `✅ تاریخ تولد ثبت شد. سن شما: ${age} سال`,
       genderUpdated: (gender: string) => `✅ جنسیت به "${gender}" تغییر یافت.`,
       lookingForUpdated: (text: string) => `✅ تنظیمات به "${text}" تغییر یافت.`,
@@ -171,7 +164,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 انجام تست‌ها",
       editName: "✏️ ویرایش نام",
       editBio: "📝 ویرایش بیوگرافی",
-      editBirthdate: "🎂 سن",
+      editAge: "🎂 سن",
       editGender: "⚧️ جنسیت",
       editLookingFor: "🤝 پیشنهاد",
       editImage: "📷 تصویر",
@@ -193,7 +186,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     editPrompts: {
       name: `لطفا نام نمایشی خود را ارسال کنید (حداکثر ${MAX_DISPLAY_NAME_LENGTH} کاراکتر):\n\nبرای لغو: /cancel`,
       bio: "لطفا بیوگرافی خود را ارسال کنید (حداکثر 500 کاراکتر):\n\n📝 تعداد کاراکتر: 0/500\n\nبرای لغو: /cancel",
-      birthdate:
+      age:
         "لطفا سن خود را به صورت عدد ارسال کنید (مثال: 25):\n\nبرای لغو: /cancel",
       gender: "جنسیت خود را انتخاب کنید:",
       lookingFor: "می‌خواهید چه کسی به شما پیشنهاد شود؟",
@@ -226,10 +219,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       editCancelled: "❌ Edit cancelled.",
       nameTooLong: `❌ Display name cannot be longer than ${MAX_DISPLAY_NAME_LENGTH} characters.`,
       bioTooLong: "❌ Biography cannot exceed 500 characters.",
-      invalidDate:
-        "❌ Invalid date format. Please send in YYYY-MM-DD (e.g., 1995-05-15).",
-      invalidDateValue: "❌ Invalid date.",
-      futureDate: "❌ Birthdate cannot be in the future.",
       invalidAge: `❌ Age must be between ${MIN_AGE} and ${MAX_AGE} years.`,
       updateFailed: "❌ Failed to update profile.",
       invalidMood: "❌ Invalid mood.",
@@ -248,7 +237,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     success: {
       nameUpdated: (name: string) => `✅ Display name changed to "${name}".`,
       bioUpdated: "✅ Biography updated.",
-      birthdateUpdated: (age: number) => `✅ Birthdate saved. Your age: ${age}.`,
+      ageUpdated: (age: number) => `✅ Age saved. Your age: ${age}.`,
       genderUpdated: (gender: string) => `✅ Gender changed to "${gender}".`,
       lookingForUpdated: (text: string) => `✅ Preference changed to "${text}".`,
       moodUpdated: (mood: string) => `✅ Mood set to ${mood}.`,
@@ -282,7 +271,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 Take Quizzes",
       editName: "✏️ Edit Name",
       editBio: "📝 Edit Biography",
-      editBirthdate: "🎂 Age",
+      editAge: "🎂 Age",
       editGender: "⚧️ Gender",
       editLookingFor: "🤝 Looking For",
       editImage: "📷 Image",
@@ -304,7 +293,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     editPrompts: {
       name: `Please send your display name (max ${MAX_DISPLAY_NAME_LENGTH} characters):\n\nTo cancel: /cancel`,
       bio: "Please send your biography (max 500 characters):\n\n📝 Characters: 0/500\n\nTo cancel: /cancel",
-      birthdate:
+      age:
         "Please send your age as a number (e.g., 25):\n\nTo cancel: /cancel",
       gender: "Choose your gender:",
       lookingFor: "Who do you want to be suggested?",
@@ -337,10 +326,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       editCancelled: "❌ Редактирование отменено.",
       nameTooLong: `❌ Имя не может быть длиннее ${MAX_DISPLAY_NAME_LENGTH} символов.`,
       bioTooLong: "❌ Биография не может превышать 500 символов.",
-      invalidDate:
-        "❌ Неверный формат даты. Используйте YYYY-MM-DD (например, 1995-05-15).",
-      invalidDateValue: "❌ Неверная дата.",
-      futureDate: "❌ Дата рождения не может быть в будущем.",
       invalidAge: `❌ Возраст должен быть от ${MIN_AGE} до ${MAX_AGE} лет.`,
       updateFailed: "❌ Не удалось обновить профиль.",
       invalidMood: "❌ Недопустимое настроение.",
@@ -359,7 +344,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     success: {
       nameUpdated: (name: string) => `✅ Имя изменено на «${name}».`,
       bioUpdated: "✅ Биография обновлена.",
-      birthdateUpdated: (age: number) =>
+      ageUpdated: (age: number) =>
         `✅ Дата рождения сохранена. Ваш возраст: ${age}.`,
       genderUpdated: (gender: string) => `✅ Пол изменён на «${gender}».`,
       lookingForUpdated: (text: string) =>
@@ -395,7 +380,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 Пройти тесты",
       editName: "✏️ Имя",
       editBio: "📝 Биография",
-      editBirthdate: "🎂 Возраст",
+      editAge: "🎂 Возраст",
       editGender: "⚧️ Пол",
       editLookingFor: "🤝 Предпочтения",
       editImage: "📷 Фото",
@@ -417,7 +402,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     editPrompts: {
       name: `Отправьте имя (макс. ${MAX_DISPLAY_NAME_LENGTH} символов):\n\nОтмена: /cancel`,
       bio: "Отправьте биографию (макс. 500 символов):\n\n📝 Символы: 0/500\n\nОтмена: /cancel",
-      birthdate:
+      age:
         "Отправьте ваш возраст числом (например, 25):\n\nОтмена: /cancel",
       gender: "Выберите пол:",
       lookingFor: "Кого вы хотите видеть в рекомендациях?",
@@ -450,10 +435,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       editCancelled: "❌ تم إلغاء التعديل.",
       nameTooLong: `❌ لا يمكن أن يتجاوز الاسم ${MAX_DISPLAY_NAME_LENGTH} حرفًا.`,
       bioTooLong: "❌ لا يمكن أن تتجاوز السيرة الذاتية 500 حرف.",
-      invalidDate:
-        "❌ تنسيق التاريخ غير صالح. أرسل بالتنسيق YYYY-MM-DD (مثال: 1995-05-15).",
-      invalidDateValue: "❌ تاريخ غير صالح.",
-      futureDate: "❌ لا يمكن أن يكون تاريخ الميلاد في المستقبل.",
       invalidAge: `❌ يجب أن يكون العمر بين ${MIN_AGE} و ${MAX_AGE} سنة.`,
       updateFailed: "❌ فشل تحديث الملف الشخصي.",
       invalidMood: "❌ مزاج غير صالح.",
@@ -472,7 +453,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     success: {
       nameUpdated: (name: string) => `✅ تم تغيير الاسم إلى "${name}".`,
       bioUpdated: "✅ تم تحديث السيرة الذاتية.",
-      birthdateUpdated: (age: number) => `✅ تم حفظ تاريخ الميلاد. عمرك: ${age}.`,
+      ageUpdated: (age: number) => `✅ تم حفظ تاريخ الميلاد. عمرك: ${age}.`,
       genderUpdated: (gender: string) => `✅ تم تغيير الجنس إلى "${gender}".`,
       lookingForUpdated: (text: string) => `✅ تم تغيير التفضيل إلى "${text}".`,
       moodUpdated: (mood: string) => `✅ تم ضبط المزاج إلى ${mood}.`,
@@ -506,7 +487,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       takeQuizzes: "🧪 إجراء الاختبارات",
       editName: "✏️ تعديل الاسم",
       editBio: "📝 تعديل السيرة",
-      editBirthdate: "🎂 العمر",
+      editAge: "🎂 العمر",
       editGender: "⚧️ الجنس",
       editLookingFor: "🤝 التفضيل",
       editImage: "📷 الصورة",
@@ -528,7 +509,7 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
     editPrompts: {
       name: `أرسل اسم العرض (بحد أقصى ${MAX_DISPLAY_NAME_LENGTH} حرفًا):\n\nللإلغاء: /cancel`,
       bio: "أرسل سيرتك الذاتية (بحد أقصى 500 حرف):\n\n📝 عدد الأحرف: 0/500\n\nللإلغاء: /cancel",
-      birthdate:
+      age:
         "أرسل عمرك كرقم (مثال: 25):\n\nللإلغاء: /cancel",
       gender: "اختر جنسك:",
       lookingFor: "من تريد أن يتم اقتراحه لك؟",

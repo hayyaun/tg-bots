@@ -182,7 +182,7 @@ export async function displayProfile(
     .text(strings.editName, "profile:edit:name")
     .text(strings.editBio, "profile:edit:bio")
     .row()
-    .text(strings.editBirthdate, "profile:edit:birthdate")
+    .text(strings.editAge, "profile:edit:age")
     .text(strings.editGender, "profile:edit:gender");
 
   // Only show "Looking for" button for matchfound bot

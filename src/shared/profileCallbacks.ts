@@ -251,7 +251,7 @@ export function setupProfileCallbacks(
         editPrompts.interests(selectedCount, currentPage + 1, totalPages),
         { reply_markup: interestsKeyboard }
       );
-    } catch (err) {
+    } catch {
       // If edit fails, send a new message
       await ctx.reply(
         editPrompts.interests(selectedCount, currentPage + 1, totalPages),
@@ -294,7 +294,7 @@ export function setupProfileCallbacks(
         editPrompts.interests(selectedCount, page + 1, totalPages),
         { reply_markup: interestsKeyboard }
       );
-    } catch (err) {
+    } catch {
       await ctx.reply(
         editPrompts.interests(selectedCount, page + 1, totalPages),
         { reply_markup: interestsKeyboard }
@@ -319,7 +319,7 @@ export function setupProfileCallbacks(
     ctx.answerCallbackQuery().catch(() => {}); // Ignore errors for expired queries
     const session = await getSession(userId);
 
-    if (!IRAN_PROVINCES.includes(location as any)) {
+    if (!IRAN_PROVINCES.includes(location as typeof IRAN_PROVINCES[number])) {
       await ctx.reply(errors.invalidProvince);
       delete session.editingField;
       return;
@@ -347,7 +347,7 @@ export function setupProfileCallbacks(
         editPrompts.locationSelected(provinceName, currentPage + 1, totalPages),
         { reply_markup: locationKeyboard }
       );
-    } catch (err) {
+    } catch {
       // If edit fails, send a new message
       await ctx.reply(
         editPrompts.locationSelected(provinceName, currentPage + 1, totalPages),
@@ -389,7 +389,7 @@ export function setupProfileCallbacks(
         editPrompts.location(page + 1, totalPages),
         { reply_markup: locationKeyboard }
       );
-    } catch (err) {
+    } catch {
       await ctx.reply(
         editPrompts.location(page + 1, totalPages),
         { reply_markup: locationKeyboard }
@@ -456,20 +456,21 @@ export function setupProfileCallbacks(
         await ctx.reply(editPrompts.bio);
         break;
 
-      case "birthdate":
+      case "age":
         session.editingField = FIELD_KEY.AGE;
-        await ctx.reply(editPrompts.birthdate);
+        await ctx.reply(editPrompts.age);
         break;
 
-      case "gender":
+      case "gender": {
         session.editingField = FIELD_KEY.GENDER;
         const genderKeyboard = new InlineKeyboard()
           .text(profileValues.male, "profile:set:gender:male")
           .text(profileValues.female, "profile:set:gender:female");
         await ctx.reply(editPrompts.gender, { reply_markup: genderKeyboard });
         break;
+      }
 
-      case "looking_for":
+      case "looking_for": {
         session.editingField = FIELD_KEY.LOOKING_FOR_GENDER;
         const lookingForKeyboard = new InlineKeyboard()
           .text(profileValues.male, "profile:set:looking_for:male")
@@ -478,8 +479,9 @@ export function setupProfileCallbacks(
           .text(profileValues.both, "profile:set:looking_for:both");
         await ctx.reply(editPrompts.lookingFor, { reply_markup: lookingForKeyboard });
         break;
+      }
 
-      case "image":
+      case "image": {
         session.editingField = FIELD_KEY.PROFILE_IMAGE;
         const profile = await getUserProfile(userId);
         if (profile?.profile_image) {
@@ -496,8 +498,9 @@ export function setupProfileCallbacks(
           await ctx.reply(editPrompts.image.noImage, { reply_markup: imageKeyboard });
         }
         break;
+      }
 
-      case "username":
+      case "username": {
         session.editingField = FIELD_KEY.USERNAME;
         // Update username from current Telegram profile
         const currentUsername = ctx.from?.username;
@@ -514,8 +517,9 @@ export function setupProfileCallbacks(
           // Don't delete editingField or continue if username is missing
         }
         break;
+      }
 
-      case "mood":
+      case "mood": {
         session.editingField = FIELD_KEY.MOOD;
         const moodKeyboard = new InlineKeyboard()
           .text(`${MOODS.happy} ${moodOptions.happy}`, "profile:set:mood:happy")
@@ -546,6 +550,7 @@ export function setupProfileCallbacks(
           );
         await ctx.reply(editPrompts.mood, { reply_markup: moodKeyboard });
         break;
+      }
 
       case "interests":
         session.editingField = FIELD_KEY.INTERESTS;
@@ -649,7 +654,7 @@ export function setupProfileCallbacks(
     if (!userId) return;
 
     const session = await getSession(userId);
-    const { errors, success, profileValues } = await loadProfileStrings(userId);
+    const { errors, success } = await loadProfileStrings(userId);
     if (session.editingField) {
       const text = ctx.message.text;
       
@@ -692,7 +697,7 @@ export function setupProfileCallbacks(
             await ctx.reply(success.bioUpdated + `\n\n📝 تعداد کاراکتر: ${text.length}/500`);
             break;
 
-          case FIELD_KEY.AGE:
+          case FIELD_KEY.AGE: {
             // Validate age is a number
             const age = parseInt(text, 10);
             if (isNaN(age) || !Number.isInteger(age) || age < MIN_AGE || age > MAX_AGE) {
@@ -702,12 +707,13 @@ export function setupProfileCallbacks(
             // Save age directly
             await updateUserField(userId, FIELD_KEY.AGE, age);
             delete session.editingField;
-            await ctx.reply(success.birthdateUpdated(age));
+            await ctx.reply(success.ageUpdated(age));
             // Continue profile completion if in progress
             if (session.completingProfile && onContinueProfileCompletion) {
               await onContinueProfileCompletion(ctx, bot, userId);
             }
             break;
+          }
 
           default:
             await next();
