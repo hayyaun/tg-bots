@@ -5,8 +5,6 @@ import { getDisplayNameFromUser } from "../utils/string";
 import {
   getQuizModeName,
   getQuizTypeName,
-  quizModes,
-  quizTypes,
   MATCHFOUND_BOT_USERNAME,
   quizNeedsGender,
 } from "./config";
@@ -14,6 +12,7 @@ import { getStrings, getStringsForUser, ANSWER_VALUES } from "./i18n";
 import {
   getUserLanguage,
   setUserLanguage,
+  hasUserLanguage,
   DEFAULT_LANGUAGE,
 } from "../shared/i18n";
 import {
@@ -34,6 +33,11 @@ import {
 } from "./userData";
 import { setupProfileCallbacks } from "../shared/profileCallbacks";
 import { getSession } from "./session";
+import {
+  showLanguageSelection,
+  showQuizTypeSelection,
+  showQuizModeSelection,
+} from "./selectionHelpers";
 
 const BOT_NAME = "Inmankist";
 
@@ -198,14 +202,6 @@ async function saveQuizResultToDB(
   }
 }
 
-function createQuizTypesKeyboard(language: Language): InlineKeyboard {
-  const keyboard = new InlineKeyboard();
-  Object.keys(quizTypes).forEach((k) =>
-    keyboard.text(getQuizTypeName(k as QuizType, language), `quiz:${k}`).row()
-  );
-  return keyboard;
-}
-
 function getLanguageName(language: Language): string {
   const names: { [key in Language]: string } = {
     [Language.Persian]: "فارسی",
@@ -272,10 +268,31 @@ async function setUser(
   });
 }
 
+// Find the next unanswered question index
+function findNextUnansweredQuestion(user: IUserData): number | null {
+  // Check if all questions are answered
+  const allAnswered = user.order.every((index) => 
+    typeof user.answers[index] === "number"
+  );
+  
+  if (allAnswered) {
+    return null; // All questions answered
+  }
+  
+  // Find first unanswered question
+  for (const index of user.order) {
+    if (typeof user.answers[index] !== "number") {
+      return index;
+    }
+  }
+  
+  return null;
+}
+
 // Quiz
 async function sendQuestionOrResult(
   ctx: Context,
-  current: number,
+  currentOrUnused: number | null,
   userData?: IUserData,
   notifyAdmin?: (message: string) => Promise<void>
 ) {
@@ -288,10 +305,11 @@ async function sendQuestionOrResult(
     return;
   }
 
-  const length = user.order.length;
-
-  if (current >= length) {
-    // Quiz finished
+      // Find next unanswered question
+      const nextQuestionIndex = findNextUnansweredQuestion(user);
+  
+  if (nextQuestionIndex === null) {
+    // Quiz finished - all questions answered
     const result = await replyResult(ctx, user);
     log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
 
@@ -320,14 +338,22 @@ async function sendQuestionOrResult(
     return; // end
   }
 
+  // Find the position in order array for display (1-indexed)
+  const positionInOrder = user.order.indexOf(nextQuestionIndex) + 1;
+
   const keyboard = new InlineKeyboard();
+  // Pre-select current answer if exists (for revisions)
+  const currentAnswer = user.answers[nextQuestionIndex];
   ANSWER_VALUES.forEach((v, i: Value) =>
-    keyboard.text(v, `answer:${current}-${i}`)
+    keyboard.text(
+      typeof currentAnswer === "number" && i === currentAnswer ? "✅" : v,
+      `answer:${nextQuestionIndex}-${i}`
+    )
   );
 
-  const question = selectQuizQuestion(user, current);
+  const question = selectQuizQuestion(user, nextQuestionIndex);
   if (!question) throw new Error("Cannot find next question");
-  const message = `${current + 1}/${length} \n\n${question.text}`;
+  const message = `${positionInOrder}/${length} \n\n${question.text}`;
   await ctx.reply(message, { reply_markup: keyboard });
 }
 
@@ -350,9 +376,7 @@ export function setupCallbacks(
           { reply_markup: undefined }
         )
         .catch(() => {});
-      ctx.reply(strings.welcome, {
-        reply_markup: createQuizTypesKeyboard(language),
-      });
+      await showQuizTypeSelection(ctx, language);
     } catch (err) {
       log.error(BOT_NAME + " > Language", err);
       notifyAdmin(
@@ -367,7 +391,16 @@ export function setupCallbacks(
       const type = ctx.match[1] as QuizType;
       const userId = ctx.from?.id;
       if (!userId) throw new Error("UserId Invalid!");
+      // Validate: If language is not set, show language selection
+      const userHasLanguage = await hasUserLanguage(userId);
+      if (!userHasLanguage) {
+        ctx.answerCallbackQuery().catch(() => {});
+        await showLanguageSelection(ctx);
+        return;
+      }
+      
       const language = await getUserLanguage(userId);
+      
       ctx.answerCallbackQuery().catch(() => {});
       const welcomeId = ctx.callbackQuery?.message?.message_id;
       if (welcomeId) {
@@ -378,15 +411,7 @@ export function setupCallbacks(
       await displaySavedResult(ctx, userId, type, language);
 
       await setUser(ctx, type, notifyAdmin);
-      const keyboard = new InlineKeyboard();
-      Object.keys(quizModes).forEach((k) =>
-        keyboard.text(
-          getQuizModeName(parseInt(k) as QuizMode, language),
-          `mode:${k}`
-        )
-      );
-      const strings = getStrings(language);
-      ctx.reply(strings.mode, { reply_markup: keyboard });
+      await showQuizModeSelection(ctx, language);
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Type", err);
       notifyAdmin(
@@ -406,6 +431,15 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
+      
+      // Validate: If quiz type was not set, show quiz type selection
+      if (!user.quiz) {
+        ctx.answerCallbackQuery().catch(() => {});
+        const language = user.language || (await getUserLanguage(userId)) || DEFAULT_LANGUAGE;
+        await showQuizTypeSelection(ctx, language);
+        return;
+      }
+      
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
       ctx.answerCallbackQuery().catch(() => {});
@@ -450,7 +484,7 @@ export function setupCallbacks(
             mode,
             gender
           );
-          await sendQuestionOrResult(ctx, 0, finalUser, notifyAdmin);
+          await sendQuestionOrResult(ctx, null, finalUser, notifyAdmin);
           return;
         }
         // No gender in database, ask for it
@@ -468,7 +502,7 @@ export function setupCallbacks(
           updatedUser
         );
         updateUserDataCache(userId, finalUser);
-        await sendQuestionOrResult(ctx, 0, finalUser, notifyAdmin);
+        await sendQuestionOrResult(ctx, null, finalUser, notifyAdmin);
       }
     } catch (err) {
       log.error(BOT_NAME + " > Quiz Mode", err);
@@ -489,6 +523,15 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
+      
+      // Validate: If quiz mode was not set, show quiz mode selection
+      if (user.mode === undefined || user.mode === null) {
+        ctx.answerCallbackQuery().catch(() => {});
+        const language = user.language || DEFAULT_LANGUAGE;
+        await showQuizModeSelection(ctx, language);
+        return;
+      }
+      
       // Defensive check: only process gender selection if quiz needs it
       if (!quizNeedsGender(user.quiz)) {
         await ctx
@@ -528,7 +571,7 @@ export function setupCallbacks(
         },
       });
 
-      await sendQuestionOrResult(ctx, 0, updatedUser, notifyAdmin);
+      await sendQuestionOrResult(ctx, null, updatedUser, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Gender", err);
       notifyAdmin(
@@ -549,39 +592,33 @@ export function setupCallbacks(
       ctx.answerCallbackQuery().catch(() => {});
 
       // Save/Update Answer
-      const current = parseInt(ctx.match[1]);
+      const questionIndex = parseInt(ctx.match[1]);
       const selectedAnswer = parseInt(ctx.match[2]);
       if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
-      const isRevision = typeof user.answers[current] === "number";
-      const noChange = user.answers[current] === selectedAnswer;
-      const isLastQuestion = current + 1 >= user.order.length;
+      const noChange = user.answers[questionIndex] === selectedAnswer;
 
       // Save answer first if it changed (needed before quiz completion)
       if (!noChange) {
-        user.answers[current] = selectedAnswer;
+        user.answers[questionIndex] = selectedAnswer;
         // Pass existing user data to avoid redundant Redis read
         user = await updateUserData(userId, { answers: user.answers }, user);
         // Update cache immediately
         updateUserDataCache(userId, user);
       }
 
-      // Go next question (or complete quiz if last question)
-      if (!isRevision || noChange) {
-        // Pass user data to avoid redundant Redis read
-        await sendQuestionOrResult(ctx, current + 1, user, notifyAdmin);
-        // If quiz completed, user data is deleted - return early
-        if (isLastQuestion) return;
+      // Update keyboard for current question if answer changed
+      if (!noChange) {
+        const keyboard = new InlineKeyboard();
+        ANSWER_VALUES.forEach((v, i: Value) =>
+          keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${questionIndex}-${i}`)
+        );
+        // Edit the message with the new keyboard
+        ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
       }
-      if (noChange) return;
 
-      // Update keyboard
-      const keyboard = new InlineKeyboard();
-      ANSWER_VALUES.forEach((v, i: Value) =>
-        keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${current}-${i}`)
-      );
-
-      // Edit the message with the new keyboard
-      ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
+      // Go to next unanswered question (or complete quiz if all answered)
+      // Pass null since we'll find the next unanswered question inside the function
+      await sendQuestionOrResult(ctx, null, user, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Answer", err);
       notifyAdmin(

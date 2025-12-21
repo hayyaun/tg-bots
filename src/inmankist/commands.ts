@@ -1,36 +1,21 @@
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot } from "grammy";
 import log from "../log";
-import { getStringsForUser } from "./i18n";
-import { getQuizTypeName, quizTypes } from "./config";
 import {
   getUserLanguage,
   hasUserLanguage,
   refreshUserLanguageTTL,
 } from "../shared/i18n";
 import { replyAbout } from "./reducer";
-import { Language } from "../shared/types";
 import { QuizType } from "../shared/types";
 import { getUserData } from "./userData";
 import { setupProfileCommand } from "../shared/profileCommand";
+import {
+  showLanguageSelection,
+  showQuizTypeSelection,
+} from "./selectionHelpers";
+import { quizTypes } from "./config";
 
 const BOT_NAME = "Inmankist";
-
-function createLanguageKeyboard(): InlineKeyboard {
-  return new InlineKeyboard()
-    .text("🇮🇷 فارسی", `lang:${Language.Persian}`)
-    .text("🇬🇧 English", `lang:${Language.English}`)
-    .row()
-    .text("🇷🇺 Русский", `lang:${Language.Russian}`)
-    .text("🇸🇦 العربية", `lang:${Language.Arabic}`);
-}
-
-function createQuizTypesKeyboard(language: Language): InlineKeyboard {
-  const keyboard = new InlineKeyboard();
-  Object.keys(quizTypes).forEach((k) =>
-    keyboard.text(getQuizTypeName(k as QuizType, language), `quiz:${k}`).row()
-  );
-  return keyboard;
-}
 
 export function setupCommands(
   bot: Bot,
@@ -39,10 +24,7 @@ export function setupCommands(
   // /language command
   bot.command("language", async (ctx) => {
     ctx.react("⚡").catch(() => {});
-    const strings = await getStringsForUser(ctx.from?.id);
-    ctx.reply(strings.select_language, {
-      reply_markup: createLanguageKeyboard(),
-    });
+    await showLanguageSelection(ctx);
   });
 
   // /userdata command
@@ -92,7 +74,6 @@ export function setupCommands(
     );
 
     const language = await getUserLanguage(userId);
-    const strings = await getStringsForUser(userId);
 
     // Notify admin about new user
     notifyAdmin(
@@ -102,16 +83,11 @@ export function setupCommands(
     // Check if user has selected language before (first time users)
     const userHasLanguage = await hasUserLanguage(userId);
     if (!userHasLanguage) {
-      ctx.reply(
-        "🌐 Please select your language / Пожалуйста, выберите язык / لطفا زبان خود را انتخاب کنید / الرجاء اختيار لغتك:",
-        { reply_markup: createLanguageKeyboard() }
-      );
+      await showLanguageSelection(ctx);
       return;
     }
 
-    ctx.reply(strings.welcome, {
-      reply_markup: createQuizTypesKeyboard(language),
-    });
+    await showQuizTypeSelection(ctx, language);
   });
 
   // Quiz type commands (archetype, mbti, etc.)

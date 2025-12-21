@@ -1,4 +1,5 @@
 import { getWithPrefix, setWithPrefix, delWithPrefix } from "../redis";
+import log from "../log";
 import { IUserData } from "./types";
 
 const REDIS_PREFIX = "inmankist";
@@ -32,9 +33,12 @@ export async function getUserData(userId: number): Promise<IUserData | null> {
 
 // Set user data with TTL
 export async function setUserData(userId: number, data: IUserData): Promise<void> {
-  await setWithPrefix(REDIS_PREFIX, `userdata:${userId}`, JSON.stringify(data), USER_DATA_TTL);
-  // Update cache immediately
+  // Update cache immediately (non-blocking)
   userDataCache.set(userId, { data, timestamp: Date.now() });
+  // Persist to Redis in background (fire-and-forget)
+  setWithPrefix(REDIS_PREFIX, `userdata:${userId}`, JSON.stringify(data), USER_DATA_TTL).catch((err) => {
+    log.error("Failed to persist user data to Redis", { userId, error: err });
+  });
 }
 
 // Update cache without Redis write (for in-memory updates)
