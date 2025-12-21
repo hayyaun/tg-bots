@@ -1,6 +1,7 @@
 import express from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { updateCompletionScoreById } from "../../../shared/database";
+import { convertToEnglishDigits } from "../../../utils/string";
 import { prisma } from "../../../db";
 import log from "../../../log";
 
@@ -86,7 +87,11 @@ router.patch("/", async (req: AuthRequest, res) => {
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         if (field === "age" && req.body[field] !== null) {
-          const age = parseInt(req.body[field], 10);
+          // Convert Persian/Arabic digits to English
+          const ageText = typeof req.body[field] === "string" 
+            ? convertToEnglishDigits(req.body[field]) 
+            : req.body[field].toString();
+          const age = parseInt(ageText, 10);
           if (isNaN(age) || age < 18 || age > 120) {
             res.status(400).json({ error: "Invalid age" });
             return;

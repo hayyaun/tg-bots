@@ -47,3 +47,28 @@ export function getUserName(ctx: Context): string {
     ? `@${from.username}`
     : `${from.first_name || ""} ${from.last_name || ""}`.trim() || "Unknown";
 }
+
+/**
+ * Converts Persian/Arabic digits to English digits
+ * Supports: ۰-۹ (Persian), ٠-٩ (Arabic), and 0-9 (English)
+ */
+export function convertToEnglishDigits(text: string): string {
+  // Persian digits: ۰۱۲۳۴۵۶۷۸۹
+  const persianDigits = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+  // Arabic digits: ٠١٢٣٤٥٦٧٨٩
+  const arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  
+  let result = text;
+  
+  // Replace Persian digits
+  persianDigits.forEach((persianDigit, index) => {
+    result = result.replace(new RegExp(persianDigit, "g"), index.toString());
+  });
+  
+  // Replace Arabic digits
+  arabicDigits.forEach((arabicDigit, index) => {
+    result = result.replace(new RegExp(arabicDigit, "g"), index.toString());
+  });
+  
+  return result;
+}

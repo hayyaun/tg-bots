@@ -5,6 +5,7 @@ import { getInterestNames, getProvinceNames } from "./i18n";
 import { INTERESTS, IRAN_PROVINCES, MOODS, MIN_INTERESTS, MAX_INTERESTS, ITEMS_PER_PAGE, MIN_AGE, MAX_AGE, MAX_DISPLAY_NAME_LENGTH } from "./constants";
 import { getProfileStrings } from "./i18n/profileStrings";
 import { BaseSessionData } from "./session";
+import { convertToEnglishDigits } from "../utils/string";
 import log from "../log";
 
 export interface ProfileCallbacksConfig {
@@ -698,8 +699,9 @@ export function setupProfileCallbacks(
             break;
 
           case FIELD_KEY.AGE: {
-            // Validate age is a number
-            const age = parseInt(text, 10);
+            // Convert Persian/Arabic digits to English, then validate age is a number
+            const englishText = convertToEnglishDigits(text);
+            const age = parseInt(englishText, 10);
             if (isNaN(age) || !Number.isInteger(age) || age < MIN_AGE || age > MAX_AGE) {
               await ctx.reply(errors.invalidAge);
               return;

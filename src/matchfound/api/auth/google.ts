@@ -3,7 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { prisma } from "../../../db";
 import { generateToken } from "../middleware/auth";
 import log from "../../../log";
-import { calculateAge } from "../../../shared/utils";
+import { calculateAge } from "../../../utils/date";
 
 const GOOGLE_CLIENT_ID = process.env.MATCHFOUND_GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.MATCHFOUND_GOOGLE_CLIENT_SECRET || "";

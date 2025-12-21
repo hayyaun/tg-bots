@@ -22,3 +22,19 @@ export function getSecondsUntilMidnightUTC(): number {
   return Math.floor((tomorrow.getTime() - now.getTime()) / 1000);
 }
 
+/**
+ * Calculate age from birth date
+ * @param birthDate - Birth date or null
+ * @returns Age in years or null if birth date is not provided
+ */
+export function calculateAge(birthDate: Date | null): number | null {
+  if (!birthDate) return null;
+  const today = new Date();
+  const age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    return age - 1;
+  }
+  return age;
+}
+
