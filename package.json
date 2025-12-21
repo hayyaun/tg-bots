@@ -16,8 +16,8 @@
   "description": "",
   "dependencies": {
     "@grammyjs/runner": "^2.0.3",
-    "@prisma/adapter-pg": "^7.0.1",
-    "@prisma/client": "^7.0.1",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
     "@types/lodash": "^4.17.16",
     "@types/pg": "^8.15.6",
     "bcryptjs": "^3.0.3",
@@ -35,7 +35,6 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.16.3",
-    "prisma": "^7.0.1",
     "socks-proxy-agent": "^8.0.5",
     "winston": "^3.17.0"
   },
@@ -58,6 +57,7 @@
     "eslint-plugin-prettier": "^5.2.3",
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
+    "prisma": "^7.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.27.0"
