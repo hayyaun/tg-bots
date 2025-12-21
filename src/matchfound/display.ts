@@ -295,6 +295,12 @@ export async function displayUsersToAdmin(
         last_online: true,
         gender: true,
         looking_for_gender: true,
+        archetype_result: true,
+        mbti_result: true,
+        leftright_result: true,
+        politicalcompass_result: true,
+        enneagram_result: true,
+        bigfive_result: true,
       },
     }),
     prisma.user.count(),
@@ -325,6 +331,20 @@ export async function displayUsersToAdmin(
     message += `   Name: ${displayName}\n`;
     message += `   Completion: ${completionScore}%\n`;
     message += `   Gender: ${gender} | Looking for: ${lookingFor}\n`;
+    
+    // Show exam results if available
+    const examResults = [];
+    if (user.archetype_result) examResults.push(`Archetype: ${user.archetype_result}`);
+    if (user.mbti_result) examResults.push(`MBTI: ${user.mbti_result}`);
+    if (user.enneagram_result) examResults.push(`Enneagram: ${user.enneagram_result}`);
+    if (user.leftright_result) examResults.push(`LeftRight: ${user.leftright_result}`);
+    if (user.politicalcompass_result) examResults.push(`PolCompass: ${user.politicalcompass_result}`);
+    if (user.bigfive_result) examResults.push(`BigFive: ${user.bigfive_result}`);
+    
+    if (examResults.length > 0) {
+      message += `   Exams: ${examResults.join(" | ")}\n`;
+    }
+    
     message += `   Created: ${createdAt} | Last online: ${lastOnline}\n\n`;
   });
 
