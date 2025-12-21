@@ -238,6 +238,9 @@ export const admin = {
     reason: "📝 <b>Reason:</b>",
     date: "📅 <b>Date:</b>",
   },
+  resolveReport: "✅ Resolve",
+  reportResolved: "✅ گزارش حل شد.",
+  resolveReportFailed: "❌ خطا در حل کردن گزارش.",
   noReason: "بدون دلیل",
   userPrefix: "User",
 };

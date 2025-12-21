@@ -102,6 +102,7 @@ model Report {
   reporter_id     BigInt   @db.BigInt
   reported_user_id BigInt  @db.BigInt
   reason          String?  @db.Text
+  resolved        Boolean  @default(false)
   created_at      DateTime @default(now())
 
   reporter    User @relation("Reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
@@ -109,6 +110,7 @@ model Report {
 
   @@index([reporter_id])
   @@index([reported_user_id])
+  @@index([resolved])
   @@map("reports")
 }
 

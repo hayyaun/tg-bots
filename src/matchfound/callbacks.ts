@@ -554,8 +554,12 @@ export function setupCallbacks(
       await ctx.answerCallbackQuery();
 
       try {
+        // Only show unresolved reports
         const reports = await prisma.report.findMany({
-          take: 50, // Show last 50 reports
+          where: {
+            resolved: false,
+          },
+          take: 50, // Show last 50 unresolved reports
           orderBy: { created_at: "desc" },
           include: {
             reporter: {
@@ -580,7 +584,9 @@ export function setupCallbacks(
           return;
         }
 
+        const keyboard = new InlineKeyboard();
         let message = `${admin.reportsTitle(reports.length)}\n\n`;
+        
         for (const report of reports) {
           const reporterName =
             report.reporter.display_name ||
@@ -596,13 +602,107 @@ export function setupCallbacks(
           message += `${admin.reportLabels.reporter} ${reporterName} (<code>${report.reporter.telegram_id}</code>)\n`;
           message += `${admin.reportLabels.reported} ${reportedName} (<code>${report.reported_user_id}</code>)\n`;
           message += `${admin.reportLabels.reason} ${reason}\n`;
-          message += `${admin.reportLabels.date} ${date}\n\n`;
+          message += `${admin.reportLabels.date} ${date}\n`;
+          
+          // Add resolve button for each report
+          keyboard.text(admin.resolveReport, callbackQueries.resolveReport(Number(report.id))).row();
+          message += "\n";
         }
 
-        await ctx.reply(message, { parse_mode: "HTML" });
+        await ctx.reply(message, { 
+          parse_mode: "HTML",
+          reply_markup: keyboard,
+        });
       } catch (err) {
         log.error(BOT_NAME + " > Admin reports failed", err);
         await ctx.reply(errors.reportsFailed);
+      }
+    });
+
+    // Admin: Resolve report
+    bot.callbackQuery(/^resolve_report:(\d+)$/, async (ctx) => {
+      const userId = ctx.from?.id;
+      if (!userId || userId !== ADMIN_USER_ID) {
+        await ctx.answerCallbackQuery(errors.accessDenied);
+        return;
+      }
+
+      const reportId = BigInt(ctx.match[1]);
+      await ctx.answerCallbackQuery();
+
+      try {
+        // Update report as resolved
+        await prisma.report.update({
+          where: { id: reportId },
+          data: { resolved: true },
+        });
+
+        await ctx.reply(admin.reportResolved);
+        
+        // Get updated reports list to show remaining unresolved reports
+        const reports = await prisma.report.findMany({
+          where: {
+            resolved: false,
+          },
+          take: 50,
+          orderBy: { created_at: "desc" },
+          include: {
+            reporter: {
+              select: {
+                telegram_id: true,
+                display_name: true,
+                username: true,
+              },
+            },
+            reportedUser: {
+              select: {
+                telegram_id: true,
+                display_name: true,
+                username: true,
+              },
+            },
+          },
+        });
+
+        if (reports.length === 0) {
+          await ctx.reply(admin.noReports);
+          return;
+        }
+
+        const keyboard = new InlineKeyboard();
+        let message = `${admin.reportsTitle(reports.length)}\n\n`;
+        
+        for (const report of reports) {
+          const reporterName =
+            report.reporter.display_name ||
+            report.reporter.username ||
+            `${admin.userPrefix} ${report.reporter.telegram_id}`;
+          const reportedName =
+            report.reportedUser.display_name ||
+            report.reportedUser.username ||
+            `${admin.userPrefix} ${report.reportedUser.telegram_id}`;
+          const reason = report.reason || admin.noReason;
+          const date = report.created_at.toLocaleDateString("fa-IR");
+
+          message += `${admin.reportLabels.reporter} ${reporterName} (<code>${report.reporter.telegram_id}</code>)\n`;
+          message += `${admin.reportLabels.reported} ${reportedName} (<code>${report.reported_user_id}</code>)\n`;
+          message += `${admin.reportLabels.reason} ${reason}\n`;
+          message += `${admin.reportLabels.date} ${date}\n`;
+          
+          keyboard.text(admin.resolveReport, callbackQueries.resolveReport(Number(report.id))).row();
+          message += "\n";
+        }
+
+        await ctx.reply(message, { 
+          parse_mode: "HTML",
+          reply_markup: keyboard,
+        });
+      } catch (err) {
+        log.error(BOT_NAME + " > Resolve report failed", err);
+        await ctx.reply(admin.resolveReportFailed);
+        notifyAdmin(
+          `❌ <b>Resolve Report Failed</b>\nReport ID: <code>${reportId}</code>\nAdmin: <code>${userId}</code>\nError: ${err}`
+        );
       }
     });
   }
