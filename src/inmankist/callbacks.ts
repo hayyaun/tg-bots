@@ -268,7 +268,7 @@ async function setUser(
 }
 
 // Find the next unanswered question position in order array
-function findNextUnansweredQuestion(user: IUserData): number | null {
+function findNextUnansweredQuestionPosition(user: IUserData): number | null {
   // Check if all questions are answered
   const allAnswered = user.order.every(
     (questionIndex) => typeof user.answers[questionIndex] === "number"
@@ -303,7 +303,7 @@ async function sendQuestionOrResult(
   }
 
   // Find next unanswered question (returns position in order array)
-  const nextPosition = findNextUnansweredQuestion(user);
+  const nextPosition = findNextUnansweredQuestionPosition(user);
 
   if (nextPosition === null) {
     // Quiz finished - all questions answered
@@ -349,7 +349,7 @@ async function sendQuestionOrResult(
     )
   );
 
-  const question = selectQuizQuestion(user, nextPosition);
+  const question = selectQuizQuestion(user, questionIndex);
   if (!question) throw new Error("Cannot find next question");
   const message = `${positionInOrder}/${user.order.length} \n\n${question.text}`;
   await ctx.reply(message, { reply_markup: keyboard });
@@ -363,7 +363,7 @@ export function setupCallbacks(
   bot.callbackQuery(/lang:(.+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    
+
     try {
       const language = ctx.match[1] as Language;
       const userId = ctx.from?.id;
@@ -389,7 +389,7 @@ export function setupCallbacks(
   bot.callbackQuery(/quiz:(.+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    
+
     try {
       const type = ctx.match[1] as QuizType;
       const userId = ctx.from?.id;
@@ -424,7 +424,7 @@ export function setupCallbacks(
   bot.callbackQuery(/mode:(\d+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    
+
     try {
       const mode = parseInt(ctx.match[1]) as QuizMode;
       const userId = ctx.from?.id;
@@ -515,7 +515,7 @@ export function setupCallbacks(
   bot.callbackQuery(/gender:(.+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    
+
     try {
       const gender = ctx.match[1] as Gender;
       const userId = ctx.from?.id;
@@ -583,7 +583,7 @@ export function setupCallbacks(
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    
+
     const userId = ctx.from?.id;
     try {
       if (!userId) {
@@ -599,11 +599,13 @@ export function setupCallbacks(
       // Save/Update Answer
       const questionIndex = parseInt(ctx.match[1]);
       const selectedAnswer = parseInt(ctx.match[2]);
-      
+
       if (isNaN(questionIndex) || isNaN(selectedAnswer)) {
-        throw new Error(`Invalid answer parameters: questionIndex=${ctx.match[1]}, selectedAnswer=${ctx.match[2]}`);
+        throw new Error(
+          `Invalid answer parameters: questionIndex=${ctx.match[1]}, selectedAnswer=${ctx.match[2]}`
+        );
       }
-      
+
       if (selectedAnswer < 0) {
         throw new Error(`Not Valid Answer! selectedAnswer=${selectedAnswer}`);
       }
@@ -653,7 +655,7 @@ export function setupCallbacks(
   bot.callbackQuery(/detail:(.+):(.+)/, (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    
+
     try {
       const type = ctx.match[1] as QuizType;
       const item = ctx.match[2];

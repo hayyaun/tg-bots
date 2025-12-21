@@ -54,21 +54,21 @@ export function selectOrder(user: IUserData) {
 
 export function selectQuizQuestion<T>(
   user: IUserData,
-  index: number
+  questionIndex: number
 ): IQuest<T> {
   switch (user.quiz) {
     case QuizType.Archetype:
-      return archetype.getQuestion(user, index) as IQuest<T>;
+      return archetype.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
     case QuizType.MBTI:
-      return mbti.getQuestion(user, index) as IQuest<T>;
+      return mbti.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
     case QuizType.LeftRight:
-      return leftright.getQuestion(user, index) as IQuest<T>;
+      return leftright.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
     case QuizType.PoliticalCompass:
-      return politicalcompass.getQuestion(user, index) as IQuest<T>;
+      return politicalcompass.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
     case QuizType.Enneagram:
-      return enneagram.getQuestion(user, index) as IQuest<T>;
+      return enneagram.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
     case QuizType.BigFive:
-      return bigfive.getQuestion(user, index) as IQuest<T>;
+      return bigfive.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
   }
 }
 

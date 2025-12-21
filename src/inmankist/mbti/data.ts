@@ -72,15 +72,7 @@ export const getSample = (
   return sample(items, all, size);
 };
 
-// Get question by position in order array (for sending questions)
-export const getQuestion = (user: IUserData, index: number) => {
-  const language = user.language || Language.Persian;
-  const items = getItems(language);
-  const all = combine(items);
-  return all[user.order[index]];
-};
-
-// Get question by actual question index (for calculating results)
+// Get question by actual question index
 export const getQuestionByQuestionIndex = (user: IUserData, questionIndex: number) => {
   const language = user.language || Language.Persian;
   const items = getItems(language);
