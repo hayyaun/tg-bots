@@ -14,6 +14,11 @@ export enum QuizType {
   BigFive = "bigfive",
 }
 
+export enum Gender {
+  male = "male",
+  female = "female",
+}
+
 // Re-export ProfileFieldKey from shared constants for backward compatibility
 // ProfileEditingField is now just the field keys from UserProfile
 export type { ProfileFieldKey as ProfileEditingField } from "./constants";
@@ -24,8 +29,8 @@ export interface UserProfile {
   display_name: string | null;
   biography: string | null;
   age: number | null;
-  gender: string | null;
-  looking_for_gender: string | null;
+  gender: Gender | null;
+  looking_for_gender: Gender | "both" | null;
   archetype_result: string | null;
   mbti_result: string | null;
   leftright_result: string | null;
@@ -36,6 +41,7 @@ export interface UserProfile {
   mood: string | null;
   interests: string[] | null;
   location: string | null;
+  language: string | null;
   completion_score: number;
   last_online: Date | null;
   created_at: Date;

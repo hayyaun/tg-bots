@@ -80,6 +80,7 @@ export async function findMatches(
     mood: string | null;
     interests: string[];
     location: string | null;
+    language: string | null;
     completion_score: number;
     last_online: Date | null;
     created_at: Date;

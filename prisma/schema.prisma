@@ -37,6 +37,7 @@ model User {
   mood               String?   @db.VarChar(10)
   interests          String[]  @default([]) // Note: GIN index exists via migration (see 20251217135532_add_matching_indexes)
   location           String?   @db.VarChar(50)
+  language           String?   @db.VarChar(10)
   completion_score   Int       @default(0)
   last_online        DateTime?
   created_at         DateTime  @default(now())

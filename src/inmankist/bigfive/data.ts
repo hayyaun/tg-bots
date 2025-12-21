@@ -1,13 +1,12 @@
 import _ from "lodash";
-import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
 import { IQuest, IUserData } from "../types";
 import { BigFiveAspect } from "./types";
 
-import * as fa from "./json/fa";
-import * as en from "./json/en";
-import * as ru from "./json/ru";
 import * as ar from "./json/ar";
+import * as en from "./json/en";
+import * as fa from "./json/fa";
+import * as ru from "./json/ru";
 
 // Question data by language
 const questionsByLanguage: Record<Language, Record<string, string[]>> = {
@@ -35,20 +34,16 @@ interface IListItem {
 
 const combine = (items: IListItem[]) =>
   items
-    .map(({ aspect: belong, questions }) =>
-      questions.map((text) => ({ belong, text }) as IQuest<BigFiveAspect>)
-    )
+    .map(({ aspect: belong, questions }) => questions.map((text) => ({ belong, text }) as IQuest<BigFiveAspect>))
     .flat();
 
 const sample = (items: IListItem[], check: IQuest<BigFiveAspect>[], size: number) =>
   _.shuffle(
     items
       .map(({ aspect: belong, questions }) =>
-        _.sampleSize(questions, size).map((text) =>
-          _.findIndex(check, { belong, text } as IQuest<BigFiveAspect>)
-        )
+        _.sampleSize(questions, size).map((text) => _.findIndex(check, { belong, text } as IQuest<BigFiveAspect>)),
       )
-      .flat()
+      .flat(),
   );
 
 // Get items for a specific language
@@ -80,4 +75,3 @@ export const getQuestionByQuestionIndex = (user: IUserData, questionIndex: numbe
   const all = combine(items);
   return all[questionIndex];
 };
-

@@ -30,7 +30,8 @@ import {
   showQuizTypeSelection,
 } from "./selectionHelpers";
 import { getSession } from "./session";
-import { Gender, IUserData, QuizMode, Value } from "./types";
+import { Gender } from "../shared/types";
+import { IUserData, QuizMode, Value } from "./types";
 import {
   deleteUserData,
   getUserData,

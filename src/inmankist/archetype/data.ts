@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { Language } from "../../shared/types";
-import { Gender, IQuest, IUserData } from "../types";
+import { Gender, Language } from "../../shared/types";
+import { IQuest, IUserData } from "../types";
 import { Deity } from "./types";
 
 import * as fa from "./json/fa";

@@ -1,4 +1,4 @@
-import { Language, QuizType } from "../shared/types";
+import { Gender, Language, QuizType } from "../shared/types";
 
 export enum QuizMode {
   SM,
@@ -27,11 +27,6 @@ export interface IUserData {
 export interface IQuest<T> {
   text: string;
   belong: T;
-}
-
-export enum Gender {
-  male = "male",
-  female = "female",
 }
 
 export interface IScore<T> {

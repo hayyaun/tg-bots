@@ -289,7 +289,7 @@ export async function displayUsersToAdmin(ctx: Context, page: number = 0, usersP
     if (user.enneagram_result) examResults.push(`Enneagram: ${user.enneagram_result}`);
     if (user.leftright_result) examResults.push(`LeftRight: ${user.leftright_result}`);
     if (user.politicalcompass_result) examResults.push(`PolCompass: ${user.politicalcompass_result}`);
-    if (user.bigfive_result) examResults.push(`BigFive: ${user.bigfive_result.slice(12)}`);
+    if (user.bigfive_result) examResults.push(`BigFive: ${user.bigfive_result.slice(0, 12)}`);
 
     if (examResults.length > 0) {
       message += `   Exams: ${examResults.join(" | ")}\n`;
