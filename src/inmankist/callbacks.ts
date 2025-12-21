@@ -302,10 +302,10 @@ async function sendQuestionOrResult(
     return;
   }
 
-  // Find next unanswered question
-  const nextQuestionIndex = findNextUnansweredQuestion(user);
+  // Find next unanswered question (returns position in order array)
+  const nextPosition = findNextUnansweredQuestion(user);
 
-  if (nextQuestionIndex === null) {
+  if (nextPosition === null) {
     // Quiz finished - all questions answered
     const result = await replyResult(ctx, user);
     log.info(BOT_NAME + " > Complete", { userId, type: user.quiz, result });
@@ -335,9 +335,9 @@ async function sendQuestionOrResult(
     return; // end
   }
 
-  // nextQuestionIndex is now the position in order array (0-indexed)
-  const positionInOrder = nextQuestionIndex + 1; // 1-indexed for display
-  const questionIndex = user.order[nextQuestionIndex]; // Actual question index from order array
+  // nextPosition is the position in order array (0-indexed)
+  const positionInOrder = nextPosition + 1; // 1-indexed for display
+  const questionIndex = user.order[nextPosition]; // Actual question index from order array
 
   const keyboard = new InlineKeyboard();
   // Pre-select current answer if exists (for revisions)
@@ -349,7 +349,7 @@ async function sendQuestionOrResult(
     )
   );
 
-  const question = selectQuizQuestion(user, nextQuestionIndex);
+  const question = selectQuizQuestion(user, nextPosition);
   if (!question) throw new Error("Cannot find next question");
   const message = `${positionInOrder}/${user.order.length} \n\n${question.text}`;
   await ctx.reply(message, { reply_markup: keyboard });
