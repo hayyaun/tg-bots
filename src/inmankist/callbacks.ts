@@ -1,6 +1,14 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
+import {
+  DEFAULT_LANGUAGE,
+  getUserLanguage,
+  hasUserLanguage,
+  setUserLanguage,
+} from "../shared/i18n";
+import { setupProfileCallbacks } from "../shared/profileCallbacks";
+import { Language, QuizType } from "../shared/types";
 import { getDisplayNameFromUser } from "../utils/string";
 import {
   getQuizModeName,
@@ -8,35 +16,27 @@ import {
   MATCHFOUND_BOT_USERNAME,
   quizNeedsGender,
 } from "./config";
-import { getStrings, getStringsForUser, ANSWER_VALUES } from "./i18n";
+import { ANSWER_VALUES, getStrings, getStringsForUser } from "./i18n";
 import {
-  getUserLanguage,
-  setUserLanguage,
-  hasUserLanguage,
-  DEFAULT_LANGUAGE,
-} from "../shared/i18n";
-import {
-  replyResult,
+  displaySavedResult,
   replyDetial,
+  replyResult,
   selectOrder,
   selectQuizQuestion,
-  displaySavedResult,
 } from "./reducer";
-import { Language, QuizType } from "../shared/types";
+import {
+  showLanguageSelection,
+  showQuizModeSelection,
+  showQuizTypeSelection,
+} from "./selectionHelpers";
+import { getSession } from "./session";
 import { Gender, IUserData, QuizMode, Value } from "./types";
 import {
+  deleteUserData,
   getUserData,
   setUserData,
   updateUserData,
-  deleteUserData,
 } from "./userData";
-import { setupProfileCallbacks } from "../shared/profileCallbacks";
-import { getSession } from "./session";
-import {
-  showLanguageSelection,
-  showQuizTypeSelection,
-  showQuizModeSelection,
-} from "./selectionHelpers";
 
 const BOT_NAME = "Inmankist";
 
@@ -270,14 +270,14 @@ async function setUser(
 // Find the next unanswered question position in order array
 function findNextUnansweredQuestion(user: IUserData): number | null {
   // Check if all questions are answered
-  const allAnswered = user.order.every((questionIndex) => 
-    typeof user.answers[questionIndex] === "number"
+  const allAnswered = user.order.every(
+    (questionIndex) => typeof user.answers[questionIndex] === "number"
   );
-  
+
   if (allAnswered) {
     return null; // All questions answered
   }
-  
+
   // Find first unanswered question (return position in order array, not question index)
   for (let position = 0; position < user.order.length; position++) {
     const questionIndex = user.order[position];
@@ -285,7 +285,7 @@ function findNextUnansweredQuestion(user: IUserData): number | null {
       return position; // Return position in order array, not question index
     }
   }
-  
+
   return null;
 }
 
@@ -305,9 +305,9 @@ async function sendQuestionOrResult(
     return;
   }
 
-      // Find next unanswered question
-      const nextQuestionIndex = findNextUnansweredQuestion(user);
-  
+  // Find next unanswered question
+  const nextQuestionIndex = findNextUnansweredQuestion(user);
+
   if (nextQuestionIndex === null) {
     // Quiz finished - all questions answered
     const result = await replyResult(ctx, user);
@@ -399,9 +399,9 @@ export function setupCallbacks(
         await showLanguageSelection(ctx);
         return;
       }
-      
+
       const language = await getUserLanguage(userId);
-      
+
       ctx.answerCallbackQuery().catch(() => {});
       const welcomeId = ctx.callbackQuery?.message?.message_id;
       if (welcomeId) {
@@ -432,15 +432,16 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
-      
+
       // Validate: If quiz type was not set, show quiz type selection
       if (!user.quiz) {
         ctx.answerCallbackQuery().catch(() => {});
-        const language = user.language || (await getUserLanguage(userId)) || DEFAULT_LANGUAGE;
+        const language =
+          user.language || (await getUserLanguage(userId)) || DEFAULT_LANGUAGE;
         await showQuizTypeSelection(ctx, language);
         return;
       }
-      
+
       const language = user.language || DEFAULT_LANGUAGE;
       const strings = getStrings(language);
       ctx.answerCallbackQuery().catch(() => {});
@@ -521,7 +522,7 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
-      
+
       // Validate: If quiz mode was not set, show quiz mode selection
       if (user.mode === undefined || user.mode === null) {
         ctx.answerCallbackQuery().catch(() => {});
@@ -529,7 +530,7 @@ export function setupCallbacks(
         await showQuizModeSelection(ctx, language);
         return;
       }
-      
+
       // Defensive check: only process gender selection if quiz needs it
       if (!quizNeedsGender(user.quiz)) {
         await ctx
@@ -592,27 +593,30 @@ export function setupCallbacks(
       const questionIndex = parseInt(ctx.match[1]);
       const selectedAnswer = parseInt(ctx.match[2]);
       if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
-      
+
       // Check if this question was previously answered
-      const wasPreviouslyAnswered = typeof user.answers[questionIndex] === "number";
-      const noChange = user.answers[questionIndex] === selectedAnswer;
+      const wasPreviouslyAnswered =
+        typeof user.answers[questionIndex] === "number";
+      const changed = user.answers[questionIndex] === selectedAnswer;
 
       // Save answer first if it changed (needed before quiz completion)
-      if (!noChange) {
+      if (changed) {
         user.answers[questionIndex] = selectedAnswer;
         // Pass existing user data to avoid redundant Redis read
         user = await updateUserData(userId, { answers: user.answers }, user);
       }
 
-      if (wasPreviouslyAnswered && !noChange) {
-        // Answer was updated (changed from previous answer) - just update keyboard, don't send next question
-        const keyboard = new InlineKeyboard();
-        ANSWER_VALUES.forEach((v, i: Value) =>
-          keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${questionIndex}-${i}`)
-        );
-        // Edit the message with the new keyboard
-        ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
-      } else {
+      // Update keybaord
+      const keyboard = new InlineKeyboard();
+      ANSWER_VALUES.forEach((v, i: Value) =>
+        keyboard.text(
+          i === selectedAnswer ? "✅" : v,
+          `answer:${questionIndex}-${i}`
+        )
+      );
+      // Edit the message with the new keyboard
+      ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
+      if (!wasPreviouslyAnswered || !changed) {
         // Answer is new (first time answering) OR same answer clicked - send next unanswered question
         // Pass null since we'll find the next unanswered question inside the function
         await sendQuestionOrResult(ctx, null, user, notifyAdmin);
