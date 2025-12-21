@@ -268,21 +268,22 @@ async function setUser(
   });
 }
 
-// Find the next unanswered question index
+// Find the next unanswered question position in order array
 function findNextUnansweredQuestion(user: IUserData): number | null {
   // Check if all questions are answered
-  const allAnswered = user.order.every((index) => 
-    typeof user.answers[index] === "number"
+  const allAnswered = user.order.every((questionIndex) => 
+    typeof user.answers[questionIndex] === "number"
   );
   
   if (allAnswered) {
     return null; // All questions answered
   }
   
-  // Find first unanswered question
-  for (const index of user.order) {
-    if (typeof user.answers[index] !== "number") {
-      return index;
+  // Find first unanswered question (return position in order array, not question index)
+  for (let position = 0; position < user.order.length; position++) {
+    const questionIndex = user.order[position];
+    if (typeof user.answers[questionIndex] !== "number") {
+      return position; // Return position in order array, not question index
     }
   }
   
@@ -338,22 +339,23 @@ async function sendQuestionOrResult(
     return; // end
   }
 
-  // Find the position in order array for display (1-indexed)
-  const positionInOrder = user.order.indexOf(nextQuestionIndex) + 1;
+  // nextQuestionIndex is now the position in order array (0-indexed)
+  const positionInOrder = nextQuestionIndex + 1; // 1-indexed for display
+  const questionIndex = user.order[nextQuestionIndex]; // Actual question index from order array
 
   const keyboard = new InlineKeyboard();
   // Pre-select current answer if exists (for revisions)
-  const currentAnswer = user.answers[nextQuestionIndex];
+  const currentAnswer = user.answers[questionIndex];
   ANSWER_VALUES.forEach((v, i: Value) =>
     keyboard.text(
       typeof currentAnswer === "number" && i === currentAnswer ? "✅" : v,
-      `answer:${nextQuestionIndex}-${i}`
+      `answer:${questionIndex}-${i}`
     )
   );
 
   const question = selectQuizQuestion(user, nextQuestionIndex);
   if (!question) throw new Error("Cannot find next question");
-  const message = `${positionInOrder}/${length} \n\n${question.text}`;
+  const message = `${positionInOrder}/${user.order.length} \n\n${question.text}`;
   await ctx.reply(message, { reply_markup: keyboard });
 }
 
