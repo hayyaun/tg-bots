@@ -54,7 +54,6 @@ export interface IProfileStrings {
     playful: string;
   };
   buttons: {
-    editProfile: string;
     completionStatus: string;
     findPeople: string;
     takeQuizzes: string;
@@ -158,7 +157,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       playful: "بازیگوش",
     },
     buttons: {
-      editProfile: "📝 ویرایش پروفایل",
       completionStatus: "📊 وضعیت تکمیل پروفایل",
       findPeople: "🔍 پیدا کردن افراد",
       takeQuizzes: "🧪 انجام تست‌ها",
@@ -265,7 +263,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       playful: "Playful",
     },
     buttons: {
-      editProfile: "📝 Edit Profile",
       completionStatus: "📊 Profile Completion",
       findPeople: "🔍 Find People",
       takeQuizzes: "🧪 Take Quizzes",
@@ -374,7 +371,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       playful: "Игривый",
     },
     buttons: {
-      editProfile: "📝 Редактировать профиль",
       completionStatus: "📊 Заполненность профиля",
       findPeople: "🔍 Найти людей",
       takeQuizzes: "🧪 Пройти тесты",
@@ -481,7 +477,6 @@ const profileTranslations: { [key in Language]: IProfileStrings } = {
       playful: "لعوب",
     },
     buttons: {
-      editProfile: "📝 تعديل الملف",
       completionStatus: "📊 اكتمال الملف",
       findPeople: "🔍 ابحث عن أشخاص",
       takeQuizzes: "🧪 إجراء الاختبارات",

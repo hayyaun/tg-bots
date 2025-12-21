@@ -87,29 +87,14 @@ export const success = {
   dataDeleted: "✅ تمام اطلاعات شما با موفقیت حذف شد.",
 };
 
-// Field labels
+// Field labels (only fields used in validation and profile completion)
 export const fields = {
   username: "نام کاربری",
   displayName: "نام نمایشی",
   gender: "جنسیت",
   lookingForGender: "پیشنهاد (جنسیت مورد نظر)",
   age: "سن",
-  notSet: "ثبت نشده",
-  profileTitle: "📋 <b>پروفایل شما</b>",
-  name: "👤 نام",
-  genderLabel: "⚧️ جنسیت",
-  lookingFor: "🤝 پیشنهاد",
-  biography: "📝 بیوگرافی",
-  archetype: "🔮 کهن الگو",
-  mbti: "🧠 تست MBTI",
-  leftright: "⚖️ سبک شناختی",
-  politicalcompass: "🧭 قطب‌نمای سیاسی",
-  enneagram: "🎯 انیاگرام",
-  bigfive: "📊 پنج عامل بزرگ",
-  mood: "😊 مود",
   interests: "🎯 علایق",
-  location: "📍 استان",
-  completion: "📊 تکمیل",
 };
 
 // Profile field values

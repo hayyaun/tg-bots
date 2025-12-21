@@ -16,16 +16,11 @@ export interface IStrings {
   help_btn: string;
   language_btn: string;
   help: string;
-  got_it: string;
-  done: string;
   male: string;
   female: string;
   about: string;
   language: string;
   select_language: string;
-  quick: string;
-  normal: string;
-  complete: string;
   matchfound_message: string;
   matchfound_button: string;
   compass_left: string;
@@ -52,16 +47,11 @@ const translations: { [key in Language]: IStrings } = {
     help_btn: "❓ راهنما",
     language_btn: "🌐 زبان",
     help: ["📌 لطفا برای شروع روی دکمه «شروع آزمون» بزنید!"].join("\n"),
-    got_it: "متوجه شدم!",
-    done: "🎉 خسته نباشید!",
     male: "مرد",
     female: "زن",
     about: "درباره",
     language: "زبان",
     select_language: "لطفا زبان خود را انتخاب کنید:",
-    quick: "سریع",
-    normal: "عادی",
-    complete: "کامل",
     matchfound_message: "🎯 آیا مایلید با افرادی هم تایپ خودتون آشنا بشید؟",
     matchfound_button: "✅ بله",
     compass_left: "چپ",
@@ -86,16 +76,11 @@ const translations: { [key in Language]: IStrings } = {
     help_btn: "❓ Help",
     language_btn: "🌐 Language",
     help: ["📌 Please click the «Start Quiz» button to begin!"].join("\n"),
-    got_it: "Got it!",
-    done: "🎉 Well done!",
     male: "Male",
     female: "Female",
     about: "About",
     language: "Language",
     select_language: "Please select your language:",
-    quick: "Quick",
-    normal: "Normal",
-    complete: "Complete",
     matchfound_message: "🎯 Would you like to meet people of your type?",
     matchfound_button: "✅ Yes",
     compass_left: "Left",
@@ -122,16 +107,11 @@ const translations: { [key in Language]: IStrings } = {
     help: ["📌 Пожалуйста, нажмите кнопку «Начать тест», чтобы начать!"].join(
       "\n"
     ),
-    got_it: "Понятно!",
-    done: "🎉 Молодец!",
     male: "Мужской",
     female: "Женский",
     about: "О",
     language: "Язык",
     select_language: "Пожалуйста, выберите ваш язык:",
-    quick: "Быстрый",
-    normal: "Обычный",
-    complete: "Полный",
     matchfound_message: "🎯 Хотите ли вы познакомиться с людьми вашего типа?",
     matchfound_button: "✅ Да",
     compass_left: "Левые",
@@ -156,16 +136,11 @@ const translations: { [key in Language]: IStrings } = {
     help_btn: "❓ مساعدة",
     language_btn: "🌐 اللغة",
     help: ["📌 الرجاء الضغط على زر «ابدأ الاختبار» للبدء!"].join("\n"),
-    got_it: "فهمت!",
-    done: "🎉 أحسنت!",
     male: "ذكر",
     female: "أنثى",
     about: "حول",
     language: "اللغة",
     select_language: "الرجاء اختيار لغتك:",
-    quick: "سريع",
-    normal: "عادي",
-    complete: "كامل",
     matchfound_message: "🎯 هل تريد التعرف على أشخاص من نوعك؟",
     matchfound_button: "✅ نعم",
     compass_left: "يسار",
