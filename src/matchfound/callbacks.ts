@@ -320,16 +320,9 @@ export function setupCallbacks(
         },
       });
 
-      // Get user info for admin notification
-      const bannedUser = await prisma.user.findUnique({
-        where: { telegram_id: BigInt(bannedUserId) },
-        select: { username: true, display_name: true },
-      });
-
       // Notify admin
       notifyAdmin(
         `🚫 <b>User Banned</b>\n\n` +
-          `Banned User: ${bannedUser?.username ? `@${bannedUser.username}` : bannedUser?.display_name || bannedUserId}\n` +
           `Banned User ID: <code>${bannedUserId}</code>\n\n` +
           `Duration: ${durationText}\n` +
           `Banned by: <code>${userId}</code>`
@@ -398,22 +391,10 @@ export function setupCallbacks(
           },
         });
 
-        // Get user info for admin notification
-        const reporter = await prisma.user.findUnique({
-          where: { telegram_id: BigInt(userId) },
-          select: { username: true, display_name: true },
-        });
-        const reported = await prisma.user.findUnique({
-          where: { telegram_id: BigInt(reportedUserId) },
-          select: { username: true, display_name: true },
-        });
-
         // Notify admin immediately
         notifyAdmin(
           `🚨 <b>New Report</b>\n\n` +
-            `Reporter: ${reporter?.username ? `@${reporter.username}` : reporter?.display_name || userId}\n` +
             `Reporter ID: <code>${userId}</code>\n\n` +
-            `Reported: ${reported?.username ? `@${reported.username}` : reported?.display_name || reportedUserId}\n` +
             `Reported ID: <code>${reportedUserId}</code>\n\n` +
             `Reason: ${reason}`
         );

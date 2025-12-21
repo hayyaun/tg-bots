@@ -99,7 +99,7 @@ export function setupCommands(
 
     // Notify admin about new user
     notifyAdmin(
-      `👤 <b>New Start</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nLanguage: ${language}`
+      `👤 <b>New Start</b>\nUser ID: <code>${userId}</code>\nLanguage: ${language}`
     );
 
     // Check if user has selected language before (first time users)

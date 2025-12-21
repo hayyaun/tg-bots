@@ -257,7 +257,7 @@ async function setUser(
 
   // Notify admin about quiz start
   notifyAdmin(
-    `🎯 <b>Quiz Started</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
+    `🎯 <b>Quiz Started</b>\nUser ID: <code>${userId}</code>\nType: ${type}\nLanguage: ${language}`
   );
 
   await setUserData(userId, {
@@ -299,19 +299,9 @@ async function sendQuestionOrResult(
     await saveQuizResultToDB(userId, user.quiz, result, ctx.from);
 
     // Notify admin about quiz completion
-    // Format result for display (stringify objects/arrays)
-    let resultDisplay: string;
-    if (typeof result === "object" && result !== null) {
-      resultDisplay = JSON.stringify(result);
-    } else if (Array.isArray(result)) {
-      resultDisplay = JSON.stringify(result);
-    } else {
-      resultDisplay = String(result);
-    }
-
     if (notifyAdmin) {
       notifyAdmin(
-        `✅ <b>Quiz Completed</b>\nUser: ${getUserName(ctx)}\nID: <code>${userId}</code>\nType: ${user.quiz}\nResult: ${resultDisplay}`
+        `✅ <b>Quiz Completed</b>\nUser ID: <code>${userId}</code>\nType: ${user.quiz}`
       );
     }
 

@@ -42,9 +42,9 @@ export function setupCommands(
       await ensureUserExists(
         userId,
         username,
-        async (uid, uname) => {
+        async (uid) => {
           await notifyAdmin(
-            `👤 <b>New User Registration</b>\nUser: ${uname ? `@${uname}` : `ID: ${uid}`}\nID: <code>${uid}</code>`
+            `👤 <b>New User Registration</b>\nUser ID: <code>${uid}</code>`
           );
         },
         firstName,
