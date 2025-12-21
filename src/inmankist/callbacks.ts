@@ -303,9 +303,7 @@ async function sendQuestionOrResult(
 
   // Find next unanswered question (returns position in order array)
   const nextPosition = findNextUnansweredQuestionPosition(user);
-
   console.timeLog("DEBUG:ANSWER", "findNextUnansweredQuestionPosition");
-
 
   if (nextPosition === null) {
     // Quiz finished - all questions answered
@@ -586,7 +584,6 @@ export function setupCallbacks(
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-
     console.time("DEBUG:ANSWER");
 
     const userId = ctx.from?.id;
@@ -600,7 +597,6 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
-
       console.timeLog("DEBUG:ANSWER", "userData");
 
       // Save/Update Answer
@@ -625,7 +621,6 @@ export function setupCallbacks(
       user.answers[questionIndex] = selectedAnswer;
       // Pass existing user data to avoid redundant Redis read
       user = await updateUserData(userId, { answers: user.answers }, user);
-
       console.timeLog("DEBUG:ANSWER", "updateUserData");
 
       // Update keyboard
@@ -638,6 +633,7 @@ export function setupCallbacks(
       );
       // Edit the message with the new keyboard
       ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
+      console.timeLog("DEBUG:ANSWER", "editMessage");
 
       // Only send next question if this was a NEW answer (first time answering)
       // If user is updating an existing answer, don't send next question (it's already been sent)
