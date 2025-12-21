@@ -584,8 +584,12 @@ export function setupCallbacks(
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
     
+    const userId = ctx.from?.id;
     try {
-      const userId = ctx.from.id;
+      if (!userId) {
+        throw new Error("UserId Invalid!");
+      }
+
       let user = await getUserData(userId);
       if (!user) {
         await handleExpiredSession(ctx);
@@ -595,7 +599,14 @@ export function setupCallbacks(
       // Save/Update Answer
       const questionIndex = parseInt(ctx.match[1]);
       const selectedAnswer = parseInt(ctx.match[2]);
-      if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
+      
+      if (isNaN(questionIndex) || isNaN(selectedAnswer)) {
+        throw new Error(`Invalid answer parameters: questionIndex=${ctx.match[1]}, selectedAnswer=${ctx.match[2]}`);
+      }
+      
+      if (selectedAnswer < 0) {
+        throw new Error(`Not Valid Answer! selectedAnswer=${selectedAnswer}`);
+      }
 
       // Check if this question was previously answered
       const wasPreviouslyAnswered =
@@ -624,10 +635,17 @@ export function setupCallbacks(
         await sendQuestionOrResult(ctx, user, notifyAdmin);
       }
     } catch (err) {
-      log.error(BOT_NAME + " > Answer", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : undefined;
+      log.error(BOT_NAME + " > Answer", {
+        error: errorMessage,
+        stack: errorStack,
+        userId,
+        match: ctx.match,
+      });
       notifyAdmin(
-        `❌ <b>Error in Answer</b>\nUser: <code>${ctx.from?.id}</code>\nError: ${err}`
-      );
+        `❌ <b>Error in Answer</b>\nUser ID: <code>${userId || "unknown"}</code>\nError: ${errorMessage}`
+      ).catch(() => {});
     }
   });
 
