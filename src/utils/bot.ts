@@ -1,4 +1,5 @@
 import { Bot, Context } from "grammy";
+import { run } from "@grammyjs/runner";
 import log from "../log";
 import { updateLastOnline } from "../shared/database";
 
@@ -64,12 +65,19 @@ export function setupLastOnlineMiddleware(bot: Bot): void {
 }
 
 /**
- * Initializes and starts a bot with standard setup
+ * Initializes and starts a bot with standard setup using grammY runner for concurrent processing
  * @param bot - The bot instance
  * @returns Promise that resolves when bot is initialized
  */
 export async function initializeBot(bot: Bot): Promise<void> {
-  bot.start();
   await bot.init();
+  // Use runner for concurrent update processing (better performance)
+  run(bot, {
+    runner: {
+      fetch: {
+        allowed_updates: ["message", "callback_query"],
+      },
+    },
+  });
 }
 
