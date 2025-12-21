@@ -1,7 +1,7 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { prisma } from "../db";
 import log from "../log";
-import { getDisplayNameFromUser, getUserName } from "../utils/string";
+import { getDisplayNameFromUser } from "../utils/string";
 import {
   getQuizModeName,
   getQuizTypeName,

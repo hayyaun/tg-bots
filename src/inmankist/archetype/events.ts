@@ -2,7 +2,6 @@ import { Bot, Context, InlineKeyboard, InputFile } from "grammy";
 import _ from "lodash";
 import { getQuestion } from ".";
 import { toPercentage } from "../../utils/string";
-import { quizModes } from "../config";
 import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";

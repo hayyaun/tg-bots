@@ -1,9 +1,7 @@
-import { Bot, Context, InlineKeyboard } from "grammy";
+import { Bot, Context } from "grammy";
 import { getQuestion } from ".";
-import { getStringsForUser } from "../i18n";
 import { getUserLanguage } from "../../shared/i18n";
 import { Language } from "../../shared/types";
-import { QuizType } from "../../shared/types";
 import { IUserData } from "../types";
 import { aspectToTrait, BigFiveAspect, BigFiveTrait, BigFiveResult } from "./types";
 

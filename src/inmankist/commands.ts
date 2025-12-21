@@ -1,10 +1,7 @@
 import { Bot, InlineKeyboard } from "grammy";
 import log from "../log";
-import { getUserName } from "../utils/string";
+import { getStringsForUser } from "./i18n";
 import { getQuizTypeName, quizTypes } from "./config";
-import {
-  getStringsForUser,
-} from "./i18n";
 import {
   getUserLanguage,
   hasUserLanguage,
