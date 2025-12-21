@@ -47,16 +47,12 @@ function formatLastOnline(lastOnline: Date | null): string {
 }
 
 // Helper function to calculate compatibility score between two users
-function calculateCompatibilityScore(
-  currentUser: UserProfile,
-  otherUser: MatchUser
-): number {
+function calculateCompatibilityScore(currentUser: UserProfile, otherUser: MatchUser): number {
   const currentUserAge = currentUser.age || 0;
   const otherUserAge = otherUser.age || 0;
 
   // Calculate match information (archetype, MBTI, mutual interests)
-  const { archetypeMatch, mbtiMatch, mutualInterestsCount } =
-    calculateMatchInfo(currentUser, otherUser);
+  const { archetypeMatch, mbtiMatch, mutualInterestsCount } = calculateMatchInfo(currentUser, otherUser);
 
   // Use shared compatibility score calculation
   const compatibilityScore = calculateCompatibilityScoreCore(
@@ -65,7 +61,7 @@ function calculateCompatibilityScore(
     mutualInterestsCount,
     currentUserAge || 0,
     otherUserAge,
-    otherUser.completion_score
+    otherUser.completion_score,
   );
 
   // Round and cap at MAX_COMPATIBILITY_SCORE
@@ -73,9 +69,7 @@ function calculateCompatibilityScore(
 }
 
 // Helper to build ban status text
-async function buildBanStatusText(
-  userTelegramId: number | null
-): Promise<string> {
+async function buildBanStatusText(userTelegramId: number | null): Promise<string> {
   if (!userTelegramId) return "";
 
   const banStatus = await isUserBanned(userTelegramId);
@@ -97,36 +91,24 @@ async function buildBanStatusText(
 async function buildInterestsSection(
   user: MatchUser,
   userInterests: string[] | undefined,
-  viewerId: number | undefined
+  viewerId: number | undefined,
 ): Promise<string> {
   if (!user.interests?.length) return "";
 
-  const [interestNamesMap] = await Promise.all([
-    getInterestNames(viewerId, BOT_NAME),
-  ]);
+  const [interestNamesMap] = await Promise.all([getInterestNames(viewerId, BOT_NAME)]);
 
   const interestNames = user.interests
-    .map(
-      (interest) =>
-        interestNamesMap[interest as keyof typeof interestNamesMap] || interest
-    )
+    .map((interest) => interestNamesMap[interest as keyof typeof interestNamesMap] || interest)
     .join(", ");
 
-  const mutualCount = calculateMutualInterestsCount(
-    userInterests,
-    user.interests
-  );
-  const mutualInterestsText =
-    mutualCount > 0 ? display.mutualInterests(mutualCount) : "";
+  const mutualCount = calculateMutualInterestsCount(userInterests, user.interests);
+  const mutualInterestsText = mutualCount > 0 ? display.mutualInterests(mutualCount) : "";
 
   return `\n${display.interestsLabel} ${interestNames}${mutualInterestsText}`;
 }
 
 // Helper to build admin info section
-async function buildAdminInfoSection(
-  user: MatchUser,
-  isAdmin: boolean
-): Promise<string> {
+async function buildAdminInfoSection(user: MatchUser, isAdmin: boolean): Promise<string> {
   if (!isAdmin) return "";
 
   let section = `\n\n${display.adminUsername} ${user.username ? `@${user.username}` : display.usernameNotSet}`;
@@ -146,7 +128,7 @@ export async function displayUser(
   user: MatchUser,
   mode: DisplayMode = "match",
   session?: SessionData,
-  currentUserProfile?: UserProfile
+  currentUserProfile?: UserProfile,
 ) {
   // Check if viewing user is admin
   const isAdmin = isAdminContext(ctx);
@@ -155,31 +137,23 @@ export async function displayUser(
   // Calculate compatibility score
   const compatibilityScore =
     user.compatibility_score ??
-    (currentUserProfile
-      ? calculateCompatibilityScore(currentUserProfile, user)
-      : undefined);
+    (currentUserProfile ? calculateCompatibilityScore(currentUserProfile, user) : undefined);
 
   // Derive user interests from currentUserProfile
   const userInterests = currentUserProfile?.interests ?? undefined;
 
   // Build message sections in parallel where possible
-  const [quizResultsSection, interestsSection, adminInfoSection] =
-    await Promise.all([
-      buildQuizResultsSection(user, BOT_NAME, ctx.from?.id, false),
-      buildInterestsSection(user, userInterests, ctx.from?.id),
-      isAdmin ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
-    ]);
+  const [quizResultsSection, interestsSection, adminInfoSection] = await Promise.all([
+    buildQuizResultsSection(user, BOT_NAME, ctx.from?.id, false),
+    buildInterestsSection(user, userInterests, ctx.from?.id),
+    isAdmin ? buildAdminInfoSection(user, isAdmin) : Promise.resolve(""),
+  ]);
 
   // Build main message
-  const ageText = user.age
-    ? `${user.age} ${profileValues.year}`
-    : display.unknownAge;
+  const ageText = user.age ? `${user.age} ${profileValues.year}` : display.unknownAge;
   const nameText = user.display_name || display.noName;
   const bioText = user.biography || display.noBio;
-  const compatibilityText =
-    compatibilityScore !== undefined
-      ? display.compatibility(compatibilityScore)
-      : "";
+  const compatibilityText = compatibilityScore !== undefined ? display.compatibility(compatibilityScore) : "";
 
   let message = `${display.namePrefix} ${nameText}\n`;
   message += `${display.agePrefix} ${ageText}${compatibilityText}\n\n`;
@@ -200,47 +174,30 @@ export async function displayUser(
   if (!showUsername) {
     keyboard.text(buttons.like, callbackQueries.like(user.telegram_id || 0));
     if (mode === "liked") {
-      keyboard.text(
-        buttons.delete,
-        callbackQueries.deleteLiked(user.telegram_id || 0)
-      );
+      keyboard.text(buttons.delete, callbackQueries.deleteLiked(user.telegram_id || 0));
       if (user.username) {
         keyboard.url(buttons.chat, `https://t.me/${user.username}`);
       }
     } else {
       // match or admin mode
-      keyboard.text(
-        buttons.dislike,
-        callbackQueries.dislike(user.telegram_id || 0)
-      );
+      keyboard.text(buttons.dislike, callbackQueries.dislike(user.telegram_id || 0));
     }
     keyboard.row();
   }
 
   // Add "Next" button if there are more matches
-  if (
-    mode === "match" &&
-    session &&
-    session.matchIds &&
-    session.currentMatchIndex !== undefined
-  ) {
+  if (mode === "match" && session && session.matchIds && session.currentMatchIndex !== undefined) {
     const currentIndex = session.currentMatchIndex;
     const totalMatches = session.matchIds.length;
     if (currentIndex < totalMatches - 1) {
-      keyboard.text(
-        buttons.next,
-        callbackQueries.nextMatch(user.telegram_id || 0)
-      );
+      keyboard.text(buttons.next, callbackQueries.nextMatch(user.telegram_id || 0));
       keyboard.row();
     }
   }
 
   // Only show report button if not admin
   if (!isAdmin) {
-    keyboard.text(
-      buttons.report,
-      callbackQueries.report(user.telegram_id || 0)
-    );
+    keyboard.text(buttons.report, callbackQueries.report(user.telegram_id || 0));
   }
 
   // Add ban button if admin
@@ -273,11 +230,7 @@ export async function displayUser(
   }
 }
 
-export async function displayUsersToAdmin(
-  ctx: Context,
-  page: number = 0,
-  usersPerPage: number = 10
-) {
+export async function displayUsersToAdmin(ctx: Context, page: number = 0, usersPerPage: number = 10) {
   const skip = page * usersPerPage;
 
   const [users, totalCount] = await Promise.all([
@@ -319,9 +272,7 @@ export async function displayUsersToAdmin(
     const displayName = user.display_name || "N/A";
     const completionScore = user.completion_score || 0;
     const createdAt = user.created_at.toLocaleDateString("en-US");
-    const lastOnline = user.last_online
-      ? user.last_online.toLocaleDateString("en-US")
-      : "Never";
+    const lastOnline = user.last_online ? user.last_online.toLocaleDateString("en-US") : "Never";
     const gender = user.gender || "N/A";
     const lookingFor = user.looking_for_gender || "N/A";
 
@@ -330,7 +281,7 @@ export async function displayUsersToAdmin(
     message += `   Name: ${displayName}\n`;
     message += `   Completion: ${completionScore}%\n`;
     message += `   Gender: ${gender} | Looking for: ${lookingFor}\n`;
-    
+
     // Show exam results if available
     const examResults = [];
     if (user.archetype_result) examResults.push(`Archetype: ${user.archetype_result}`);
@@ -338,12 +289,12 @@ export async function displayUsersToAdmin(
     if (user.enneagram_result) examResults.push(`Enneagram: ${user.enneagram_result}`);
     if (user.leftright_result) examResults.push(`LeftRight: ${user.leftright_result}`);
     if (user.politicalcompass_result) examResults.push(`PolCompass: ${user.politicalcompass_result}`);
-    if (user.bigfive_result) examResults.push(`BigFive: ${user.bigfive_result}`);
-    
+    if (user.bigfive_result) examResults.push(`BigFive: ${user.bigfive_result.slice(12)}`);
+
     if (examResults.length > 0) {
       message += `   Exams: ${examResults.join(" | ")}\n`;
     }
-    
+
     message += `   Created: ${createdAt} | Last online: ${lastOnline}\n\n`;
   });
 
