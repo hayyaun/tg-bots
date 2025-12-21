@@ -303,7 +303,6 @@ async function sendQuestionOrResult(
 
   // Find next unanswered question (returns position in order array)
   const nextPosition = findNextUnansweredQuestionPosition(user);
-  console.timeLog("DEBUG:ANSWER", "findNextUnansweredQuestionPosition");
 
   if (nextPosition === null) {
     // Quiz finished - all questions answered
@@ -350,7 +349,6 @@ async function sendQuestionOrResult(
   );
 
   const question = selectQuizQuestion(user, questionIndex);
-  console.timeLog("DEBUG:ANSWER", "selectQuizQuestion");
   if (!question) throw new Error("Cannot find next question");
   const message = `${positionInOrder}/${user.order.length} \n\n${question.text}`;
   await ctx.reply(message, { reply_markup: keyboard });
@@ -584,7 +582,6 @@ export function setupCallbacks(
   bot.callbackQuery(/answer:(\d+)-(\d+)/, async (ctx) => {
     // Answer callback query immediately to stop loading animation
     ctx.answerCallbackQuery().catch(() => {});
-    console.time("DEBUG:ANSWER");
 
     const userId = ctx.from?.id;
     try {
@@ -597,7 +594,6 @@ export function setupCallbacks(
         await handleExpiredSession(ctx);
         return;
       }
-      console.timeLog("DEBUG:ANSWER", "userData");
 
       // Save/Update Answer
       const questionIndex = parseInt(ctx.match[1]);
@@ -621,7 +617,6 @@ export function setupCallbacks(
       user.answers[questionIndex] = selectedAnswer;
       // Pass existing user data to avoid redundant Redis read
       user = await updateUserData(userId, { answers: user.answers }, user);
-      console.timeLog("DEBUG:ANSWER", "updateUserData");
 
       // Update keyboard
       const keyboard = new InlineKeyboard();
@@ -632,18 +627,16 @@ export function setupCallbacks(
         )
       );
       // Edit the message with the new keyboard
-      await ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
-      console.timeLog("DEBUG:ANSWER", "editMessage");
+      await ctx
+        .editMessageReplyMarkup({ reply_markup: keyboard })
+        .catch(() => {});
 
       // Only send next question if this was a NEW answer (first time answering)
       // If user is updating an existing answer, don't send next question (it's already been sent)
       if (!wasPreviouslyAnswered) {
         // Answer is new (first time answering) - send next unanswered question
         await sendQuestionOrResult(ctx, user, notifyAdmin);
-        console.timeLog("DEBUG:ANSWER", "sendQuestionOrResult");
       }
-
-      console.timeEnd("DEBUG:ANSWER");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const errorStack = err instanceof Error ? err.stack : undefined;
