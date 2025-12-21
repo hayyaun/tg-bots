@@ -632,7 +632,7 @@ export function setupCallbacks(
         )
       );
       // Edit the message with the new keyboard
-      ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
+      await ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
       console.timeLog("DEBUG:ANSWER", "editMessage");
 
       // Only send next question if this was a NEW answer (first time answering)
