@@ -355,7 +355,11 @@ async function sendQuestionOrResult(
   console.timeLog("DEBUG:ANSWER", "selectQuizQuestion");
   if (!question) throw new Error("Cannot find next question");
   const message = `${positionInOrder}/${user.order.length} \n\n${question.text}`;
-  await ctx.reply(message, { reply_markup: keyboard });
+  
+  // Use ctx.api.sendMessage directly instead of ctx.reply() for better performance in callback handlers
+  const chatId = ctx.chat?.id;
+  if (!chatId) throw new Error("Chat ID not found");
+  await ctx.api.sendMessage(chatId, message, { reply_markup: keyboard });
 }
 
 export function setupCallbacks(
