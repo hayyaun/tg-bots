@@ -30,14 +30,14 @@ const startBot = async (botKey: string, agent: unknown) => {
   await bot.api.setMyCommands(commands);
 
   bot.command("start", (ctx) => {
-    ctx.react("❤‍🔥");
+    ctx.react("❤‍🔥").catch(() => {});
     if (typeof ctx.from !== "object") return;
     log.info("IVWhat > Start", { ...ctx.from });
     ctx.reply("Hi give me a link:");
   });
 
   bot.command("help", (ctx) => {
-    ctx.react("⚡");
+    ctx.react("⚡").catch(() => {});
     const domains = options.map((o) => o.domain).join("\n");
     ctx.reply(`Supported domains: \n\n${domains}`);
   });

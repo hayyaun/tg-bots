@@ -73,7 +73,7 @@ export function setupCallbacks(
       });
 
       // Invalidate match cache for both users (matches change when likes are added)
-      await invalidateMatchCacheForUsers([userIdBigInt, likedUserIdBigInt]);
+      invalidateMatchCacheForUsers([userIdBigInt, likedUserIdBigInt]).catch(() => {});
 
       // Check for mutual like
       const mutualLike = await prisma.like.findUnique({
@@ -188,7 +188,7 @@ export function setupCallbacks(
       });
 
       // Invalidate match cache for both users (matches change when ignores are added)
-      await invalidateMatchCacheForUsers([userIdBigInt, likedUserIdBigInt]);
+      invalidateMatchCacheForUsers([userIdBigInt, likedUserIdBigInt]).catch(() => {});
 
       await ctx.answerCallbackQuery(callbacks.deleted);
       await showNextUser(ctx, userId, "liked");

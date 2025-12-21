@@ -138,7 +138,7 @@ const startBot = async (botKey: string, agent: unknown) => {
 
   // Command: /start
   bot.command("start", async (ctx) => {
-    ctx.react("🎉");
+    ctx.react("🎉").catch(() => {});
     const welcomeText = [
       "👋 Welcome to Converslation Bot!",
       "",

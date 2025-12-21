@@ -66,8 +66,8 @@ router.post("/:userId", async (req: AuthRequest, res) => {
     });
 
     // Invalidate exclusion cache and match cache for both users (affects their match queries)
-    await invalidateExclusionCacheForUsers([req.userId, likedUserId]);
-    await invalidateMatchCacheForUsers([req.userId, likedUserId]);
+    invalidateExclusionCacheForUsers([req.userId, likedUserId]).catch(() => {});
+    invalidateMatchCacheForUsers([req.userId, likedUserId]).catch(() => {});
 
     // Check for mutual like (match)
     const mutualLike = await prisma.like.findUnique({
@@ -129,8 +129,8 @@ router.delete("/:userId", async (req: AuthRequest, res) => {
     });
 
     // Invalidate exclusion cache and match cache for both users (affects their match queries)
-    await invalidateExclusionCacheForUsers([req.userId, dislikedUserId]);
-    await invalidateMatchCacheForUsers([req.userId, dislikedUserId]);
+    invalidateExclusionCacheForUsers([req.userId, dislikedUserId]).catch(() => {});
+    invalidateMatchCacheForUsers([req.userId, dislikedUserId]).catch(() => {});
 
     res.json({ message: "User disliked successfully" });
   } catch (error) {

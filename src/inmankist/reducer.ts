@@ -78,22 +78,22 @@ export function selectQuizQuestion<T>(
 export async function replyAbout(ctx: Context, type: QuizType) {
   switch (type) {
     case QuizType.Archetype:
-      ctx.react("⚡");
+      ctx.react("⚡").catch(() => {});
       return archetype.replyAbout(ctx);
     case QuizType.MBTI:
-      ctx.react("🤔");
+      ctx.react("🤔").catch(() => {});
       return mbti.replyAbout(ctx);
     case QuizType.LeftRight:
-      ctx.react("🤩");
+      ctx.react("🤩").catch(() => {});
       return leftright.replyAbout(ctx);
     case QuizType.PoliticalCompass:
-      ctx.react("🤯");
+      ctx.react("🤯").catch(() => {});
       return politicalcompass.replyAbout(ctx);
     case QuizType.Enneagram:
-      ctx.react("🎉");
+      ctx.react("🎉").catch(() => {});
       return enneagram.replyAbout(ctx);
     case QuizType.BigFive:
-      ctx.react("🔥");
+      ctx.react("🔥").catch(() => {});
       return bigfive.replyAbout(ctx);
   }
 }

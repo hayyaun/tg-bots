@@ -254,7 +254,7 @@ export async function findMatches(
   const finalMatches = matches.slice(0, MAX_MATCHES_TO_RETURN);
 
   // Cache results
-  await cacheMatches(userIdBigInt, finalMatches);
+  cacheMatches(userIdBigInt, finalMatches).catch(() => {});
 
   return finalMatches;
 }
