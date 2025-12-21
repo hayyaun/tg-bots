@@ -594,16 +594,13 @@ export function setupCallbacks(
       // Check if this question was previously answered
       const wasPreviouslyAnswered =
         typeof user.answers[questionIndex] === "number";
-      const changed = user.answers[questionIndex] === selectedAnswer;
 
-      // Save answer first if it changed (needed before quiz completion)
-      if (changed) {
-        user.answers[questionIndex] = selectedAnswer;
-        // Pass existing user data to avoid redundant Redis read
-        user = await updateUserData(userId, { answers: user.answers }, user);
-      }
+      // Save answer first (always save - needed for quiz completion check)
+      user.answers[questionIndex] = selectedAnswer;
+      // Pass existing user data to avoid redundant Redis read
+      user = await updateUserData(userId, { answers: user.answers }, user);
 
-      // Update keybaord
+      // Update keyboard
       const keyboard = new InlineKeyboard();
       ANSWER_VALUES.forEach((v, i: Value) =>
         keyboard.text(
@@ -613,9 +610,11 @@ export function setupCallbacks(
       );
       // Edit the message with the new keyboard
       ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
-      if (!wasPreviouslyAnswered || !changed) {
-        // Answer is new (first time answering) OR same answer clicked - send next unanswered question
-        // Pass null since we'll find the next unanswered question inside the function
+
+      // Only send next question if this was a NEW answer (first time answering)
+      // If user is updating an existing answer, don't send next question (it's already been sent)
+      if (!wasPreviouslyAnswered) {
+        // Answer is new (first time answering) - send next unanswered question
         await sendQuestionOrResult(ctx, user, notifyAdmin);
       }
     } catch (err) {
