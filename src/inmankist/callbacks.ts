@@ -592,6 +592,9 @@ export function setupCallbacks(
       const questionIndex = parseInt(ctx.match[1]);
       const selectedAnswer = parseInt(ctx.match[2]);
       if (selectedAnswer < 0) throw new Error("Not Valid Answer!");
+      
+      // Check if this question was previously answered
+      const wasPreviouslyAnswered = typeof user.answers[questionIndex] === "number";
       const noChange = user.answers[questionIndex] === selectedAnswer;
 
       // Save answer first if it changed (needed before quiz completion)
@@ -601,19 +604,19 @@ export function setupCallbacks(
         user = await updateUserData(userId, { answers: user.answers }, user);
       }
 
-      // Update keyboard for current question if answer changed
-      if (!noChange) {
+      if (wasPreviouslyAnswered && !noChange) {
+        // Answer was updated (changed from previous answer) - just update keyboard, don't send next question
         const keyboard = new InlineKeyboard();
         ANSWER_VALUES.forEach((v, i: Value) =>
           keyboard.text(i === selectedAnswer ? "✅" : v, `answer:${questionIndex}-${i}`)
         );
         // Edit the message with the new keyboard
         ctx.editMessageReplyMarkup({ reply_markup: keyboard }).catch(() => {});
+      } else {
+        // Answer is new (first time answering) OR same answer clicked - send next unanswered question
+        // Pass null since we'll find the next unanswered question inside the function
+        await sendQuestionOrResult(ctx, null, user, notifyAdmin);
       }
-
-      // Go to next unanswered question (or complete quiz if all answered)
-      // Pass null since we'll find the next unanswered question inside the function
-      await sendQuestionOrResult(ctx, null, user, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Answer", err);
       notifyAdmin(
