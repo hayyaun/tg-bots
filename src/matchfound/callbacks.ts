@@ -435,7 +435,7 @@ export function setupCallbacks(
     try {
       // Note: Rate limiting is skipped for button clicks to improve UX
       // Users can still use /find command which has rate limiting
-      await handleFind(ctx, userId, false);
+      await handleFind(ctx, userId, false, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Find callback failed", err);
       await ctx.reply(errors.findFailed);
@@ -467,13 +467,13 @@ export function setupCallbacks(
       await ctx.editMessageText(success.dataDeleted);
 
       // Notify admin
-      await notifyAdmin(
+      notifyAdmin(
         `🗑️ <b>User Data Deleted</b>\nUser: <code>${userId}</code>\nAll data has been permanently deleted.`
       );
     } catch (err) {
       log.error(BOT_NAME + " > Delete user data failed", err);
       await ctx.editMessageText(errors.deleteFailed);
-      await notifyAdmin(
+      notifyAdmin(
         `❌ <b>Delete User Data Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
     }
@@ -514,7 +514,7 @@ export function setupCallbacks(
     } catch (err) {
       log.error(BOT_NAME + " > Settings wipe_data callback failed", err);
       await ctx.editMessageText(errors.commandFailed);
-      await notifyAdmin(
+      notifyAdmin(
         `❌ <b>Settings Wipe Data Callback Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
     }

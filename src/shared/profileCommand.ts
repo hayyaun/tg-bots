@@ -35,7 +35,7 @@ export async function handleDisplayProfile(
     const strings = await getSharedStrings(userId, botName);
     await ctx.reply(strings.profileError);
     if (notifyAdmin) {
-      await notifyAdmin(
+      notifyAdmin(
         `❌ <b>Display Profile Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
       );
     }

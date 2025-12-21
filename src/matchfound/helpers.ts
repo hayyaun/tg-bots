@@ -309,14 +309,15 @@ export async function validateProfileForFind(
 export async function handleFind(
   ctx: Context,
   userId: number,
-  checkRateLimit: boolean = true
+  checkRateLimit: boolean = true,
+  notifyAdmin?: (message: string) => Promise<void>
 ): Promise<void> {
   const profile = await getUserProfile(userId);
   if (!(await validateProfileForFind(profile, ctx, userId))) {
     return;
   }
 
-  await executeFindAndDisplay(ctx, userId, profile!, checkRateLimit);
+  await executeFindAndDisplay(ctx, userId, profile!, checkRateLimit, notifyAdmin);
 }
 
 // Execute find matches and display first result (shared logic)
@@ -324,7 +325,8 @@ export async function executeFindAndDisplay(
   ctx: Context,
   userId: number,
   profile: UserProfile,
-  checkRateLimit: boolean = true
+  checkRateLimit: boolean = true,
+  notifyAdmin?: (message: string) => Promise<void>
 ): Promise<void> {
   // Rate limiting (once per hour) - only for /find command, not button clicks
   // Skip rate limiting for admin users
@@ -366,6 +368,13 @@ export async function executeFindAndDisplay(
 
   // Show match count
   await ctx.reply(success.matchesFound(matches.length));
+
+  // Notify admin about /find command (privacy-respecting: only user ID and match count)
+  if (notifyAdmin) {
+    notifyAdmin(
+      `🔍 <b>User Searched for Matches</b>\nUser ID: <code>${userId}</code>\nMatches Found: ${matches.length}`
+    );
+  }
 
   // Show first match (with username if admin)
   const firstMatch = matches[0];

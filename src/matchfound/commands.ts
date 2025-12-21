@@ -43,7 +43,7 @@ export function setupCommands(
         userId,
         username,
         async (uid) => {
-          await notifyAdmin(
+          notifyAdmin(
             `👤 <b>New User Registration</b>\nUser ID: <code>${uid}</code>`
           );
         },
@@ -56,6 +56,11 @@ export function setupCommands(
         await ctx.reply(errors.getProfileFailed);
         return;
       }
+
+      // Notify admin about /start command usage (privacy-respecting: only user ID)
+      notifyAdmin(
+        `🔄 <b>User Started Bot</b>\nUser ID: <code>${userId}</code>`
+      );
 
       // Always show welcome message first
       const completionScore = profile.completion_score || 0;
@@ -91,7 +96,7 @@ export function setupCommands(
     if (!userId) return;
 
     try {
-      await handleFind(ctx, userId, true);
+      await handleFind(ctx, userId, true, notifyAdmin);
     } catch (err) {
       log.error(BOT_NAME + " > Find command failed", err);
       await ctx.reply(errors.findFailed);

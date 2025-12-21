@@ -727,7 +727,7 @@ export function setupProfileCallbacks(
         await ctx.reply(errors.updateFailed);
         delete session.editingField;
         if (notifyAdmin) {
-          await notifyAdmin(
+          notifyAdmin(
             `❌ <b>Profile Edit Failed</b>\nUser: <code>${userId}</code>\nField: ${editingField}\nError: ${err}`
           );
         }
@@ -760,7 +760,7 @@ export function setupProfileCallbacks(
           log.error(botName + " > Add image failed", err);
           await ctx.reply(errors.addImageFailed);
           if (notifyAdmin) {
-            await notifyAdmin(
+            notifyAdmin(
               `❌ <b>Add Profile Image Failed</b>\nUser: <code>${userId}</code>\nError: ${err}`
             );
           }
