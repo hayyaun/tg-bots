@@ -38,6 +38,12 @@ export const quizTypes: { [k: string]: { [key in Language]: string } } = {
     [Language.Russian]: "Шкала Большой Пятерки",
     [Language.Arabic]: "مقياس العوامل الخمسة الكبرى",
   },
+  [QuizType.MentalAge]: {
+    [Language.Persian]: "آزمون سن ذهنی",
+    [Language.English]: "Mental Age Test",
+    [Language.Russian]: "Тест на умственный возраст",
+    [Language.Arabic]: "اختبار العمر العقلي",
+  },
 };
 
 const SAMPLE_SIZE_SM = process.env.DEV ? 1 : 5;

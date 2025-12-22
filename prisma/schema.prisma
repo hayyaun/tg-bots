@@ -33,6 +33,7 @@ model User {
   politicalcompass_result String? @db.VarChar(20)
   enneagram_result   String?   @db.VarChar(10)
   bigfive_result     String?   @db.Text
+  mentalage_result   String?   @db.VarChar(10)
   profile_image      String?
   mood               String?   @db.VarChar(10)
   interests          String[]  @default([]) // Note: GIN index exists via migration (see 20251217135532_add_matching_indexes)

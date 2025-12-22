@@ -109,6 +109,11 @@ export async function buildQuizResultsSection(
       sections.push(`${emoji} ${strings.bigfive}: ${formatted}`);
     }
   }
+  const mentalageResult = getQuizResult(profile, QuizType.MentalAge);
+  if (mentalageResult) {
+    const emoji = getQuizTypeEmoji(QuizType.MentalAge);
+    sections.push(`${emoji} ${strings.mentalage}: ${mentalageResult} ${strings.year}`);
+  }
 
   return sections.join("\n");
 }

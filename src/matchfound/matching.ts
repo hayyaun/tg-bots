@@ -76,6 +76,7 @@ export async function findMatches(
     politicalcompass_result: string | null;
     enneagram_result: string | null;
     bigfive_result: string | null;
+    mentalage_result: string | null;
     profile_image: string | null;
     mood: string | null;
     interests: string[];

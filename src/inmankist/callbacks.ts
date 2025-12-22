@@ -111,6 +111,13 @@ function extractQuizResult(
       }
       return null;
 
+    case QuizType.MentalAge:
+      if (typeof result === "object" && result !== null && "age" in result) {
+        // result is object with age number - store as string
+        return String((result as { age: number }).age);
+      }
+      return null;
+
     default:
       return null;
   }
@@ -124,6 +131,7 @@ const QUIZ_FIELD_MAP: Record<QuizType, string> = {
   [QuizType.PoliticalCompass]: "politicalcompass_result",
   [QuizType.Enneagram]: "enneagram_result",
   [QuizType.BigFive]: "bigfive_result",
+  [QuizType.MentalAge]: "mentalage_result",
 } as const;
 
 // Save quiz result to PostgreSQL

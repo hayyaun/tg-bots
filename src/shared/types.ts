@@ -12,6 +12,7 @@ export enum QuizType {
   PoliticalCompass = "politicalcompass",
   Enneagram = "enneagram",
   BigFive = "bigfive",
+  MentalAge = "mentalage",
 }
 
 export enum Gender {
@@ -37,6 +38,7 @@ export interface UserProfile {
   politicalcompass_result: string | null;
   enneagram_result: string | null;
   bigfive_result: string | null;
+  mentalage_result: string | null;
   profile_image: string | null;
   mood: string | null;
   interests: string[] | null;

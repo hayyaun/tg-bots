@@ -18,6 +18,7 @@ export interface ISharedStrings {
   politicalcompass: string;
   enneagram: string;
   bigfive: string;
+  mentalage: string;
   interests: string;
   location: string;
   completion: string;
@@ -60,6 +61,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     politicalcompass: "قطب‌نمای سیاسی",
     enneagram: "انیاگرام",
     bigfive: "پنج عامل بزرگ",
+    mentalage: "سن ذهنی",
     interests: "🎯 علایق",
     location: "📍 استان",
     completion: "📊 تکمیل",
@@ -98,6 +100,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     politicalcompass: "Political Compass",
     enneagram: "Enneagram",
     bigfive: "Big Five",
+    mentalage: "Mental Age",
     interests: "🎯 Interests",
     location: "📍 Province",
     completion: "📊 Completion",
@@ -137,6 +140,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     politicalcompass: "Политический компас",
     enneagram: "Эннеаграмма",
     bigfive: "Большая пятерка",
+    mentalage: "Умственный возраст",
     interests: "🎯 Интересы",
     location: "📍 Провинция",
     completion: "📊 Заполнение",
@@ -175,6 +179,7 @@ const translations: { [key in Language]: ISharedStrings } = {
     politicalcompass: "البوصلة السياسية",
     enneagram: "الإنياجرام",
     bigfive: "العوامل الخمسة الكبرى",
+    mentalage: "العمر العقلي",
     interests: "🎯 الاهتمامات",
     location: "📍 المحافظة",
     completion: "📊 الإكمال",

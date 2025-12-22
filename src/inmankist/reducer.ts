@@ -4,6 +4,8 @@ import * as archetype from "./archetype";
 import { Deity } from "./archetype/types";
 import * as bigfive from "./bigfive";
 import { BigFiveAspect, BigFiveResult } from "./bigfive/types";
+import * as mentalage from "./mentalage";
+import { MentalAgeResult } from "./mentalage/types";
 import { quizModes } from "./config";
 import * as enneagram from "./enneagram";
 import { EnneagramType } from "./enneagram/types";
@@ -25,6 +27,7 @@ export async function setCustomCommands(bot: Bot) {
   politicalcompass.setCustomCommands(bot);
   enneagram.setCustomCommands(bot);
   bigfive.setCustomCommands(bot);
+  mentalage.setCustomCommands(bot);
 }
 
 // Indirect - select
@@ -49,6 +52,8 @@ export function selectOrder(user: IUserData) {
       return enneagram.getSample(size, language);
     case QuizType.BigFive:
       return bigfive.getSample(size, language);
+    case QuizType.MentalAge:
+      return mentalage.getSample(size, language);
   }
 }
 
@@ -69,6 +74,8 @@ export function selectQuizQuestion<T>(
       return enneagram.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
     case QuizType.BigFive:
       return bigfive.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
+    case QuizType.MentalAge:
+      return mentalage.getQuestionByQuestionIndex(user, questionIndex) as IQuest<T>;
   }
 }
 
@@ -94,6 +101,9 @@ export async function replyAbout(ctx: Context, type: QuizType) {
     case QuizType.BigFive:
       ctx.react("🔥").catch(() => {});
       return bigfive.replyAbout(ctx);
+    case QuizType.MentalAge:
+      ctx.react("🤓").catch(() => {});
+      return mentalage.replyAbout(ctx);
   }
 }
 
@@ -153,6 +163,12 @@ export async function replyResult(ctx: Context, user: IUserData) {
       await bigfive.replyResult(ctx, language, result as BigFiveResult);
       return result;
     }
+    case QuizType.MentalAge: {
+      result = mentalage.calculateResult(user);
+      await storeQuizResult(userId, user.quiz, result);
+      await mentalage.replyResult(ctx, language, result as MentalAgeResult);
+      return result;
+    }
   }
 }
 
@@ -170,6 +186,8 @@ export async function replyDetial(ctx: Context, type: QuizType, item: string) {
       return enneagram.replyDetail(ctx, item as EnneagramType);
     case QuizType.BigFive:
       return bigfive.replyDetail(ctx, item as BigFiveAspect);
+    case QuizType.MentalAge:
+      return mentalage.replyDetail(ctx, item);
   }
 }
 
@@ -231,6 +249,15 @@ export async function displaySavedResult(
         );
         if (!savedResult) return false;
         await bigfive.replyResult(ctx, language, savedResult);
+        return true;
+      }
+      case QuizType.MentalAge: {
+        const savedResult = await getQuizResult<MentalAgeResult>(
+          userId,
+          quizType
+        );
+        if (!savedResult) return false;
+        await mentalage.replyResult(ctx, language, savedResult);
         return true;
       }
     }

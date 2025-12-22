@@ -8,6 +8,7 @@ export const QUIZ_TYPE_EMOJIS: Record<QuizType, string> = {
   [QuizType.PoliticalCompass]: "🧭",
   [QuizType.Enneagram]: "🎯",
   [QuizType.BigFive]: "📊",
+  [QuizType.MentalAge]: "🧠",
 };
 
 // Mapping from QuizType to UserProfile field name
@@ -18,6 +19,7 @@ export const QUIZ_TYPE_TO_FIELD: Record<QuizType, keyof UserProfile> = {
   [QuizType.PoliticalCompass]: "politicalcompass_result",
   [QuizType.Enneagram]: "enneagram_result",
   [QuizType.BigFive]: "bigfive_result",
+  [QuizType.MentalAge]: "mentalage_result",
 };
 
 // Helper function to get quiz emoji by type
